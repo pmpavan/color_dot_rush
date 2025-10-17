@@ -5,3 +5,4 @@ export * from './Dot';
 export * from './Bomb';
 export * from './SlowMoDot';
 export * from './ObjectPool';
+export * from './ObjectSpawner';

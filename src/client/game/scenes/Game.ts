@@ -4,6 +4,8 @@ import { UIScene } from './UIScene';
 import { DebugService, ProductionDebugService } from '../../services/DebugService';
 import { DifficultyManager } from '../../services/DifficultyManager';
 import { IDebugService } from '../../../shared/types/debug';
+import { ObjectPoolManager, ObjectSpawner, Dot, Bomb, SlowMoDot } from '../objects';
+import { GameColor } from '../../../shared/types/game';
 
 // Game state finite state machine
 enum GameState {
@@ -21,10 +23,14 @@ export class Game extends Scene {
   // Game state variables
   private score: number = 0;
   private elapsedTime: number = 0;
-  private targetColor: string = 'RED';
+  private targetColor: GameColor = GameColor.RED;
   private slowMoCharges: number = 3;
   private gameStartTime: number = 0;
   private gameTimer: Phaser.Time.TimerEvent | null = null;
+
+  // Object management
+  private objectPool: ObjectPoolManager;
+  private objectSpawner: ObjectSpawner;
 
   // Debug and difficulty management
   private debugService: IDebugService;
@@ -49,7 +55,7 @@ export class Game extends Scene {
     this.currentState = GameState.READY;
     this.score = 0;
     this.elapsedTime = 0;
-    this.targetColor = 'RED';
+    this.targetColor = GameColor.RED;
     this.slowMoCharges = 3;
     this.gameStartTime = 0;
     this.gameTimer = null;
@@ -67,15 +73,23 @@ export class Game extends Scene {
     // Get reference to UIScene
     this.uiScene = this.scene.get('UI') as UIScene;
 
+    // Initialize object management systems
+    this.objectPool = new ObjectPoolManager(this);
+    this.objectSpawner = new ObjectSpawner(this, this.objectPool, this.difficultyManager);
+
     // Setup responsive layout
     this.updateLayout(this.scale.width, this.scale.height);
     this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
       const { width, height } = gameSize;
       this.updateLayout(width, height);
+      this.objectSpawner.updateScreenBounds(width, height);
     });
 
     // Initialize debug system
     this.setupDebugSystem();
+
+    // Setup game object event handlers
+    this.setupGameObjectEvents();
 
     // Initialize game state
     this.changeState(GameState.READY);
@@ -98,13 +112,117 @@ export class Game extends Scene {
     });
   }
 
+  private setupGameObjectEvents(): void {
+    // Listen for dot tap events
+    this.events.on('dot-tapped', (dot: Dot) => {
+      this.handleDotTap(dot);
+    });
+
+    // Listen for bomb tap events
+    this.events.on('bomb-tapped', (bomb: Bomb) => {
+      this.handleBombTap(bomb);
+    });
+
+    // Listen for slow-mo activation events
+    this.events.on('slowmo-activated', (slowMoDot: SlowMoDot) => {
+      this.handleSlowMoActivation(slowMoDot);
+    });
+  }
+
   private handleTap(x: number, y: number): void {
-    // TODO: Implement tap collision detection with game objects
-    // For now, just increment score as placeholder
-    this.score++;
-    this.updateUI();
+    // Create ripple effect for all taps
+    this.createRippleEffect(x, y);
     
-    console.log(`Tap at (${x}, ${y}) - Score: ${this.score}`);
+    // The actual object interaction is handled by the objects themselves
+    // through their interactive areas and event emissions
+    console.log(`Tap at (${x}, ${y})`);
+  }
+
+  private handleDotTap(dot: Dot): void {
+    if (this.currentState !== GameState.PLAYING) return;
+
+    // Check if dot matches target color
+    if (dot.isCorrectColor(this.targetColor)) {
+      // Correct tap - award point and create celebration effect
+      this.score++;
+      dot.createPopEffect();
+      
+      // Change target color occasionally for variety
+      if (Math.random() < 0.3) { // 30% chance to change color
+        this.targetColor = this.getRandomColor();
+        this.objectSpawner.setTargetColor(this.targetColor);
+      }
+    } else {
+      // Wrong color - game over
+      dot.createRippleEffect();
+      this.changeState(GameState.GAME_OVER);
+      return;
+    }
+
+    this.updateUI();
+  }
+
+  private handleBombTap(bomb: Bomb): void {
+    if (this.currentState !== GameState.PLAYING) return;
+
+    // Bomb tap always triggers game over
+    bomb.createRippleEffect();
+    this.changeState(GameState.GAME_OVER);
+  }
+
+  private handleSlowMoActivation(slowMoDot: SlowMoDot): void {
+    if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0) return;
+
+    // Consume a slow-mo charge
+    this.slowMoCharges--;
+    
+    // Create visual feedback
+    slowMoDot.createRippleEffect();
+    
+    // Activate slow-motion effect
+    this.activateSlowMotion();
+    
+    this.updateUI();
+  }
+
+  private createRippleEffect(x: number, y: number): void {
+    // Create expanding white ripple effect for any tap
+    const ripple = this.add.circle(x, y, 10, 0xFFFFFF, 0.8);
+    
+    this.tweens.add({
+      targets: ripple,
+      radius: 100,
+      alpha: 0,
+      duration: 200,
+      ease: 'Power2',
+      onComplete: () => {
+        ripple.destroy();
+      }
+    });
+  }
+
+  private activateSlowMotion(): void {
+    // Implement slow-motion effect with smooth time scaling
+    this.physics.world.timeScale = 0.3; // Slow down physics
+    this.tweens.timeScale = 0.3; // Slow down tweens
+    
+    // Create blue vignette effect
+    const vignette = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2,
+      this.scale.width,
+      this.scale.height,
+      0x3498DB,
+      0.2
+    );
+    vignette.setDepth(999);
+    
+    // Restore normal time after duration
+    this.time.delayedCall(SlowMoDot.getDuration(), () => {
+      this.physics.world.timeScale = 1;
+      this.tweens.timeScale = 1;
+      vignette.destroy();
+    });
   }
 
   private updateLayout(width: number, height: number): void {
@@ -163,6 +281,10 @@ export class Game extends Scene {
     this.targetColor = this.getRandomColor();
     this.slowMoCharges = 3;
     
+    // Reset object systems
+    this.objectSpawner.reset();
+    this.objectSpawner.setTargetColor(this.targetColor);
+    
     // Update UI
     this.updateUI();
   }
@@ -178,11 +300,20 @@ export class Game extends Scene {
       loop: true,
     });
 
-    // TODO: Start object spawning
+    // Start object spawning
+    this.objectSpawner.resume();
+    
     console.log('Game started!');
   }
 
   private endGame(): void {
+    // Stop object spawning
+    this.objectSpawner.pause();
+    
+    // Reset time scale in case slow-mo was active
+    this.physics.world.timeScale = 1;
+    this.tweens.timeScale = 1;
+    
     // TODO: Submit score to leaderboard
     console.log(`Game Over! Final Score: ${this.score}, Time: ${this.elapsedTime}ms`);
     
@@ -207,9 +338,9 @@ export class Game extends Scene {
     }
   }
 
-  private getRandomColor(): string {
-    const colors = ['RED', 'GREEN', 'BLUE', 'YELLOW', 'PURPLE'];
-    return colors[Math.floor(Math.random() * colors.length)];
+  private getRandomColor(): GameColor {
+    const colors = [GameColor.RED, GameColor.GREEN, GameColor.BLUE, GameColor.YELLOW, GameColor.PURPLE];
+    return colors[Math.floor(Math.random() * colors.length)] as GameColor;
   }
 
   // Public method for testing game over
@@ -273,18 +404,39 @@ export class Game extends Scene {
     this.hitboxGraphics.lineStyle(2, 0x00ff00, 0.8); // Green outline
     this.hitboxGraphics.fillStyle(0x00ff00, 0.1); // Semi-transparent green fill
 
-    // TODO: Draw hitboxes for all game objects (dots, bombs, power-ups)
-    // This will be implemented when game objects are created
-    
-    // Example hitbox for demonstration (remove when real objects are implemented)
-    if (this.currentState === GameState.PLAYING) {
-      // Draw example hitbox at center of screen
-      const centerX = this.scale.width / 2;
-      const centerY = this.scale.height / 2;
-      const size = this.difficultyManager.calculateSize(this.elapsedTime / 1000);
-      
-      this.hitboxGraphics.strokeCircle(centerX, centerY, size / 2);
-      this.hitboxGraphics.fillCircle(centerX, centerY, size / 2);
+    // Draw hitboxes for all active game objects
+    if (this.currentState === GameState.PLAYING && this.hitboxGraphics) {
+      // Draw hitboxes for active dots
+      const activeDots = this.objectPool.getActiveDots();
+      activeDots.forEach(dot => {
+        const bounds = dot.getBounds();
+        this.hitboxGraphics!.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        this.hitboxGraphics!.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      });
+
+      // Draw hitboxes for active bombs
+      const activeBombs = this.objectPool.getActiveBombs();
+      activeBombs.forEach(bomb => {
+        const bounds = bomb.getBounds();
+        this.hitboxGraphics!.lineStyle(2, 0xff0000, 0.8); // Red for bombs
+        this.hitboxGraphics!.fillStyle(0xff0000, 0.1);
+        this.hitboxGraphics!.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        this.hitboxGraphics!.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        this.hitboxGraphics!.lineStyle(2, 0x00ff00, 0.8); // Reset to green
+        this.hitboxGraphics!.fillStyle(0x00ff00, 0.1);
+      });
+
+      // Draw hitboxes for active slow-mo dots
+      const activeSlowMoDots = this.objectPool.getActiveSlowMoDots();
+      activeSlowMoDots.forEach(slowMoDot => {
+        const bounds = slowMoDot.getBounds();
+        this.hitboxGraphics!.lineStyle(2, 0x0000ff, 0.8); // Blue for slow-mo
+        this.hitboxGraphics!.fillStyle(0x0000ff, 0.1);
+        this.hitboxGraphics!.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        this.hitboxGraphics!.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        this.hitboxGraphics!.lineStyle(2, 0x00ff00, 0.8); // Reset to green
+        this.hitboxGraphics!.fillStyle(0x00ff00, 0.1);
+      });
     }
   }
 
@@ -306,10 +458,16 @@ export class Game extends Scene {
   }
 
   // Override update method to include debug updates
-  update(time: number, delta: number): void {
+  override update(time: number, delta: number): void {
     super.update(time, delta);
 
     if (this.currentState === GameState.PLAYING) {
+      // Update object spawner
+      this.objectSpawner.update(delta, this.elapsedTime);
+      
+      // Update object pool
+      this.objectPool.update(delta);
+      
       // Update difficulty display for debugging
       this.updateDifficultyDisplay();
       
@@ -318,12 +476,10 @@ export class Game extends Scene {
     }
   }
 
-  // Clean up debug resources
-  destroy(): void {
+  // Clean up debug resources when scene shuts down
+  shutdown(): void {
     if (this.debugService instanceof DebugService) {
       this.debugService.destroy();
     }
-    
-    super.destroy();
   }
 }

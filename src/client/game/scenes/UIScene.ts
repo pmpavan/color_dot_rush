@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { GameColor } from '../../../shared/types/game';
 
 export class UIScene extends Scene {
   private scoreText: Phaser.GameObjects.Text | null = null;
@@ -8,7 +9,7 @@ export class UIScene extends Scene {
   
   private score: number = 0;
   private bestScore: number = 0;
-  private targetColor: string = 'RED';
+  private targetColor: GameColor = GameColor.RED;
 
   constructor() {
     super({ key: 'UI', active: false });
@@ -24,7 +25,7 @@ export class UIScene extends Scene {
     // Reset game state
     this.score = 0;
     this.bestScore = this.getBestScore();
-    this.targetColor = 'RED';
+    this.targetColor = GameColor.RED;
   }
 
   create(): void {
@@ -80,11 +81,11 @@ export class UIScene extends Scene {
 
     // Target color display (below header)
     this.targetColorText = this.add
-      .text(width / 2, 120, `TAP: ${this.targetColor}`, {
+      .text(width / 2, 120, `TAP: ${this.getColorName(this.targetColor)}`, {
         fontFamily: 'Poppins',
         fontSize: '32px',
         fontStyle: 'bold',
-        color: this.getColorHex(this.targetColor),
+        color: this.targetColor,
         backgroundColor: '#000000',
         padding: { x: 20, y: 10 },
       })
@@ -135,11 +136,11 @@ export class UIScene extends Scene {
     }
   }
 
-  private updateTargetColor(color: string): void {
+  private updateTargetColor(color: GameColor): void {
     this.targetColor = color;
     if (this.targetColorText) {
-      this.targetColorText.setText(`TAP: ${color}`);
-      this.targetColorText.setColor(this.getColorHex(color));
+      this.targetColorText.setText(`TAP: ${this.getColorName(color)}`);
+      this.targetColorText.setColor(color);
     }
   }
 
@@ -156,15 +157,15 @@ export class UIScene extends Scene {
     });
   }
 
-  private getColorHex(colorName: string): string {
-    const colorMap: { [key: string]: string } = {
-      'RED': '#E74C3C',
-      'GREEN': '#2ECC71',
-      'BLUE': '#3498DB',
-      'YELLOW': '#F1C40F',
-      'PURPLE': '#9B59B6',
+  private getColorName(color: GameColor): string {
+    const colorNameMap: { [key: string]: string } = {
+      [GameColor.RED]: 'RED',
+      [GameColor.GREEN]: 'GREEN',
+      [GameColor.BLUE]: 'BLUE',
+      [GameColor.YELLOW]: 'YELLOW',
+      [GameColor.PURPLE]: 'PURPLE',
     };
-    return colorMap[colorName] || '#FFFFFF';
+    return colorNameMap[color] || 'RED';
   }
 
   private getBestScore(): number {
@@ -184,7 +185,7 @@ export class UIScene extends Scene {
     this.events.emit('updateTime', elapsedTime);
   }
 
-  public setTargetColor(color: string): void {
+  public setTargetColor(color: GameColor): void {
     this.events.emit('updateTargetColor', color);
   }
 
