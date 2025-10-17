@@ -5,6 +5,7 @@ export class UIScene extends Scene {
   private scoreText: Phaser.GameObjects.Text | null = null;
   private timeText: Phaser.GameObjects.Text | null = null;
   private targetColorText: Phaser.GameObjects.Text | null = null;
+  private targetColorBg: Phaser.GameObjects.Rectangle | null = null;
   private slowMoCharges: Phaser.GameObjects.Arc[] = [];
   
   private score: number = 0;
@@ -79,17 +80,31 @@ export class UIScene extends Scene {
       this.slowMoCharges.push(charge);
     }
 
-    // Target color display (below header)
+    // Target color display (below header) - Prominent and eye-catching
+    this.targetColorBg = this.add.rectangle(width / 2, 120, 300, 60, 0x000000, 0.8);
+    this.targetColorBg.setStrokeStyle(3, 0xFFFFFF, 0.9);
+    
     this.targetColorText = this.add
       .text(width / 2, 120, `TAP: ${this.getColorName(this.targetColor)}`, {
         fontFamily: 'Poppins',
-        fontSize: '32px',
+        fontSize: '36px',
         fontStyle: 'bold',
         color: this.targetColor,
-        backgroundColor: '#000000',
-        padding: { x: 20, y: 10 },
+        stroke: '#000000',
+        strokeThickness: 2,
       })
       .setOrigin(0.5, 0.5);
+
+    // Add subtle pulsing animation to make target color more noticeable
+    this.tweens.add({
+      targets: [this.targetColorBg, this.targetColorText],
+      scaleX: 1.05,
+      scaleY: 1.05,
+      duration: 800,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
   }
 
   private setupLayout(): void {
@@ -111,6 +126,10 @@ export class UIScene extends Scene {
 
     if (this.targetColorText) {
       this.targetColorText.setPosition(width / 2, 120);
+    }
+
+    if (this.targetColorBg) {
+      this.targetColorBg.setPosition(width / 2, 120);
     }
   }
 
@@ -141,6 +160,11 @@ export class UIScene extends Scene {
     if (this.targetColorText) {
       this.targetColorText.setText(`TAP: ${this.getColorName(color)}`);
       this.targetColorText.setColor(color);
+    }
+    
+    // Update background border color to match target color
+    if (this.targetColorBg) {
+      this.targetColorBg.setStrokeStyle(3, parseInt(color.replace('#', '0x')), 0.9);
     }
   }
 

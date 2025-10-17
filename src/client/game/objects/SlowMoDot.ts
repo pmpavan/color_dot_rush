@@ -35,9 +35,7 @@ export class SlowMoDot extends GameObject {
     // Set slow-mo dot color (Shimmering White)
     this.setTint(parseInt(UIColor.SLOW_MO.replace('#', '0x')));
     
-    // Make interactive for tap detection
-    this.setInteractive();
-    this.on('pointerdown', this.onTap, this);
+    // Interactive setup handled by centralized input system in GameScene
   }
 
   /**
@@ -116,16 +114,11 @@ export class SlowMoDot extends GameObject {
   }
 
   /**
-   * Handle tap/click on this slow-mo dot
+   * Handle tap/click on this slow-mo dot (called by centralized input system)
    */
-  private onTap(): void {
-    if (!this.active) return;
-    
-    // Activate slow-mo effect
-    this.activateSlowMo();
-    
-    // Emit event for game scene to handle slow-mo activation
-    this.scene.events.emit('slowmo-activated', this);
+  public onTap(): void {
+    // Tap handling is now managed by GameScene's centralized collision detection
+    // This method is kept for potential future use or debugging
   }
 
   /**

@@ -113,29 +113,71 @@ export class Game extends Scene {
   }
 
   private setupGameObjectEvents(): void {
-    // Listen for dot tap events
-    this.events.on('dot-tapped', (dot: Dot) => {
-      this.handleDotTap(dot);
-    });
-
-    // Listen for bomb tap events
-    this.events.on('bomb-tapped', (bomb: Bomb) => {
-      this.handleBombTap(bomb);
-    });
-
-    // Listen for slow-mo activation events
-    this.events.on('slowmo-activated', (slowMoDot: SlowMoDot) => {
-      this.handleSlowMoActivation(slowMoDot);
-    });
+    // Game object events are now handled through centralized collision detection
+    // This method is kept for potential future event handling needs
+    console.log('Game object event system initialized (centralized collision detection)');
   }
 
   private handleTap(x: number, y: number): void {
+    if (this.currentState !== GameState.PLAYING) return;
+
     // Create ripple effect for all taps
     this.createRippleEffect(x, y);
     
-    // The actual object interaction is handled by the objects themselves
-    // through their interactive areas and event emissions
-    console.log(`Tap at (${x}, ${y})`);
+    // Centralized collision detection for all game objects
+    const tappedObject = this.checkCollisionAtPoint(x, y);
+    
+    if (tappedObject) {
+      // Handle the tapped object based on its type
+      if (tappedObject instanceof Dot) {
+        this.handleDotTap(tappedObject);
+      } else if (tappedObject instanceof Bomb) {
+        this.handleBombTap(tappedObject);
+      } else if (tappedObject instanceof SlowMoDot) {
+        this.handleSlowMoActivation(tappedObject);
+      }
+    }
+    
+    console.log(`Tap at (${x}, ${y}) - Object: ${tappedObject ? tappedObject.constructor.name : 'none'}`);
+  }
+
+  /**
+   * Centralized collision detection for tap input
+   * Checks all active game objects for collision with tap point
+   */
+  private checkCollisionAtPoint(x: number, y: number): Dot | Bomb | SlowMoDot | null {
+    // Check dots first (highest priority for gameplay)
+    const activeDots = this.objectPool.getActiveDots();
+    for (const dot of activeDots) {
+      if (this.isPointInBounds(x, y, dot.getBounds())) {
+        return dot;
+      }
+    }
+
+    // Check slow-mo dots (power-ups have priority over bombs)
+    const activeSlowMoDots = this.objectPool.getActiveSlowMoDots();
+    for (const slowMoDot of activeSlowMoDots) {
+      if (this.isPointInBounds(x, y, slowMoDot.getBounds())) {
+        return slowMoDot;
+      }
+    }
+
+    // Check bombs last (most dangerous, so check after other objects)
+    const activeBombs = this.objectPool.getActiveBombs();
+    for (const bomb of activeBombs) {
+      if (this.isPointInBounds(x, y, bomb.getBounds())) {
+        return bomb;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if a point is within the bounds of a rectangle
+   */
+  private isPointInBounds(x: number, y: number, bounds: Phaser.Geom.Rectangle): boolean {
+    return Phaser.Geom.Rectangle.Contains(bounds, x, y);
   }
 
   private handleDotTap(dot: Dot): void {
@@ -143,18 +185,26 @@ export class Game extends Scene {
 
     // Check if dot matches target color
     if (dot.isCorrectColor(this.targetColor)) {
-      // Correct tap - award point and create celebration effect
+      // Correct tap - award point (+1 for correct taps)
       this.score++;
-      dot.createPopEffect();
       
-      // Change target color occasionally for variety
-      if (Math.random() < 0.3) { // 30% chance to change color
+      // Create celebratory pop effect with particle burst
+      this.createCorrectTapEffect(dot);
+      
+      // Deactivate the dot after successful tap
+      dot.deactivate();
+      
+      // Change target color occasionally for variety (30% chance)
+      if (Math.random() < 0.3) {
         this.targetColor = this.getRandomColor();
         this.objectSpawner.setTargetColor(this.targetColor);
       }
+      
+      console.log(`Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
     } else {
-      // Wrong color - game over
-      dot.createRippleEffect();
+      // Wrong color - immediate game over
+      console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
+      this.createWrongTapEffect(dot);
       this.changeState(GameState.GAME_OVER);
       return;
     }
@@ -162,41 +212,192 @@ export class Game extends Scene {
     this.updateUI();
   }
 
+  /**
+   * Create visual feedback for correct dot taps
+   * Includes particle burst and satisfying "pop" animation
+   */
+  private createCorrectTapEffect(dot: Dot): void {
+    const x = dot.x;
+    const y = dot.y;
+    const color = dot.getColor();
+    
+    // Create particle burst with 5-7 particles of dot's color
+    const particles = this.add.particles(x, y, 'dot-red', {
+      tint: parseInt(color.replace('#', '0x')),
+      speed: { min: 80, max: 200 },
+      scale: { start: 0.4, end: 0 },
+      lifespan: 300,
+      quantity: { min: 5, max: 7 },
+      blendMode: 'NORMAL'
+    });
+
+    // Dot shrinks to nothing with satisfying animation
+    this.tweens.add({
+      targets: dot,
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      duration: 300,
+      ease: 'Back.easeIn',
+      onComplete: () => {
+        particles.destroy();
+      }
+    });
+  }
+
+  /**
+   * Create visual feedback for wrong dot taps
+   */
+  private createWrongTapEffect(dot: Dot): void {
+    // Create red warning ripple effect
+    const ripple = this.add.circle(dot.x, dot.y, 10, 0xFF0000, 0.8);
+    
+    this.tweens.add({
+      targets: ripple,
+      radius: dot.size * 3,
+      alpha: 0,
+      duration: 400,
+      ease: 'Power2',
+      onComplete: () => {
+        ripple.destroy();
+      }
+    });
+
+    // Flash the dot red briefly
+    const originalTint = dot.tintTopLeft;
+    dot.setTint(0xFF0000);
+    
+    this.time.delayedCall(200, () => {
+      dot.setTint(originalTint);
+    });
+  }
+
   private handleBombTap(bomb: Bomb): void {
     if (this.currentState !== GameState.PLAYING) return;
 
-    // Bomb tap always triggers game over
-    bomb.createRippleEffect();
+    console.log('Bomb tapped! Game Over!');
+    
+    // Create explosion effect with screen shake and particles
+    this.createBombExplosionEffect(bomb);
+    
+    // Immediate game over (no delay)
     this.changeState(GameState.GAME_OVER);
+  }
+
+  /**
+   * Create explosion effect for bomb taps
+   * Includes screen shake, particle explosion, and visual feedback
+   */
+  private createBombExplosionEffect(bomb: Bomb): void {
+    const x = bomb.x;
+    const y = bomb.y;
+    
+    // Screen shake effect (2-3px, 150ms)
+    this.cameras.main.shake(150, 0.025); // 150ms duration, 0.025 intensity (~2-3px)
+    
+    // Create explosion particle effect with red/orange/yellow colors
+    const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700]; // Red, OrangeRed, DarkOrange, Gold
+    
+    const explosion = this.add.particles(x, y, 'dot-red', {
+      tint: explosionColors,
+      speed: { min: 150, max: 400 },
+      scale: { start: 0.8, end: 0 },
+      lifespan: { min: 400, max: 800 },
+      quantity: { min: 15, max: 25 },
+      blendMode: 'ADD',
+      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, bomb.size / 2), quantity: 20 }
+    });
+
+    // Hide bomb immediately
+    bomb.setVisible(false);
+    
+    // Clean up explosion after animation
+    this.time.delayedCall(800, () => {
+      explosion.destroy();
+      bomb.deactivate();
+    });
   }
 
   private handleSlowMoActivation(slowMoDot: SlowMoDot): void {
     if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0) return;
 
+    console.log(`Slow-mo activated! Charges remaining: ${this.slowMoCharges - 1}`);
+    
     // Consume a slow-mo charge
     this.slowMoCharges--;
     
-    // Create visual feedback
-    slowMoDot.createRippleEffect();
+    // Create radial blue glow and visual feedback
+    this.createSlowMoActivationEffect(slowMoDot);
     
     // Activate slow-motion effect
     this.activateSlowMotion();
     
+    // Deactivate the slow-mo dot
+    slowMoDot.deactivate();
+    
     this.updateUI();
   }
 
+  /**
+   * Create visual effects for slow-mo activation
+   */
+  private createSlowMoActivationEffect(slowMoDot: SlowMoDot): void {
+    const x = slowMoDot.x;
+    const y = slowMoDot.y;
+    
+    // Create radial blue glow emanating from tap point
+    const glow = this.add.circle(x, y, 20, 0x3498DB, 0.6);
+    
+    this.tweens.add({
+      targets: glow,
+      radius: 300,
+      alpha: 0,
+      duration: 600,
+      ease: 'Power2',
+      onComplete: () => {
+        glow.destroy();
+      }
+    });
+
+    // Shrink the slow-mo dot with satisfying animation
+    this.tweens.add({
+      targets: slowMoDot,
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      duration: 400,
+      ease: 'Back.easeIn'
+    });
+  }
+
   private createRippleEffect(x: number, y: number): void {
-    // Create expanding white ripple effect for any tap
-    const ripple = this.add.circle(x, y, 10, 0xFFFFFF, 0.8);
+    // Create expanding white ripple effect for any tap (instantaneous feedback)
+    const ripple = this.add.circle(x, y, 8, 0xFFFFFF, 0.9);
+    ripple.setStrokeStyle(3, 0xFFFFFF, 0.6);
     
     this.tweens.add({
       targets: ripple,
-      radius: 100,
+      radius: 120,
       alpha: 0,
       duration: 200,
       ease: 'Power2',
       onComplete: () => {
         ripple.destroy();
+      }
+    });
+
+    // Add a secondary, smaller ripple for extra "juice"
+    const innerRipple = this.add.circle(x, y, 4, 0xFFFFFF, 0.6);
+    
+    this.tweens.add({
+      targets: innerRipple,
+      radius: 60,
+      alpha: 0,
+      duration: 150,
+      ease: 'Power2',
+      delay: 50,
+      onComplete: () => {
+        innerRipple.destroy();
       }
     });
   }

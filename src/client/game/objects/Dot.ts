@@ -23,9 +23,7 @@ export class Dot extends GameObject {
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
-    // Make interactive for tap detection
-    this.setInteractive();
-    this.on('pointerdown', this.onTap, this);
+    // Interactive setup handled by centralized input system in GameScene
   }
 
   /**
@@ -99,13 +97,11 @@ export class Dot extends GameObject {
   }
 
   /**
-   * Handle tap/click on this dot
+   * Handle tap/click on this dot (called by centralized input system)
    */
-  private onTap(): void {
-    if (!this.active) return;
-    
-    // Emit custom event for game scene to handle
-    this.scene.events.emit('dot-tapped', this);
+  public onTap(): void {
+    // Tap handling is now managed by GameScene's centralized collision detection
+    // This method is kept for potential future use or debugging
   }
 
   /**

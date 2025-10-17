@@ -32,9 +32,7 @@ export class Bomb extends GameObject {
     // Set bomb color (Near Black)
     this.setTint(parseInt(UIColor.BOMB.replace('#', '0x')));
     
-    // Make interactive for tap detection
-    this.setInteractive();
-    this.on('pointerdown', this.onTap, this);
+    // Interactive setup handled by centralized input system in GameScene
   }
 
   /**
@@ -112,16 +110,11 @@ export class Bomb extends GameObject {
   }
 
   /**
-   * Handle tap/click on this bomb - triggers game over
+   * Handle tap/click on this bomb (called by centralized input system)
    */
-  private onTap(): void {
-    if (!this.active) return;
-    
-    // Create explosion effect first
-    this.explode();
-    
-    // Emit event for game scene to handle game over
-    this.scene.events.emit('bomb-tapped', this);
+  public onTap(): void {
+    // Tap handling is now managed by GameScene's centralized collision detection
+    // This method is kept for potential future use or debugging
   }
 
   /**
