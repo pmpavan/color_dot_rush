@@ -155,12 +155,13 @@
   - ✅ **COMPLETED**: Comprehensive mock service with 47+ tests, network simulation, and UI integration examples
   - _Requirements: 5.5, 8.3 | PRD Story 6.1, QA Medium Risk_
 
-- [ ] 18. Implement server-side Reddit leaderboard API
+- [x] 18. Implement server-side Reddit leaderboard API
 
-  - Create /api/submit-score endpoint in src/server/ using Devvit Redis for weekly leaderboard storage
-  - Create /api/get-leaderboard endpoint returning weekly rankings with Reddit usernames
-  - Implement automatic Reddit user authentication through Devvit middleware
-  - Add graceful error handling, 30-second timeout compliance, and retry logic
+  - ✅ Create /api/submit-score endpoint in src/server/ using Devvit Redis for weekly leaderboard storage
+  - ✅ Create /api/get-leaderboard endpoint returning weekly rankings with Reddit usernames
+  - ✅ Implement automatic Reddit user authentication through Devvit middleware
+  - ✅ Add graceful error handling, 30-second timeout compliance, and retry logic
+  - ✅ **COMPLETED**: Full server-side Reddit leaderboard API with weekly Redis storage, atomic operations, retry logic, comprehensive error handling, and additional metadata/cleanup endpoints
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5 | PRD Story 6.2_
 
 - [ ] 19. Build client-side leaderboard integration
