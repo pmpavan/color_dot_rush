@@ -3,6 +3,7 @@ import * as Phaser from 'phaser';
 import { UIScene } from './UIScene';
 import { DebugService, ProductionDebugService } from '../../services/DebugService';
 import { DifficultyManager } from '../../services/DifficultyManager';
+import { ILeaderboardService, DevvitLeaderboardService, MockLeaderboardService } from '../../services/LeaderboardService';
 import { IDebugService } from '../../../shared/types/debug';
 import { ObjectPoolManager, ObjectSpawner, Dot, Bomb, SlowMoDot } from '../objects';
 import { GameColor } from '../../../shared/types/game';
@@ -41,6 +42,7 @@ export class Game extends Scene {
   // Debug and difficulty management
   private debugService: IDebugService;
   private difficultyManager: DifficultyManager;
+  private leaderboardService: ILeaderboardService;
   private hitboxGraphics: Phaser.GameObjects.Graphics | null = null;
 
   constructor() {
@@ -49,8 +51,11 @@ export class Game extends Scene {
     // Initialize services based on environment
     if (process.env.NODE_ENV === 'production') {
       this.debugService = new ProductionDebugService();
+      this.leaderboardService = new DevvitLeaderboardService();
     } else {
       this.debugService = DebugService.getInstance();
+      // Use mock service for development to avoid API calls during testing
+      this.leaderboardService = new MockLeaderboardService();
     }
     
     this.difficultyManager = new DifficultyManager();
@@ -796,8 +801,9 @@ export class Game extends Scene {
     // Clear any remaining visual effects
     this.tweens.killAll();
     
-    // Calculate final session time in seconds
+    // Calculate final session time in seconds and milliseconds
     const sessionTimeSeconds = Math.floor(this.elapsedTime / 1000);
+    const sessionTimeMs = Math.floor(this.elapsedTime);
     
     // Store best score in local storage
     const currentBestScore = parseInt(localStorage.getItem('colorRushBestScore') || '0');
@@ -806,7 +812,9 @@ export class Game extends Scene {
       console.log(`New best score: ${this.score}!`);
     }
     
-    // TODO: Submit score to leaderboard service
+    // Automatic score submission to leaderboard with graceful error handling
+    this.submitScoreToLeaderboard(this.score, sessionTimeMs);
+    
     console.log(`Game Over! Final Score: ${this.score}, Time: ${sessionTimeSeconds}s, Best: ${Math.max(this.score, currentBestScore)}`);
     
     // Prepare data for GameOver scene
@@ -821,6 +829,77 @@ export class Game extends Scene {
     this.time.delayedCall(1500, () => {
       this.scene.stop('UI'); // Stop UIScene
       this.scene.start('GameOver', gameOverData);
+    });
+  }
+
+  /**
+   * Submit score to leaderboard with automatic retry and graceful error handling
+   * Implements fallback messaging for API failures as per requirements
+   */
+  private async submitScoreToLeaderboard(score: number, sessionTime: number): Promise<void> {
+    try {
+      console.log(`Submitting score to leaderboard: ${score} points, ${sessionTime}ms session`);
+      
+      const result = await this.leaderboardService.submitScore(score, sessionTime);
+      
+      if (result.success) {
+        console.log('Score submitted successfully:', result.message);
+        if (result.rank) {
+          console.log(`Current leaderboard rank: ${result.rank}`);
+        }
+      } else {
+        console.warn('Score submission failed:', result.message);
+        this.showScoreSubmissionError(result.message || 'Could not submit score');
+      }
+      
+    } catch (error) {
+      console.error('Error submitting score to leaderboard:', error);
+      
+      // Graceful degradation - show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
+      this.showScoreSubmissionError(errorMessage);
+    }
+  }
+
+  /**
+   * Show user-friendly error message for score submission failures
+   * Provides fallback messaging as required by task specifications
+   */
+  private showScoreSubmissionError(message: string): void {
+    // Create a temporary error notification that doesn't interrupt gameplay
+    const errorText = this.add.text(
+      this.scale.width / 2,
+      this.scale.height - 100,
+      `⚠️ ${message}`,
+      {
+        fontFamily: 'Poppins',
+        fontSize: '18px',
+        color: '#F39C12', // Orange warning color
+        backgroundColor: '#2C3E50',
+        padding: { x: 20, y: 10 },
+        align: 'center',
+      }
+    ).setOrigin(0.5).setDepth(1000).setAlpha(0);
+
+    // Fade in, hold, then fade out
+    this.tweens.add({
+      targets: errorText,
+      alpha: 1,
+      duration: 300,
+      ease: 'Power2.easeOut',
+      onComplete: () => {
+        this.time.delayedCall(3000, () => {
+          this.tweens.add({
+            targets: errorText,
+            alpha: 0,
+            duration: 500,
+            ease: 'Power2.easeIn',
+            onComplete: () => {
+              errorText.destroy();
+            }
+          });
+        });
+      }
     });
   }
 

@@ -1,6 +1,7 @@
 import { Boot } from './scenes/Boot';
 import { GameOver } from './scenes/GameOver';
 import { Game as MainGame } from './scenes/Game';
+import { Leaderboard } from './scenes/Leaderboard';
 import { SplashScreen } from './scenes/SplashScreen';
 import { UIScene } from './scenes/UIScene';
 import { ResponsiveCanvas } from './utils/ResponsiveCanvas';
@@ -45,7 +46,7 @@ const config: Phaser.Types.Core.GameConfig = {
     target: 60,
     forceSetTimeOut: true,
   },
-  scene: [Boot, Preloader, SplashScreen, MainGame, UIScene, GameOver],
+  scene: [Boot, Preloader, SplashScreen, MainGame, UIScene, GameOver, Leaderboard],
 };
 
 const StartGame = (parent: string) => {

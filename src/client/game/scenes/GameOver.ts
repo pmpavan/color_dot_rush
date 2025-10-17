@@ -297,10 +297,26 @@ export class GameOver extends Scene {
         .on('pointerdown', () => {
           if (this.leaderboardButton) {
             this.leaderboardButton.setScale(0.95);
-            // TODO: Implement leaderboard view with smooth transition
-            console.log('Leaderboard clicked - TODO: Implement leaderboard view');
-            // For now, show a placeholder message
-            this.showLeaderboardPlaceholder();
+            // Navigate to leaderboard scene with smooth transition
+            this.tweens.add({
+              targets: this.modalCard,
+              scaleX: 0.1,
+              scaleY: 0.1,
+              alpha: 0,
+              duration: 200,
+              ease: 'Back.easeIn',
+              onComplete: () => {
+                if (this.cameras?.main?.fadeOut) {
+                  this.cameras.main.fadeOut(250, 0, 0, 0);
+                  this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('Leaderboard');
+                  });
+                } else {
+                  // Fallback for test environment
+                  this.scene.start('Leaderboard');
+                }
+              }
+            });
           }
         })
         .on('pointerup', () => {
@@ -361,31 +377,7 @@ export class GameOver extends Scene {
     }
   }
 
-  private showLeaderboardPlaceholder(): void {
-    // Create a temporary message for leaderboard placeholder
-    const placeholderText = this.add
-      .text(0, this.modalCard.y + 200, 'Leaderboard coming soon!', {
-        fontFamily: 'Poppins',
-        fontSize: '16px',
-        color: '#F1C40F',
-        backgroundColor: '#2C3E50',
-        padding: { x: 15, y: 8 },
-      })
-      .setOrigin(0.5)
-      .setAlpha(0);
 
-    // Fade in and out
-    this.tweens.add({
-      targets: placeholderText,
-      alpha: 1,
-      duration: 300,
-      yoyo: true,
-      repeat: 1,
-      onComplete: () => {
-        placeholderText.destroy();
-      }
-    });
-  }
 
 
 

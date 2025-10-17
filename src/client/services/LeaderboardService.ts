@@ -62,7 +62,8 @@ export class MockLeaderboardService implements ILeaderboardService {
       throw new Error('Failed to submit score: Server error (500)');
     }
 
-    // Add the new score to mock data
+    // Add the new score to mock data (sessionTime used for logging)
+    console.log(`Mock score submission: ${score} points in ${sessionTime}ms session`);
     const newEntry: LeaderboardEntry = {
       username: this.currentUser,
       score,
@@ -103,11 +104,16 @@ export class MockLeaderboardService implements ILeaderboardService {
 
     const userRank = this.mockScores.find(entry => entry.username === this.currentUser)?.rank;
 
-    return {
+    const response: LeaderboardResponse = {
       entries: [...this.mockScores],
-      userRank,
       totalPlayers: this.mockScores.length,
     };
+
+    if (userRank !== undefined) {
+      response.userRank = userRank;
+    }
+
+    return response;
   }
 
   /**
@@ -219,33 +225,120 @@ export class MockLeaderboardService implements ILeaderboardService {
 }
 
 /**
- * Production leaderboard service (placeholder for future implementation)
+ * Production leaderboard service for Reddit Devvit integration
+ * Implements real API calls to /api/submit-score and /api/get-leaderboard endpoints
  */
 export class DevvitLeaderboardService implements ILeaderboardService {
-  async submitScore(score: number, sessionTime: number): Promise<SubmitScoreResponse> {
-    // TODO: Implement actual Devvit API calls in task 18
-    const response = await fetch('/api/submit-score', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ score, sessionTime } as SubmitScoreRequest),
-    });
+  private readonly TIMEOUT_MS = 25000; // 25 seconds to stay under Devvit's 30s limit
+  private readonly MAX_RETRIES = 2;
 
-    if (!response.ok) {
-      throw new Error(`Failed to submit score: ${response.statusText}`);
+  async submitScore(score: number, sessionTime: number): Promise<SubmitScoreResponse> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
+
+        const response = await fetch('/api/submit-score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ score, sessionTime } as SubmitScoreRequest),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          // Handle specific HTTP error codes
+          if (response.status === 408) {
+            throw new Error('Request timeout - please try again');
+          } else if (response.status === 401) {
+            throw new Error('Authentication required - please refresh the page');
+          } else if (response.status >= 500) {
+            throw new Error('Server error - please try again later');
+          } else {
+            throw new Error(`Failed to submit score: ${response.statusText}`);
+          }
+        }
+
+        const result = await response.json();
+        console.log('Score submitted successfully:', result);
+        return result;
+
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Score submission attempt ${attempt + 1} failed:`, error);
+        
+        // Don't retry on authentication errors or client errors
+        if (error instanceof Error && (
+          error.message.includes('Authentication') ||
+          error.message.includes('400')
+        )) {
+          break;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        if (attempt < this.MAX_RETRIES) {
+          await this.delay(Math.pow(2, attempt) * 1000); // 1s, 2s delays
+        }
+      }
     }
 
-    return response.json();
+    // All retries failed - return graceful failure response
+    console.error('Failed to submit score after all retries:', lastError);
+    return {
+      success: false,
+      message: 'Could not submit score - please check your connection',
+    };
   }
 
   async getTopScores(): Promise<LeaderboardResponse> {
-    // TODO: Implement actual Devvit API calls in task 18
-    const response = await fetch('/api/get-leaderboard');
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
 
-    if (!response.ok) {
-      throw new Error(`Failed to load leaderboard: ${response.statusText}`);
+        const response = await fetch('/api/get-leaderboard', {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          // Handle specific HTTP error codes
+          if (response.status === 408) {
+            throw new Error('Request timeout - please try again');
+          } else if (response.status >= 500) {
+            throw new Error('Server error - please try again later');
+          } else {
+            throw new Error(`Failed to load leaderboard: ${response.statusText}`);
+          }
+        }
+
+        const result = await response.json();
+        console.log('Leaderboard loaded successfully:', result);
+        return result;
+
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Leaderboard fetch attempt ${attempt + 1} failed:`, error);
+        
+        // Wait before retrying (exponential backoff)
+        if (attempt < this.MAX_RETRIES) {
+          await this.delay(Math.pow(2, attempt) * 1000); // 1s, 2s delays
+        }
+      }
     }
 
-    return response.json();
+    // All retries failed - return empty leaderboard for graceful degradation
+    console.error('Failed to load leaderboard after all retries:', lastError);
+    return {
+      entries: [],
+      totalPlayers: 0,
+    };
   }
 
   async getCurrentUserRank(): Promise<number | null> {
@@ -256,5 +349,12 @@ export class DevvitLeaderboardService implements ILeaderboardService {
       console.warn('Failed to get user rank:', error);
       return null;
     }
+  }
+
+  /**
+   * Utility method for retry delays
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
