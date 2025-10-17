@@ -105,7 +105,7 @@
   - Implement button interactions: hover (scale-up), pressed (scale-down)
   - _Requirements: 4.2 | PRD Story 4.1, Frontend Spec_
 
-- [ ] 13. Implement game HUD and UI system
+- [x] 13. Implement game HUD and UI system
 
   - Create UIScene for concurrent HUD overlay (separate from GameScene to prevent redraws)
   - Build clean top-aligned header bar with transparent background
