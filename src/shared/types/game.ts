@@ -15,7 +15,7 @@ export enum UIColor {
   BUTTON_PRIMARY = '#3498DB', // Bright Blue
   BUTTON_SECONDARY = '#95A5A6', // Mid Grey
   BOMB = '#34495E', // Near Black
-  SLOW_MO = '#F8F9FA', // Shimmering White (slightly different from TEXT_SECONDARY)
+  SLOW_MO = '#ECF0F1', // Shimmering White
 }
 
 export interface GameConfig {
@@ -45,15 +45,15 @@ export interface GameState {
   gamePhase: 'READY' | 'PLAYING' | 'GAME_OVER';
 }
 
-// Legacy interface - use debug.ts for new debug-related types
-export interface DifficultyParams {
-  baseSpeed: number;
-  speedMultiplier: number;
-  baseDotSize: number;
-  sizeReductionRate: number;
-  baseSpawnRate: number;
-  spawnRateIncrease: number;
-  bombSpawnChance: number;
+// Legacy interface - moved to debug.ts
+
+// Default configuration values from PRD
+// Typography system from design document
+export interface TypographyScale {
+  gameTitle: '72pt Poppins Bold'; // H1 - Game title with color-shifting gradient
+  modalTitle: '48pt Poppins Bold'; // H2 - Modal titles
+  headerUI: '24pt Poppins Regular'; // Header UI - Score, time, charges
+  bodyButton: '20pt Poppins Medium'; // Body/Button text
 }
 
 // Default configuration values from PRD

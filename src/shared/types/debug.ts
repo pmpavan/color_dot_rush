@@ -40,5 +40,5 @@ export const DEFAULT_DEBUG_CONFIG: DebugConfig = {
   showHitboxes: false,
   showFPS: false,
   showObjectCount: false,
-  enabled: process.env.NODE_ENV !== 'production',
+  enabled: true, // Will be overridden by actual debug service based on environment
 };

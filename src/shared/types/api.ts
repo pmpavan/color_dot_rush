@@ -17,6 +17,13 @@ export type LeaderboardResponse = {
   totalPlayers: number;
 };
 
+export type WeeklyLeaderboard = {
+  entries: LeaderboardEntry[];
+  weekStart: Date;
+  weekEnd: Date;
+  totalPlayers: number;
+};
+
 export type SubmitScoreResponse = {
   success: boolean;
   rank?: number;

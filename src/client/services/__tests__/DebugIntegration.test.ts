@@ -4,33 +4,7 @@
 import { DebugService, ProductionDebugService } from '../DebugService';
 import { DifficultyManager } from '../DifficultyManager';
 import { DEFAULT_DIFFICULTY_PARAMS } from '../../../shared/types/debug';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { it } from 'vitest';
-import { describe } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { it } from 'vitest';
-import { expect } from 'vitest';
-import { it } from 'vitest';
-import { describe } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { it } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { it } from 'vitest';
-import { expect } from 'vitest';
-import { expect } from 'vitest';
-import { it } from 'vitest';
-import { describe } from 'vitest';
-import { afterEach } from 'vitest';
-import { beforeEach } from 'vitest';
-import { describe } from 'vitest';
+import { describe, it, beforeEach, afterEach, expect } from 'vitest';
 
 describe('Debug System Integration', () => {
   let debugService: DebugService;
