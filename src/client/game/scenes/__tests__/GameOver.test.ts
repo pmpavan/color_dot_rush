@@ -165,7 +165,7 @@ describe('GameOver Scene', () => {
     });
 
     it('should use default values when no data provided', () => {
-      gameOverScene.init();
+      gameOverScene.init(undefined as any);
 
       const expectedDefaults = {
         finalScore: 0,
@@ -178,7 +178,12 @@ describe('GameOver Scene', () => {
     });
 
     it('should reset button references for scene reuse', () => {
-      gameOverScene.init();
+      gameOverScene.init({
+        finalScore: 0,
+        sessionTime: 0,
+        bestScore: 0,
+        targetColor: '#E74C3C'
+      });
 
       expect((gameOverScene as any).playAgainButton).toBeNull();
       expect((gameOverScene as any).leaderboardButton).toBeNull();
@@ -381,10 +386,10 @@ describe('GameOver Scene', () => {
       const animationConfig = mockTweens.add.mock.calls.find(
         call => call[0].targets === mockContainer
       )[0];
-      
+
       // Mock the Play Again button
       (gameOverScene as any).playAgainButton = mockText;
-      
+
       animationConfig.onComplete();
 
       expect(mockText.setScale).toHaveBeenCalledWith(1.05);
@@ -507,7 +512,7 @@ describe('GameOver Scene', () => {
       const exitAnimation = mockTweens.add.mock.calls.find(
         call => call[0].targets === mockContainer && call[0].duration === 200
       )[0];
-      
+
       exitAnimation.onComplete();
 
       expect(mockScene.start).toHaveBeenCalledWith('Game');
@@ -527,7 +532,7 @@ describe('GameOver Scene', () => {
       const exitAnimation = mockTweens.add.mock.calls.find(
         call => call[0].targets === mockContainer && call[0].duration === 200
       )[0];
-      
+
       exitAnimation.onComplete();
 
       expect(mockScene.start).toHaveBeenCalledWith('SplashScreen');
@@ -761,7 +766,7 @@ describe('GameOver Scene', () => {
 
       // Should create background image (frozen game state)
       expect(mockAdd.image).toHaveBeenCalledWith(0, 0, 'background');
-      
+
       // Should create dimmed overlay
       expect(mockAdd.rectangle).toHaveBeenCalledWith(
         expect.any(Number), expect.any(Number),
