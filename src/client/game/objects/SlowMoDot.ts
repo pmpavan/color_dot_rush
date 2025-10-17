@@ -122,73 +122,118 @@ export class SlowMoDot extends GameObject {
   }
 
   /**
-   * Activate slow-motion effect with visual feedback
+   * Activate slow-motion effect with enhanced visual feedback
    */
   public activateSlowMo(): void {
     if (!this.active) return;
 
-    // Create radial blue glow effect emanating from tap point
-    const glow = this.scene.add.circle(this.x, this.y, 20, 0x3498DB, 0.6);
+    // Create multiple radial blue glow effects for more dramatic impact
+    this.createRadialGlowEffect();
     
-    this.scene.tweens.add({
-      targets: glow,
-      radius: 200,
-      alpha: 0,
-      duration: 500,
-      ease: 'Power2',
-      onComplete: () => {
-        glow.destroy();
-      }
-    });
-
-    // Create subtle blue vignette around screen edges
-    this.createBlueVignette();
+    // Create ripple effect for immediate feedback
+    this.createRippleEffect();
 
     // Hide the slow-mo dot with a satisfying shrink effect
     this.scene.tweens.add({
       targets: [this, this.clockIcon],
       scaleX: 0,
       scaleY: 0,
-      duration: 300,
+      alpha: 0,
+      duration: 400,
       ease: 'Back.easeIn',
       onComplete: () => {
         this.deactivate();
       }
     });
   }
-
+  
   /**
-   * Create blue vignette effect around screen edges
+   * Create enhanced radial glow effect with multiple layers
    */
-  private createBlueVignette(): void {
-    const bounds = this.scene.cameras.main;
-    const vignette = this.scene.add.rectangle(
-      bounds.centerX, 
-      bounds.centerY, 
-      bounds.width, 
-      bounds.height, 
-      0x3498DB, 
-      0.2
-    );
+  private createRadialGlowEffect(): void {
+    // Primary glow - large and dramatic
+    const primaryGlow = this.scene.add.circle(this.x, this.y, 30, 0x3498DB, 0.8);
+    primaryGlow.setDepth(998);
     
-    vignette.setDepth(1000); // Ensure it's on top
-    
-    // Fade in and out over the slow-mo duration
     this.scene.tweens.add({
-      targets: vignette,
-      alpha: 0.4,
-      duration: 300,
-      yoyo: true,
-      repeat: -1,
+      targets: primaryGlow,
+      radius: 300,
+      alpha: 0,
+      duration: 600,
+      ease: 'Power2.easeOut',
       onComplete: () => {
-        vignette.destroy();
+        primaryGlow.destroy();
       }
     });
 
-    // Remove vignette after slow-mo duration
-    this.scene.time.delayedCall(SlowMoDot.DURATION, () => {
-      this.scene.tweens.killTweensOf(vignette);
-      vignette.destroy();
+    // Secondary glow - faster and brighter
+    const secondaryGlow = this.scene.add.circle(this.x, this.y, 15, 0x5DADE2, 0.9);
+    secondaryGlow.setDepth(999);
+    
+    this.scene.tweens.add({
+      targets: secondaryGlow,
+      radius: 150,
+      alpha: 0,
+      duration: 400,
+      ease: 'Power3.easeOut',
+      delay: 50,
+      onComplete: () => {
+        secondaryGlow.destroy();
+      }
+    });
+
+    // Tertiary glow - subtle and long-lasting
+    const tertiaryGlow = this.scene.add.circle(this.x, this.y, 40, 0x85C1E9, 0.4);
+    tertiaryGlow.setDepth(997);
+    
+    this.scene.tweens.add({
+      targets: tertiaryGlow,
+      radius: 400,
+      alpha: 0,
+      duration: 800,
+      ease: 'Sine.easeOut',
+      delay: 100,
+      onComplete: () => {
+        tertiaryGlow.destroy();
+      }
+    });
+  }
+
+  /**
+   * Create enhanced ripple effect for tap feedback
+   */
+  public createRippleEffect(): void {
+    // Create expanding blue ripple effect with multiple layers
+    const primaryRipple = this.scene.add.circle(this.x, this.y, 15, 0x3498DB, 0.9);
+    primaryRipple.setStrokeStyle(4, 0x5DADE2, 0.8);
+    primaryRipple.setDepth(999);
+    
+    this.scene.tweens.add({
+      targets: primaryRipple,
+      radius: this.size * 3,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2.easeOut',
+      onComplete: () => {
+        primaryRipple.destroy();
+      }
+    });
+
+    // Secondary ripple for extra impact
+    const secondaryRipple = this.scene.add.circle(this.x, this.y, 8, 0x85C1E9, 0.7);
+    secondaryRipple.setStrokeStyle(2, 0x3498DB, 0.6);
+    secondaryRipple.setDepth(998);
+    
+    this.scene.tweens.add({
+      targets: secondaryRipple,
+      radius: this.size * 2,
+      alpha: 0,
+      duration: 250,
+      ease: 'Power2.easeOut',
+      delay: 75,
+      onComplete: () => {
+        secondaryRipple.destroy();
+      }
     });
   }
 
@@ -206,24 +251,7 @@ export class SlowMoDot extends GameObject {
     });
   }
 
-  /**
-   * Create ripple effect for tap feedback
-   */
-  public createRippleEffect(): void {
-    // Create expanding blue ripple effect
-    const ripple = this.scene.add.circle(this.x, this.y, 10, 0x3498DB, 0.8);
-    
-    this.scene.tweens.add({
-      targets: ripple,
-      radius: this.size * 2,
-      alpha: 0,
-      duration: 200,
-      ease: 'Power2',
-      onComplete: () => {
-        ripple.destroy();
-      }
-    });
-  }
+
 
   /**
    * Called when slow-mo dot is activated from pool

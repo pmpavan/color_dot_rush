@@ -169,16 +169,57 @@ export class UIScene extends Scene {
   }
 
   private updateSlowMoCharges(charges: number): void {
-    // Update visual representation of charges
+    // Update visual representation of charges with enhanced feedback
     this.slowMoCharges.forEach((charge, index) => {
       if (index < charges) {
+        // Active charge - bright and pulsing
         charge.fillColor = 0xECF0F1; // Active - Shimmering White
         charge.setAlpha(1.0);
+        charge.setStrokeStyle(2, 0x3498DB, 1.0); // Bright blue outline
+        
+        // Add subtle pulsing animation to active charges
+        this.tweens.add({
+          targets: charge,
+          scaleX: 1.1,
+          scaleY: 1.1,
+          duration: 800,
+          ease: 'Sine.easeInOut',
+          yoyo: true,
+          repeat: -1
+        });
       } else {
+        // Inactive charge - dimmed and static
         charge.fillColor = 0x95A5A6; // Inactive - Mid Grey
-        charge.setAlpha(0.5);
+        charge.setAlpha(0.4);
+        charge.setStrokeStyle(2, 0x7F8C8D, 0.6); // Dim grey outline
+        
+        // Stop any pulsing animation
+        this.tweens.killTweensOf(charge);
+        charge.setScale(1.0);
       }
     });
+    
+    // If a charge was just used, create a brief flash effect
+    if (charges < 3) {
+      const usedChargeIndex = charges; // The charge that was just used
+      if (usedChargeIndex < this.slowMoCharges.length) {
+        const usedCharge = this.slowMoCharges[usedChargeIndex];
+        
+        if (usedCharge) {
+          // Brief blue flash effect
+          this.tweens.add({
+            targets: usedCharge,
+            alpha: 0.1,
+            duration: 150,
+            ease: 'Power2.easeOut',
+            yoyo: true,
+            onComplete: () => {
+              usedCharge.setAlpha(0.4); // Set to inactive alpha
+            }
+          });
+        }
+      }
+    }
   }
 
   private getColorName(color: GameColor): string {

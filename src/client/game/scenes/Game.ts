@@ -27,6 +27,12 @@ export class Game extends Scene {
   private slowMoCharges: number = 3;
   private gameStartTime: number = 0;
   private gameTimer: Phaser.Time.TimerEvent | null = null;
+  
+  // Slow-motion state management
+  private isSlowMoActive: boolean = false;
+  private slowMoStartTime: number = 0;
+  private slowMoVignette: Phaser.GameObjects.Rectangle | null = null;
+  private slowMoTween: Phaser.Tweens.Tween | null = null;
 
   // Object management
   private objectPool: ObjectPoolManager;
@@ -60,6 +66,12 @@ export class Game extends Scene {
     this.gameStartTime = 0;
     this.gameTimer = null;
     this.uiScene = null;
+    
+    // Reset slow-motion state
+    this.isSlowMoActive = false;
+    this.slowMoStartTime = 0;
+    this.slowMoVignette = null;
+    this.slowMoTween = null;
   }
 
   create(): void {
@@ -345,7 +357,7 @@ export class Game extends Scene {
   }
 
   private handleSlowMoActivation(slowMoDot: SlowMoDot): void {
-    if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0) return;
+    if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0 || this.isSlowMoActive) return;
 
     console.log(`Slow-mo activated! Charges remaining: ${this.slowMoCharges - 1}`);
     
@@ -355,11 +367,11 @@ export class Game extends Scene {
     // Create radial blue glow and visual feedback
     this.createSlowMoActivationEffect(slowMoDot);
     
-    // Activate slow-motion effect
+    // Activate slow-motion effect with smooth transitions
     this.activateSlowMotion();
     
-    // Deactivate the slow-mo dot
-    slowMoDot.deactivate();
+    // Deactivate the slow-mo dot with special effect
+    slowMoDot.activateSlowMo();
     
     this.updateUI();
   }
@@ -429,26 +441,119 @@ export class Game extends Scene {
   }
 
   private activateSlowMotion(): void {
-    // Implement slow-motion effect with smooth time scaling
-    this.physics.world.timeScale = 0.3; // Slow down physics
-    this.tweens.timeScale = 0.3; // Slow down tweens
+    if (this.isSlowMoActive) return;
     
-    // Create blue vignette effect
-    const vignette = this.add.rectangle(
+    this.isSlowMoActive = true;
+    this.slowMoStartTime = this.time.now;
+    
+    console.log('Slow-motion activated with smooth transitions');
+    
+    // Create blue vignette effect around screen edges
+    this.slowMoVignette = this.add.rectangle(
       this.scale.width / 2,
       this.scale.height / 2,
       this.scale.width,
       this.scale.height,
       0x3498DB,
-      0.2
+      0.0
     );
-    vignette.setDepth(999);
+    this.slowMoVignette.setDepth(999);
     
-    // Restore normal time after duration
+    // Smooth transition to slow-motion with ease-in-out curve
+    this.slowMoTween = this.tweens.add({
+      targets: { timeScale: 1.0, vignetteAlpha: 0.0 },
+      timeScale: 0.3, // Slow down to 30% speed
+      vignetteAlpha: 0.3, // Subtle blue vignette
+      duration: 300, // 300ms smooth transition
+      ease: 'Power2.easeInOut',
+      onUpdate: (tween) => {
+        const progress = tween.getValue();
+        const timeScale = 1.0 - (0.7 * progress); // 1.0 -> 0.3
+        const vignetteAlpha = 0.3 * progress; // 0.0 -> 0.3
+        
+        // Apply time scaling to physics and tweens
+        this.physics.world.timeScale = timeScale;
+        this.tweens.timeScale = timeScale;
+        
+        // Update vignette alpha
+        if (this.slowMoVignette) {
+          this.slowMoVignette.setAlpha(vignetteAlpha);
+        }
+      },
+      onComplete: () => {
+        // Add subtle pulsing effect to vignette during slow-mo
+        if (this.slowMoVignette) {
+          this.tweens.add({
+            targets: this.slowMoVignette,
+            alpha: 0.4,
+            duration: 600,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1
+          });
+        }
+      }
+    });
+    
+    // Schedule restoration of normal time after duration
     this.time.delayedCall(SlowMoDot.getDuration(), () => {
-      this.physics.world.timeScale = 1;
-      this.tweens.timeScale = 1;
-      vignette.destroy();
+      this.deactivateSlowMotion();
+    });
+  }
+  
+  /**
+   * Deactivate slow-motion with smooth transition back to normal speed
+   */
+  private deactivateSlowMotion(): void {
+    if (!this.isSlowMoActive) return;
+    
+    console.log('Slow-motion deactivating with smooth transition');
+    
+    // Stop any ongoing slow-mo tweens
+    if (this.slowMoTween) {
+      this.slowMoTween.destroy();
+      this.slowMoTween = null;
+    }
+    
+    // Stop vignette pulsing
+    if (this.slowMoVignette) {
+      this.tweens.killTweensOf(this.slowMoVignette);
+    }
+    
+    // Smooth transition back to normal speed
+    this.tweens.add({
+      targets: { timeScale: 0.3, vignetteAlpha: this.slowMoVignette?.alpha || 0.3 },
+      timeScale: 1.0, // Return to normal speed
+      vignetteAlpha: 0.0, // Fade out vignette
+      duration: 400, // 400ms smooth transition out
+      ease: 'Power2.easeInOut',
+      onUpdate: (tween) => {
+        const progress = tween.getValue();
+        const timeScale = 0.3 + (0.7 * progress); // 0.3 -> 1.0
+        const vignetteAlpha = (this.slowMoVignette?.alpha || 0.3) * (1 - progress);
+        
+        // Apply time scaling
+        this.physics.world.timeScale = timeScale;
+        this.tweens.timeScale = timeScale;
+        
+        // Update vignette alpha
+        if (this.slowMoVignette) {
+          this.slowMoVignette.setAlpha(vignetteAlpha);
+        }
+      },
+      onComplete: () => {
+        // Clean up vignette
+        if (this.slowMoVignette) {
+          this.slowMoVignette.destroy();
+          this.slowMoVignette = null;
+        }
+        
+        // Reset slow-mo state
+        this.isSlowMoActive = false;
+        this.slowMoStartTime = 0;
+        
+        console.log('Slow-motion deactivated - normal speed restored');
+      }
     });
   }
 
@@ -524,7 +629,19 @@ export class Game extends Scene {
     this.score = 0;
     this.elapsedTime = 0;
     this.targetColor = this.getRandomColor();
-    this.slowMoCharges = 3;
+    this.slowMoCharges = SlowMoDot.getInitialCharges(); // Use constant from SlowMoDot
+    
+    // Reset slow-motion state
+    this.isSlowMoActive = false;
+    this.slowMoStartTime = 0;
+    if (this.slowMoVignette) {
+      this.slowMoVignette.destroy();
+      this.slowMoVignette = null;
+    }
+    if (this.slowMoTween) {
+      this.slowMoTween.destroy();
+      this.slowMoTween = null;
+    }
     
     // Reset object systems
     this.objectSpawner.reset();
@@ -555,9 +672,10 @@ export class Game extends Scene {
     // Stop object spawning immediately
     this.objectSpawner.pause();
     
-    // Reset time scale in case slow-mo was active
-    this.physics.world.timeScale = 1;
-    this.tweens.timeScale = 1;
+    // Force deactivate slow-motion if active
+    if (this.isSlowMoActive) {
+      this.forceDeactivateSlowMotion();
+    }
     
     // Clear any remaining visual effects
     this.tweens.killAll();
@@ -591,7 +709,18 @@ export class Game extends Scene {
   }
 
   private updateGameTime(): void {
-    this.elapsedTime = this.time.now - this.gameStartTime;
+    // Calculate elapsed time accounting for slow-motion periods
+    let realElapsedTime = this.time.now - this.gameStartTime;
+    
+    // If slow-mo is active, adjust the elapsed time calculation
+    // This ensures scoring fairness - slow-mo doesn't artificially extend game time
+    if (this.isSlowMoActive) {
+      const slowMoElapsed = this.time.now - this.slowMoStartTime;
+      const slowMoAdjustment = slowMoElapsed * (1 - 0.3); // Subtract the "extra" time from slow-mo
+      realElapsedTime -= slowMoAdjustment;
+    }
+    
+    this.elapsedTime = realElapsedTime;
     this.updateUI();
     
     // Update debug service with current elapsed time for real-time calculations
@@ -633,6 +762,40 @@ export class Game extends Scene {
 
   public getSlowMoCharges(): number {
     return this.slowMoCharges;
+  }
+  
+  public isSlowMotionActive(): boolean {
+    return this.isSlowMoActive;
+  }
+  
+  /**
+   * Force deactivate slow-motion immediately (used during game over)
+   */
+  private forceDeactivateSlowMotion(): void {
+    if (!this.isSlowMoActive) return;
+    
+    console.log('Force deactivating slow-motion');
+    
+    // Stop any ongoing slow-mo tweens
+    if (this.slowMoTween) {
+      this.slowMoTween.destroy();
+      this.slowMoTween = null;
+    }
+    
+    // Clean up vignette immediately
+    if (this.slowMoVignette) {
+      this.tweens.killTweensOf(this.slowMoVignette);
+      this.slowMoVignette.destroy();
+      this.slowMoVignette = null;
+    }
+    
+    // Reset time scale immediately
+    this.physics.world.timeScale = 1;
+    this.tweens.timeScale = 1;
+    
+    // Reset slow-mo state
+    this.isSlowMoActive = false;
+    this.slowMoStartTime = 0;
   }
 
   private setupDebugSystem(): void {
