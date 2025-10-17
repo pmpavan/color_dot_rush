@@ -1,4 +1,5 @@
 import { Scene, GameObjects } from 'phaser';
+import { GameColor, UIColor } from '../../../shared/types/game';
 
 export class SplashScreen extends Scene {
   background: GameObjects.Image | null = null;
@@ -85,13 +86,13 @@ export class SplashScreen extends Scene {
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
-          this.howToPlayButton!.setScale(1.1);
+          this.howToPlayButton!.setScale(1.1); // Scale-up on hover
         })
         .on('pointerout', () => {
           this.howToPlayButton!.setScale(1.0);
         })
         .on('pointerdown', () => {
-          this.howToPlayButton!.setScale(0.95);
+          this.howToPlayButton!.setScale(0.95); // Scale-down on press
           // TODO: Show how to play instructions
           console.log('How to Play clicked - TODO: Implement instructions');
         })
@@ -142,18 +143,27 @@ export class SplashScreen extends Scene {
       const titleText = this.add
         .text(0, 0, 'Color Rush', {
           fontFamily: 'Poppins',
-          fontSize: `${baseFontSize}px`,
+          fontSize: `${Math.round(baseFontSize * scaleFactor)}px`,
           fontStyle: 'bold',
           color: '#ffffff',
           stroke: '#000000',
-          strokeThickness: 8,
+          strokeThickness: Math.round(8 * scaleFactor),
           align: 'center',
         });
       
       if (titleText) {
         this.title = titleText.setOrigin(0.5);
         
-        // Add subtle color-shifting gradient effect
+        // Add subtle color-shifting gradient effect using game colors
+        const gameColors = [
+          GameColor.RED,
+          GameColor.GREEN, 
+          GameColor.BLUE,
+          GameColor.YELLOW,
+          GameColor.PURPLE
+        ];
+        
+        let colorIndex = 0;
         this.tweens.add({
           targets: this.title,
           duration: 3000,
@@ -162,9 +172,10 @@ export class SplashScreen extends Scene {
           ease: 'Sine.easeInOut',
           onUpdate: () => {
             if (this.title) {
-              const colors = ['#E74C3C', '#2ECC71', '#3498DB', '#F1C40F', '#9B59B6'];
-              const colorIndex = Math.floor((Date.now() / 1000) % colors.length);
-              this.title.setTint(parseInt(colors[colorIndex].replace('#', '0x')));
+              // Cycle through colors based on time
+              const timeBasedIndex = Math.floor((Date.now() / 1000) % gameColors.length);
+              const currentColor = gameColors[timeBasedIndex];
+              this.title.setTint(parseInt(currentColor.replace('#', '0x')));
             }
           }
         });
@@ -172,18 +183,16 @@ export class SplashScreen extends Scene {
     }
     if (this.title) {
       this.title.setPosition(Math.round(width / 2), Math.round(height * 0.5));
-      this.title.setScale(scaleFactor);
+      // Title already scaled in creation, don't double-scale
     }
 
     // Update button positions if they exist
     if (this.startButton) {
       this.startButton.setPosition(Math.round(width / 2), Math.round(height * 0.7));
-      this.startButton.setScale(scaleFactor);
     }
     
     if (this.howToPlayButton) {
       this.howToPlayButton.setPosition(Math.round(width / 2), Math.round(height * 0.8));
-      this.howToPlayButton.setScale(scaleFactor);
     }
   }
 }

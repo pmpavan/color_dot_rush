@@ -97,7 +97,7 @@
 
 ## Epic 4: Player Experience & UI
 
-- [ ] 12. Create splash screen with design system
+- [x] 12. Create splash screen with design system
 
   - Implement SplashScreenScene with vertically/horizontally centered content
   - Add game title "Color Rush" with subtle color-shifting gradient (72pt Poppins Bold)
