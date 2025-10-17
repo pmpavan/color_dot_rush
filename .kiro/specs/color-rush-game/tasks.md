@@ -71,7 +71,7 @@
   - Ensure hitboxes are slightly larger than visual sprites (minimum 44px tap targets)
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 6.6, 7.5 | PRD Story 2.2_
 
-- [ ] 9. Implement game over conditions and state management
+- [x] 9. Implement game over conditions and state management
   - Create finite state machine for GameScene (READY, PLAYING, GAME_OVER)
   - Implement game over triggers for wrong color taps and bomb explosions
   - Add bomb explosion animations with red/orange/yellow particles and screen shake (2-3px, 150ms)

@@ -202,9 +202,11 @@ export class Game extends Scene {
       
       console.log(`Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
     } else {
-      // Wrong color - immediate game over
+      // Wrong color - immediate game over (no delay, immediate termination)
       console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
       this.createWrongTapEffect(dot);
+      
+      // Immediate state change to game over - no delays or animations
       this.changeState(GameState.GAME_OVER);
       return;
     }
@@ -280,40 +282,64 @@ export class Game extends Scene {
     // Create explosion effect with screen shake and particles
     this.createBombExplosionEffect(bomb);
     
-    // Immediate game over (no delay)
+    // Immediate game termination - no delays, instant state change
     this.changeState(GameState.GAME_OVER);
   }
 
   /**
    * Create explosion effect for bomb taps
    * Includes screen shake, particle explosion, and visual feedback
+   * Specifications: red/orange/yellow particles, 2-3px screen shake for 150ms
    */
   private createBombExplosionEffect(bomb: Bomb): void {
     const x = bomb.x;
     const y = bomb.y;
     
-    // Screen shake effect (2-3px, 150ms)
+    // Screen shake effect (2-3px, 150ms) - exact specification
     this.cameras.main.shake(150, 0.025); // 150ms duration, 0.025 intensity (~2-3px)
     
     // Create explosion particle effect with red/orange/yellow colors
     const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700]; // Red, OrangeRed, DarkOrange, Gold
     
+    // Main explosion burst
     const explosion = this.add.particles(x, y, 'dot-red', {
       tint: explosionColors,
-      speed: { min: 150, max: 400 },
-      scale: { start: 0.8, end: 0 },
-      lifespan: { min: 400, max: 800 },
-      quantity: { min: 15, max: 25 },
+      speed: { min: 200, max: 500 },
+      scale: { start: 1.2, end: 0 },
+      lifespan: { min: 500, max: 1000 },
+      quantity: { min: 20, max: 30 },
       blendMode: 'ADD',
-      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, bomb.size / 2), quantity: 20 }
+      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, bomb.size / 2), quantity: 25 }
+    });
+
+    // Secondary explosion ring for more dramatic effect
+    const secondaryExplosion = this.add.particles(x, y, 'dot-red', {
+      tint: [0xFF0000, 0xFF4500], // Red and orange only for secondary
+      speed: { min: 100, max: 250 },
+      scale: { start: 0.6, end: 0 },
+      lifespan: { min: 300, max: 600 },
+      quantity: { min: 10, max: 15 },
+      blendMode: 'ADD',
+      delay: 50 // Slight delay for layered effect
+    });
+
+    // Flash effect for dramatic impact
+    const flash = this.add.rectangle(x, y, bomb.size * 3, bomb.size * 3, 0xFFFFFF, 0.8);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: 100,
+      ease: 'Power2',
+      onComplete: () => flash.destroy()
     });
 
     // Hide bomb immediately
     bomb.setVisible(false);
     
-    // Clean up explosion after animation
-    this.time.delayedCall(800, () => {
+    // Clean up explosion effects after animation
+    this.time.delayedCall(1000, () => {
       explosion.destroy();
+      secondaryExplosion.destroy();
       bomb.deactivate();
     });
   }
@@ -437,9 +463,27 @@ export class Game extends Scene {
   }
 
   private changeState(newState: GameState): void {
+    // Validate state transition
+    if (this.currentState === newState) {
+      console.warn(`Already in state: ${newState}`);
+      return;
+    }
+
+    // Log state transition for debugging
+    console.log(`State transition: ${this.currentState} -> ${newState}`);
+
+    // Perform state transition
     this.exitState(this.currentState);
+    const previousState = this.currentState;
     this.currentState = newState;
     this.enterState(newState);
+
+    // Validate successful transition
+    if (this.currentState !== newState) {
+      console.error(`State transition failed! Expected: ${newState}, Actual: ${this.currentState}`);
+      // Attempt to recover to previous state
+      this.currentState = previousState;
+    }
   }
 
   private exitState(state: GameState): void {
@@ -508,20 +552,41 @@ export class Game extends Scene {
   }
 
   private endGame(): void {
-    // Stop object spawning
+    // Stop object spawning immediately
     this.objectSpawner.pause();
     
     // Reset time scale in case slow-mo was active
     this.physics.world.timeScale = 1;
     this.tweens.timeScale = 1;
     
-    // TODO: Submit score to leaderboard
-    console.log(`Game Over! Final Score: ${this.score}, Time: ${this.elapsedTime}ms`);
+    // Clear any remaining visual effects
+    this.tweens.killAll();
     
-    // Transition to GameOver scene after a brief delay
-    this.time.delayedCall(1000, () => {
+    // Calculate final session time in seconds
+    const sessionTimeSeconds = Math.floor(this.elapsedTime / 1000);
+    
+    // Store best score in local storage
+    const currentBestScore = parseInt(localStorage.getItem('colorRushBestScore') || '0');
+    if (this.score > currentBestScore) {
+      localStorage.setItem('colorRushBestScore', this.score.toString());
+      console.log(`New best score: ${this.score}!`);
+    }
+    
+    // TODO: Submit score to leaderboard service
+    console.log(`Game Over! Final Score: ${this.score}, Time: ${sessionTimeSeconds}s, Best: ${Math.max(this.score, currentBestScore)}`);
+    
+    // Prepare data for GameOver scene
+    const gameOverData = {
+      finalScore: this.score,
+      sessionTime: sessionTimeSeconds,
+      bestScore: Math.max(this.score, currentBestScore),
+      targetColor: this.targetColor
+    };
+    
+    // Transition to GameOver scene after a brief delay for dramatic effect
+    this.time.delayedCall(1500, () => {
       this.scene.stop('UI'); // Stop UIScene
-      this.scene.start('GameOver');
+      this.scene.start('GameOver', gameOverData);
     });
   }
 
@@ -544,9 +609,25 @@ export class Game extends Scene {
     return colors[Math.floor(Math.random() * colors.length)] as GameColor;
   }
 
-  // Public method for testing game over
+  // Public methods for testing and debugging
   public triggerGameOver(): void {
     this.changeState(GameState.GAME_OVER);
+  }
+
+  public getCurrentState(): GameState {
+    return this.currentState;
+  }
+
+  public getScore(): number {
+    return this.score;
+  }
+
+  public getElapsedTime(): number {
+    return this.elapsedTime;
+  }
+
+  public getSlowMoCharges(): number {
+    return this.slowMoCharges;
   }
 
   private setupDebugSystem(): void {
