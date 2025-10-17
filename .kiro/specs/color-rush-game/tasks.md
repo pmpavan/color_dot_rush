@@ -44,12 +44,12 @@
 
 ## Epic 2: Core Gameplay Loop
 
-- [ ] 6. Create core game objects and object pooling system
+- [x] 6. Create core game objects and object pooling system
 
-  - Implement base GameObject interface and Dot class with color properties
-  - Create Bomb class with explosion mechanics and fuse icon (Near Black #34495E)
-  - Implement SlowMoDot power-up class with clock icon (Shimmering White #ECF0F1)
-  - Set up Phaser Groups for object pooling (dots, bombs, power-ups) to prevent garbage collection
+  - ✅ Implement base GameObject interface and Dot class with color properties
+  - ✅ Create Bomb class with explosion mechanics and fuse icon (Near Black #34495E)
+  - ✅ Implement SlowMoDot power-up class with clock icon (Shimmering White #ECF0F1)
+  - ✅ Set up Phaser Groups for object pooling (dots, bombs, power-ups) to prevent garbage collection
   - _Requirements: 1.1, 1.3, 1.4, 3.1, 3.6 | PRD Story 2.1_
 
 - [ ] 7. Implement object spawning and movement system
