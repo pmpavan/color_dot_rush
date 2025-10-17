@@ -41,6 +41,11 @@ export class GameOver extends Scene {
     // Configure camera
     this.camera = this.cameras.main;
     this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background
+    
+    // Fade in from black for smooth transition (with safety check for tests)
+    if (this.cameras?.main?.fadeIn) {
+      this.cameras.main.fadeIn(250, 0, 0, 0);
+    }
 
     // Create frozen game state background
     const backgroundImage = this.add.image(0, 0, 'background');
@@ -237,7 +242,7 @@ export class GameOver extends Scene {
         .on('pointerdown', () => {
           if (this.playAgainButton) {
             this.playAgainButton.setScale(0.95);
-            // Smooth transition back to game
+            // Smooth transition back to game with cross-fade
             this.tweens.add({
               targets: this.modalCard,
               scaleX: 0.1,
@@ -246,8 +251,17 @@ export class GameOver extends Scene {
               duration: 200,
               ease: 'Back.easeIn',
               onComplete: () => {
-                this.scene.start('Game');
-                this.scene.launch('UI');
+                if (this.cameras?.main?.fadeOut) {
+                  this.cameras.main.fadeOut(250, 0, 0, 0);
+                  this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('Game');
+                    this.scene.launch('UI');
+                  });
+                } else {
+                  // Fallback for test environment
+                  this.scene.start('Game');
+                  this.scene.launch('UI');
+                }
               }
             });
           }
@@ -318,7 +332,7 @@ export class GameOver extends Scene {
         .on('pointerdown', () => {
           if (this.mainMenuButton) {
             this.mainMenuButton.setScale(0.95);
-            // Smooth transition to splash screen
+            // Smooth transition to splash screen with cross-fade
             this.tweens.add({
               targets: this.modalCard,
               scaleX: 0.1,
@@ -327,7 +341,15 @@ export class GameOver extends Scene {
               duration: 200,
               ease: 'Back.easeIn',
               onComplete: () => {
-                this.scene.start('SplashScreen');
+                if (this.cameras?.main?.fadeOut) {
+                  this.cameras.main.fadeOut(250, 0, 0, 0);
+                  this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('SplashScreen');
+                  });
+                } else {
+                  // Fallback for test environment
+                  this.scene.start('SplashScreen');
+                }
               }
             });
           }

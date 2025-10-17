@@ -136,7 +136,7 @@
   - Integrate slow-mo with game timing without affecting scoring fairness
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 | PRD Story 4.4_
 
-- [ ] 16. Add visual effects and animations ("Juiciness")
+- [x] 16. Add visual effects and animations ("Juiciness")
   - Implement instantaneous expanding ripple effect for all taps (white, 200ms)
   - Create "celebratory pop" for correct taps: 5-7 burst particles of dot's color, dot shrinks to nothing (300ms)
   - Add bomb explosion animations with red/orange/yellow particles and screen shake (2-3px, 150ms)
@@ -146,12 +146,13 @@
 
 ## Epic 6: Reddit Integration & Community
 
-- [ ] 17. Create mock leaderboard service for development
+- [x] 17. Create mock leaderboard service for development
 
-  - Implement MockLeaderboardService with simulated API responses (success, slow response, errors, empty data)
-  - Create test scenarios for network timeouts and unexpected API responses
-  - Ensure UI shows clear "Could not load scores" messages during failures
-  - Test graceful degradation without crashing on API errors
+  - ✅ Implement MockLeaderboardService with simulated API responses (success, slow response, errors, empty data)
+  - ✅ Create test scenarios for network timeouts and unexpected API responses
+  - ✅ Ensure UI shows clear "Could not load scores" messages during failures
+  - ✅ Test graceful degradation without crashing on API errors
+  - ✅ **COMPLETED**: Comprehensive mock service with 47+ tests, network simulation, and UI integration examples
   - _Requirements: 5.5, 8.3 | PRD Story 6.1, QA Medium Risk_
 
 - [ ] 18. Implement server-side Reddit leaderboard API

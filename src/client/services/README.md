@@ -86,6 +86,71 @@ const isValid = difficultyManager.validateDifficultyCurve(90);
 - **Base Size**: 80 px diameter
 - **Shrink Rate**: 0.98 (2% decrease per second)
 
+## LeaderboardService
+
+The `LeaderboardService` provides Reddit integration for competitive weekly leaderboards with comprehensive error handling and graceful degradation.
+
+### Features
+
+- **Mock Implementation**: `MockLeaderboardService` for development and testing
+- **Production Implementation**: `DevvitLeaderboardService` for Reddit API integration
+- **Error Simulation**: Configurable API failures, timeouts, and empty responses
+- **Graceful Degradation**: Clear error messages without crashing gameplay
+- **Test Scenarios**: Network timeouts, server errors, slow responses, empty data
+
+### Usage
+
+```typescript
+import { MockLeaderboardService, DevvitLeaderboardService } from './services/LeaderboardService';
+
+// Development/Testing
+const leaderboardService = new MockLeaderboardService();
+
+// Submit score
+try {
+  const result = await leaderboardService.submitScore(150, 90000);
+  console.log(`Score submitted! Rank: ${result.rank}`);
+} catch (error) {
+  console.error('Failed to submit score:', error.message);
+  // UI shows "Could not submit score" message
+}
+
+// Get leaderboard
+try {
+  const response = await leaderboardService.getTopScores();
+  console.log(`Top scores:`, response.entries);
+  console.log(`Your rank: ${response.userRank || 'Not ranked'}`);
+} catch (error) {
+  console.error('Failed to load scores:', error.message);
+  // UI shows "Could not load scores" message
+}
+```
+
+### Mock Service Configuration
+
+```typescript
+const mockService = new MockLeaderboardService();
+
+// Test error scenarios
+mockService.simulateAPIFailure(true);
+mockService.simulateTimeout(true);
+mockService.simulateEmptyResponse(true);
+mockService.setResponseDelay(3000); // Slow network
+
+// Test different users
+mockService.setCurrentUser('TestPlayer');
+
+// Reset to normal operation
+mockService.reset();
+```
+
+### Error Handling Patterns
+
+- **Network Timeouts**: "Network timeout: Could not load scores"
+- **Server Errors**: "Failed to load leaderboard: Server unavailable"
+- **Empty Data**: Returns empty array with totalPlayers: 0
+- **Graceful Degradation**: Game continues working even when leaderboard fails
+
 ## Integration with Game Scene
 
 The debug system is automatically integrated into the main `Game` scene:
@@ -97,7 +162,7 @@ The debug system is automatically integrated into the main `Game` scene:
 
 ## Testing
 
-Both services include comprehensive unit tests:
+All services include comprehensive unit tests:
 
 ```bash
 npm test -- --run src/client/services/__tests__/
@@ -109,6 +174,10 @@ Tests cover:
 - Callback functionality
 - Production environment behavior
 - Edge cases and error handling
+- API error simulation and recovery
+- UI integration scenarios
+- Network timeout handling
+- Data consistency validation
 
 ## Production Behavior
 
@@ -118,3 +187,4 @@ In production builds (`NODE_ENV=production`):
 - No performance overhead
 - All debug methods become no-ops
 - Default parameters are used without modification
+- `DevvitLeaderboardService` used for real Reddit API integration

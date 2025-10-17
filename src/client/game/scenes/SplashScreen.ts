@@ -30,6 +30,11 @@ export class SplashScreen extends Scene {
   }
 
   create() {
+    // Fade in from black for smooth transition (with safety check for tests)
+    if (this.cameras?.main?.fadeIn) {
+      this.cameras.main.fadeIn(250, 0, 0, 0);
+    }
+    
     this.refreshLayout();
 
     // Re-calculate positions whenever the game canvas is resized (e.g. orientation change).
@@ -63,9 +68,18 @@ export class SplashScreen extends Scene {
         })
         .on('pointerdown', () => {
           this.startButton!.setScale(0.95); // Scale-down on press
-          // Start both GameScene and UIScene concurrently
-          this.scene.start('Game');
-          this.scene.launch('UI'); // Launch UIScene concurrently
+          // Smooth transition to game with 250ms cross-fade (with safety check for tests)
+          if (this.cameras?.main?.fadeOut) {
+            this.cameras.main.fadeOut(250, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+              this.scene.start('Game');
+              this.scene.launch('UI'); // Launch UIScene concurrently
+            });
+          } else {
+            // Fallback for test environment
+            this.scene.start('Game');
+            this.scene.launch('UI'); // Launch UIScene concurrently
+          }
         })
         .on('pointerup', () => {
           this.startButton!.setScale(1.1);

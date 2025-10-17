@@ -78,6 +78,11 @@ export class Game extends Scene {
     // Configure camera & background
     this.camera = this.cameras.main;
     this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background from design spec
+    
+    // Fade in from black for smooth transition (with safety check for tests)
+    if (this.cameras?.main?.fadeIn) {
+      this.cameras.main.fadeIn(250, 0, 0, 0);
+    }
 
     // Background image
     this.background = this.add.image(0, 0, 'background').setOrigin(0).setAlpha(0.3);
@@ -229,23 +234,27 @@ export class Game extends Scene {
   /**
    * Create visual feedback for correct dot taps
    * Includes particle burst and satisfying "pop" animation
+   * Specifications: 5-7 burst particles of dot's color, dot shrinks to nothing (300ms)
    */
   private createCorrectTapEffect(dot: Dot): void {
     const x = dot.x;
     const y = dot.y;
     const color = dot.getColor();
     
-    // Create particle burst with 5-7 particles of dot's color
-    const particles = this.add.particles(x, y, 'dot-red', {
-      tint: parseInt(color.replace('#', '0x')),
-      speed: { min: 80, max: 200 },
-      scale: { start: 0.4, end: 0 },
+    // Get the correct dot asset for particles based on color
+    const dotAssetKey = this.getDotAssetByColor(color) || 'dot-red';
+    
+    // Create celebratory particle burst with 5-7 particles of dot's color
+    const particles = this.add.particles(x, y, dotAssetKey, {
+      speed: { min: 120, max: 250 },
+      scale: { start: 0.6, end: 0 },
       lifespan: 300,
       quantity: { min: 5, max: 7 },
-      blendMode: 'NORMAL'
+      blendMode: 'ADD',
+      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 10), quantity: 7 }
     });
 
-    // Dot shrinks to nothing with satisfying animation
+    // Dot shrinks to nothing with satisfying "pop" animation (300ms)
     this.tweens.add({
       targets: dot,
       scaleX: 0,
@@ -256,6 +265,20 @@ export class Game extends Scene {
       onComplete: () => {
         particles.destroy();
       }
+    });
+
+    // Add extra "juice" with a secondary burst effect
+    const secondaryBurst = this.add.particles(x, y, dotAssetKey, {
+      speed: { min: 50, max: 100 },
+      scale: { start: 0.3, end: 0 },
+      lifespan: 200,
+      quantity: { min: 3, max: 5 },
+      blendMode: 'NORMAL',
+      delay: 50
+    });
+
+    this.time.delayedCall(250, () => {
+      secondaryBurst.destroy();
     });
   }
 
@@ -313,7 +336,7 @@ export class Game extends Scene {
     // Create explosion particle effect with red/orange/yellow colors
     const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700]; // Red, OrangeRed, DarkOrange, Gold
     
-    // Main explosion burst
+    // Main explosion burst using red and yellow dot assets for variety
     const explosion = this.add.particles(x, y, 'dot-red', {
       tint: explosionColors,
       speed: { min: 200, max: 500 },
@@ -324,9 +347,9 @@ export class Game extends Scene {
       emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, bomb.size / 2), quantity: 25 }
     });
 
-    // Secondary explosion ring for more dramatic effect
-    const secondaryExplosion = this.add.particles(x, y, 'dot-red', {
-      tint: [0xFF0000, 0xFF4500], // Red and orange only for secondary
+    // Secondary explosion ring using yellow dots for more dramatic effect
+    const secondaryExplosion = this.add.particles(x, y, 'dot-yellow', {
+      tint: [0xFF0000, 0xFF4500], // Red and orange tint on yellow base
       speed: { min: 100, max: 250 },
       scale: { start: 0.6, end: 0 },
       lifespan: { min: 300, max: 600 },
@@ -335,14 +358,38 @@ export class Game extends Scene {
       delay: 50 // Slight delay for layered effect
     });
 
+    // Tertiary explosion with smaller particles for extra detail
+    const tertiaryExplosion = this.add.particles(x, y, 'dot-red', {
+      tint: [0xFFD700, 0xFF8C00], // Gold and dark orange
+      speed: { min: 300, max: 600 },
+      scale: { start: 0.4, end: 0 },
+      lifespan: { min: 200, max: 400 },
+      quantity: { min: 15, max: 20 },
+      blendMode: 'ADD',
+      delay: 25
+    });
+
     // Flash effect for dramatic impact
-    const flash = this.add.rectangle(x, y, bomb.size * 3, bomb.size * 3, 0xFFFFFF, 0.8);
+    const flash = this.add.rectangle(x, y, bomb.size * 3, bomb.size * 3, 0xFFFFFF, 0.9);
     this.tweens.add({
       targets: flash,
       alpha: 0,
       duration: 100,
       ease: 'Power2',
       onComplete: () => flash.destroy()
+    });
+
+    // Secondary flash with orange tint
+    const orangeFlash = this.add.rectangle(x, y, bomb.size * 2, bomb.size * 2, 0xFF4500, 0.7);
+    this.tweens.add({
+      targets: orangeFlash,
+      alpha: 0,
+      scaleX: 2,
+      scaleY: 2,
+      duration: 150,
+      ease: 'Power2',
+      delay: 50,
+      onComplete: () => orangeFlash.destroy()
     });
 
     // Hide bomb immediately
@@ -352,6 +399,7 @@ export class Game extends Scene {
     this.time.delayedCall(1000, () => {
       explosion.destroy();
       secondaryExplosion.destroy();
+      tertiaryExplosion.destroy();
       bomb.deactivate();
     });
   }
@@ -378,23 +426,72 @@ export class Game extends Scene {
 
   /**
    * Create visual effects for slow-mo activation
+   * Specifications: radial blue glow and smooth ease-in-out time scaling
    */
   private createSlowMoActivationEffect(slowMoDot: SlowMoDot): void {
     const x = slowMoDot.x;
     const y = slowMoDot.y;
     
-    // Create radial blue glow emanating from tap point
-    const glow = this.add.circle(x, y, 20, 0x3498DB, 0.6);
+    // Primary radial blue glow emanating from tap point
+    const primaryGlow = this.add.circle(x, y, 25, 0x3498DB, 0.8);
+    primaryGlow.setDepth(998);
     
     this.tweens.add({
-      targets: glow,
-      radius: 300,
+      targets: primaryGlow,
+      radius: 350,
       alpha: 0,
-      duration: 600,
-      ease: 'Power2',
+      duration: 800,
+      ease: 'Power2.easeOut',
       onComplete: () => {
-        glow.destroy();
+        primaryGlow.destroy();
       }
+    });
+
+    // Secondary glow with different timing for layered effect
+    const secondaryGlow = this.add.circle(x, y, 15, 0x5DADE2, 0.9);
+    secondaryGlow.setDepth(999);
+    
+    this.tweens.add({
+      targets: secondaryGlow,
+      radius: 200,
+      alpha: 0,
+      duration: 500,
+      ease: 'Power3.easeOut',
+      delay: 100,
+      onComplete: () => {
+        secondaryGlow.destroy();
+      }
+    });
+
+    // Tertiary pulse effect for extra impact
+    const pulseGlow = this.add.circle(x, y, 40, 0x85C1E9, 0.5);
+    pulseGlow.setDepth(997);
+    
+    this.tweens.add({
+      targets: pulseGlow,
+      radius: 500,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Sine.easeOut',
+      delay: 50,
+      onComplete: () => {
+        pulseGlow.destroy();
+      }
+    });
+
+    // Create particle burst with blue theme
+    const particles = this.add.particles(x, y, 'slowmo-dot', {
+      tint: [0x3498DB, 0x5DADE2, 0x85C1E9],
+      speed: { min: 100, max: 250 },
+      scale: { start: 0.5, end: 0 },
+      lifespan: 600,
+      quantity: { min: 8, max: 12 },
+      blendMode: 'ADD',
+      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 15), quantity: 10 }
+    });
+
+    this.time.delayedCall(600, () => {
+      particles.destroy();
     });
 
     // Shrink the slow-mo dot with satisfying animation
@@ -408,34 +505,53 @@ export class Game extends Scene {
     });
   }
 
+  /**
+   * Create instantaneous expanding ripple effect for all taps
+   * Specifications: white, 200ms duration
+   */
   private createRippleEffect(x: number, y: number): void {
-    // Create expanding white ripple effect for any tap (instantaneous feedback)
+    // Primary ripple - main visual feedback (white, 200ms)
     const ripple = this.add.circle(x, y, 8, 0xFFFFFF, 0.9);
-    ripple.setStrokeStyle(3, 0xFFFFFF, 0.6);
+    ripple.setStrokeStyle(4, 0xFFFFFF, 0.8);
     
     this.tweens.add({
       targets: ripple,
       radius: 120,
       alpha: 0,
-      duration: 200,
-      ease: 'Power2',
+      duration: 200, // Exact 200ms specification
+      ease: 'Power2.easeOut',
       onComplete: () => {
         ripple.destroy();
       }
     });
 
-    // Add a secondary, smaller ripple for extra "juice"
-    const innerRipple = this.add.circle(x, y, 4, 0xFFFFFF, 0.6);
+    // Secondary inner ripple for extra "juice" and tactile feedback
+    const innerRipple = this.add.circle(x, y, 4, 0xFFFFFF, 0.7);
+    innerRipple.setStrokeStyle(2, 0xFFFFFF, 0.5);
     
     this.tweens.add({
       targets: innerRipple,
       radius: 60,
       alpha: 0,
       duration: 150,
-      ease: 'Power2',
-      delay: 50,
+      ease: 'Power2.easeOut',
+      delay: 25,
       onComplete: () => {
         innerRipple.destroy();
+      }
+    });
+
+    // Tertiary micro-ripple for immediate feedback
+    const microRipple = this.add.circle(x, y, 2, 0xFFFFFF, 0.5);
+    
+    this.tweens.add({
+      targets: microRipple,
+      radius: 30,
+      alpha: 0,
+      duration: 100,
+      ease: 'Power3.easeOut',
+      onComplete: () => {
+        microRipple.destroy();
       }
     });
   }
@@ -459,34 +575,34 @@ export class Game extends Scene {
     );
     this.slowMoVignette.setDepth(999);
     
-    // Smooth transition to slow-motion with ease-in-out curve
+    // Smooth transition to slow-motion with ease-in-out curve (specification requirement)
     this.slowMoTween = this.tweens.add({
       targets: { timeScale: 1.0, vignetteAlpha: 0.0 },
       timeScale: 0.3, // Slow down to 30% speed
-      vignetteAlpha: 0.3, // Subtle blue vignette
-      duration: 300, // 300ms smooth transition
-      ease: 'Power2.easeInOut',
+      vignetteAlpha: 0.35, // Subtle blue vignette
+      duration: 400, // Smooth 400ms transition for better feel
+      ease: 'Power2.easeInOut', // Smooth ease-in-out curve as specified
       onUpdate: (tween) => {
         const progress = tween.getValue();
         const timeScale = 1.0 - (0.7 * progress); // 1.0 -> 0.3
-        const vignetteAlpha = 0.3 * progress; // 0.0 -> 0.3
+        const vignetteAlpha = 0.35 * progress; // 0.0 -> 0.35
         
         // Apply time scaling to physics and tweens
         this.physics.world.timeScale = timeScale;
         this.tweens.timeScale = timeScale;
         
-        // Update vignette alpha
+        // Update vignette alpha with smooth interpolation
         if (this.slowMoVignette) {
           this.slowMoVignette.setAlpha(vignetteAlpha);
         }
       },
       onComplete: () => {
-        // Add subtle pulsing effect to vignette during slow-mo
+        // Add subtle pulsing effect to vignette during slow-mo for enhanced feedback
         if (this.slowMoVignette) {
           this.tweens.add({
             targets: this.slowMoVignette,
-            alpha: 0.4,
-            duration: 600,
+            alpha: 0.45,
+            duration: 800,
             ease: 'Sine.easeInOut',
             yoyo: true,
             repeat: -1
@@ -520,23 +636,23 @@ export class Game extends Scene {
       this.tweens.killTweensOf(this.slowMoVignette);
     }
     
-    // Smooth transition back to normal speed
+    // Smooth transition back to normal speed with ease-in-out curve
     this.tweens.add({
-      targets: { timeScale: 0.3, vignetteAlpha: this.slowMoVignette?.alpha || 0.3 },
+      targets: { timeScale: 0.3, vignetteAlpha: this.slowMoVignette?.alpha || 0.35 },
       timeScale: 1.0, // Return to normal speed
       vignetteAlpha: 0.0, // Fade out vignette
-      duration: 400, // 400ms smooth transition out
-      ease: 'Power2.easeInOut',
+      duration: 500, // Slightly longer transition out for smooth feel
+      ease: 'Power2.easeInOut', // Smooth ease-in-out curve as specified
       onUpdate: (tween) => {
         const progress = tween.getValue();
         const timeScale = 0.3 + (0.7 * progress); // 0.3 -> 1.0
-        const vignetteAlpha = (this.slowMoVignette?.alpha || 0.3) * (1 - progress);
+        const vignetteAlpha = (this.slowMoVignette?.alpha || 0.35) * (1 - progress);
         
-        // Apply time scaling
+        // Apply time scaling with smooth interpolation
         this.physics.world.timeScale = timeScale;
         this.tweens.timeScale = timeScale;
         
-        // Update vignette alpha
+        // Update vignette alpha with smooth fade
         if (this.slowMoVignette) {
           this.slowMoVignette.setAlpha(vignetteAlpha);
         }
@@ -552,7 +668,7 @@ export class Game extends Scene {
         this.isSlowMoActive = false;
         this.slowMoStartTime = 0;
         
-        console.log('Slow-motion deactivated - normal speed restored');
+        console.log('Slow-motion deactivated - normal speed restored with smooth transition');
       }
     });
   }
@@ -741,6 +857,20 @@ export class Game extends Scene {
   private getRandomColor(): GameColor {
     const colors = [GameColor.RED, GameColor.GREEN, GameColor.BLUE, GameColor.YELLOW, GameColor.PURPLE];
     return colors[Math.floor(Math.random() * colors.length)] as GameColor;
+  }
+
+  /**
+   * Get the correct dot asset key based on color
+   */
+  private getDotAssetByColor(color: GameColor): string {
+    const colorMap: Record<GameColor, string> = {
+      [GameColor.RED]: 'dot-red',
+      [GameColor.GREEN]: 'dot-green',
+      [GameColor.BLUE]: 'dot-blue',
+      [GameColor.YELLOW]: 'dot-yellow',
+      [GameColor.PURPLE]: 'dot-purple',
+    };
+    return colorMap[color] || 'dot-red';
   }
 
   // Public methods for testing and debugging
