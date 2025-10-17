@@ -593,6 +593,11 @@ export class Game extends Scene {
   private updateGameTime(): void {
     this.elapsedTime = this.time.now - this.gameStartTime;
     this.updateUI();
+    
+    // Update debug service with current elapsed time for real-time calculations
+    if (this.debugService.isEnabled()) {
+      this.debugService.updateElapsedTime(this.elapsedTime);
+    }
   }
 
   private updateUI(): void {

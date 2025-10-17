@@ -25,6 +25,7 @@ export interface IDebugService {
   isHitboxVisualizationEnabled(): boolean;
   getDebugConfig(): DebugConfig;
   updateDebugConfig(config: Partial<DebugConfig>): void;
+  updateElapsedTime(elapsedTime: number): void;
 }
 
 // Default difficulty parameters from PRD

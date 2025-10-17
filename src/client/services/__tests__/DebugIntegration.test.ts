@@ -95,8 +95,19 @@ describe('Debug System Integration', () => {
         debugService.updateDifficultyParams({ baseSpeed: 120 });
         debugService.visualizeHitboxes(true);
         debugService.updateDebugConfig({ showFPS: true });
+        debugService.updateElapsedTime(30000); // 30 seconds
         debugService.hideDebugPanel();
         debugService.toggleDebugPanel();
+      }).not.toThrow();
+    });
+
+    it('should handle real-time elapsed time updates', () => {
+      expect(() => {
+        // Test elapsed time updates for real-time calculations
+        debugService.updateElapsedTime(0);
+        debugService.updateElapsedTime(15000); // 15 seconds
+        debugService.updateElapsedTime(60000); // 60 seconds
+        debugService.updateElapsedTime(90000); // 90 seconds
       }).not.toThrow();
     });
 
