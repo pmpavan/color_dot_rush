@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { GAME_ASSETS, validateAssets } from '../assets/AssetManifest';
 
 export class Preloader extends Scene {
   constructor() {
@@ -23,10 +24,35 @@ export class Preloader extends Scene {
   }
 
   preload() {
-    //  Load the assets for the game - Replace with your own assets
-    this.load.setPath('assets');
+    // Validate asset manifest before loading
+    const validation = validateAssets();
+    if (!validation.valid) {
+      console.error('Asset manifest validation failed. Missing assets:', validation.missing);
+    }
 
-    this.load.image('logo', 'logo.png');
+    // Load all Color Rush game assets - CSP compliant (all local)
+    GAME_ASSETS.forEach(asset => {
+      if (asset.type === 'image') {
+        this.load.image(asset.key, asset.path);
+      }
+    });
+
+    // Progress tracking
+    this.load.on('complete', () => {
+      console.log('All Color Rush assets loaded successfully');
+      console.log(`Loaded ${GAME_ASSETS.length} assets`);
+    });
+
+    this.load.on('loaderror', (file: any) => {
+      console.error('Failed to load asset:', file.key);
+    });
+
+    this.load.on('progress', (progress: number) => {
+      // Optional: Add more detailed progress logging
+      if (progress === 1) {
+        console.log('Asset loading complete');
+      }
+    });
   }
 
   create() {
