@@ -1,10 +1,6 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
   "name": "color-dot-rush",
-  "version": "1.0.0",
-  "description": "Color Rush - A high-energy reflex game for Reddit Community Games 2025. Tap the correct colored dots while avoiding bombs and wrong colors!",
-  "author": "Reddit Community Games 2025 Participant",
-  "keywords": ["game", "reflex", "color", "community-games-2025", "phaser"],
   "post": {
     "dir": "dist/client",
     "entrypoints": {
@@ -34,5 +30,7 @@
   "triggers": {
     "onAppInstall": "/internal/on-app-install"
   },
-  "permissions": ["redis", "subreddit"]
+  "permissions": {
+    "redis": true
+  }
 }
