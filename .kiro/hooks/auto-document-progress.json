@@ -1,0 +1,10 @@
+{
+  "name": "Auto-Document Development Progress",
+  "description": "Automatically captures development progress and updates the journal when files are saved",
+  "trigger": {
+    "type": "onFileSave",
+    "filePattern": "**/*.{ts,tsx,js,jsx,json,md}"
+  },
+  "enabled": true,
+  "prompt": "A file was just saved in the Color Rush Devvit game project. Please:\n1. Analyze what was changed or added in relation to Color Rush requirements (PRD epics, QA risks, design specs)\n2. Update the docs/development-journal.md file with:\n   - A timestamped entry in the Development Timeline\n   - Which Color Rush epic/feature this relates to (Core Gameplay, Player Experience, Strategic Elements, Reddit Integration)\n   - How Kiro helped vs how this would have been handled in Cursor + BMAD\n   - Any technical decisions made regarding difficulty scaling, input precision, or performance\n   - Devvit-specific learnings or adaptations\n3. Keep entries concise but informative for panel presentation about Kiro advantages\n4. Focus on development velocity and AI assistance benefits"
+}

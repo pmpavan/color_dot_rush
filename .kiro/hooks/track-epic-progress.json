@@ -1,0 +1,10 @@
+{
+  "name": "Track Color Rush Epic Progress",
+  "description": "Manual hook to document progress on specific PRD epics and how Kiro assisted",
+  "trigger": {
+    "type": "manual",
+    "buttonText": "📊 Log Epic Progress"
+  },
+  "enabled": true,
+  "prompt": "Help me document progress on a Color Rush PRD epic. Ask me:\n1. Which epic am I working on? (Epic 1: Core Gameplay, Epic 2: Player Experience, Epic 3: Strategic Elements, Epic 4: Reddit Integration)\n2. Which specific user story within that epic?\n3. How did Kiro help with this implementation vs how I would have approached it in Cursor + BMAD?\n4. Any challenges with Devvit constraints or Color Rush requirements?\n5. Performance or quality considerations from the QA review?\n\nThen update the docs/development-journal.md with this progress, specifically highlighting Kiro's advantages and development velocity improvements for the panel presentation."
+}

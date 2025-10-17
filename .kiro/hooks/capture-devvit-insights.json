@@ -1,0 +1,10 @@
+{
+  "name": "Capture Devvit Development Insights",
+  "description": "Manual hook to capture key insights and learnings about Devvit development",
+  "trigger": {
+    "type": "manual",
+    "buttonText": "📝 Document Devvit Insight"
+  },
+  "enabled": true,
+  "prompt": "Please help me document a key insight or learning from Devvit development with Kiro. Ask me:\n1. What specific Devvit feature or challenge am I working with?\n2. How did Kiro help compared to how I would have handled this in Cursor + BMAD?\n3. What did I learn or discover about the development process?\n4. How does this impact the game design or development approach?\n5. Any development velocity or workflow improvements noticed?\n\nThen update the appropriate section in docs/development-journal.md with this insight, specifically highlighting Kiro's advantages for the panel presentation."
+}

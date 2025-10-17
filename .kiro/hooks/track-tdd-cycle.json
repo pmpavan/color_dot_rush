@@ -1,0 +1,10 @@
+{
+  "name": "Track TDD Red-Green-Refactor Cycle",
+  "description": "Document TDD progress and how Kiro assists with test-first development",
+  "trigger": {
+    "type": "manual",
+    "buttonText": "🔴🟢♻️ Log TDD Cycle"
+  },
+  "enabled": true,
+  "prompt": "Help me document a TDD cycle for Color Rush development. Ask me:\n1. What Color Rush feature am I implementing? (difficulty scaling, input handling, scoring, etc.)\n2. What phase am I in? (Red: writing failing test, Green: making test pass, Refactor: improving code)\n3. How is Kiro helping with this TDD cycle vs how I would have done this in Cursor + BMAD?\n4. Any challenges with testing Devvit-specific functionality?\n5. How are SOLID, DRY, and KISS principles being applied in this implementation?\n6. What code duplication was eliminated or simplicity improvements made?\n\nThen update the docs/development-journal.md with this TDD progress, highlighting how Kiro's integrated assistance improves the test-first development workflow and code quality principles for the panel presentation."
+}

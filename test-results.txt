@@ -1,0 +1,2543 @@
+
+> color-dot-rush@0.0.0 test
+> vitest src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+
+ DEV  v3.1.1 /Users/apple/P1/Projects/Web/color_rush
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 8 failed) 48ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 6ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 0ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 1ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   × SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 3ms
+     → expected "spy" to be called with arguments: [ 512, 537.6, 'Start Game', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m    "Start Game",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#3498DB",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "bold",[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[32m-   "Start Game",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#3498DB",[90m
+[31m+   614,[90m
+[31m+   "How to Play",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#95A5A6",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "bold",[90m
+[31m+     "fontStyle": "normal",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   × SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+     → expected "spy" to be called with arguments: [ 512, 614.4, 'How to Play', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[32m-   "How to Play",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#95A5A6",[90m
+[31m+   538,[90m
+[31m+   "Start Game",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#3498DB",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "normal",[90m
+[31m+     "fontStyle": "bold",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[31m+   614,[90m
+[2m    "How to Play",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#95A5A6",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "normal",[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 0ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 0ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 0ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 1ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   × SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   × SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 0ms
+   × SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 1ms
+     → expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 2ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 2ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 0ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 0ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 0ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 0ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 0ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 0ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 0ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 0ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 0ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   × SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 1ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:104:38
+    102|   describe('Constructor', () => {
+    103|     it('should initialize with correct scene key', () => {
+    104|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    105|     });
+    106| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > should create Start Game button with correct properties
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6, 'Start Game', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m    "Start Game",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#3498DB",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "bold",[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[32m-   "Start Game",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#3498DB",[90m
+[31m+   614,[90m
+[31m+   "How to Play",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#95A5A6",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "bold",[90m
+[31m+     "fontStyle": "normal",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:192:28
+    190|       (splashScreen as any).createButtons();
+    191| 
+    192|       expect(mockAdd.text).toHaveBeenCalledWith(
+       |                            ^
+    193|         512, // width / 2
+    194|         537.6, // height * 0.7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > should create How to Play button with correct properties
+AssertionError: expected "spy" to be called with arguments: [ 512, 614.4, 'How to Play', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[32m-   "How to Play",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#95A5A6",[90m
+[31m+   538,[90m
+[31m+   "Start Game",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#3498DB",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "normal",[90m
+[31m+     "fontStyle": "bold",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[31m+   614,[90m
+[2m    "How to Play",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#95A5A6",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "normal",[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:210:28
+    208|       (splashScreen as any).createButtons();
+    209| 
+    210|       expect(mockAdd.text).toHaveBeenCalledWith(
+       |                            ^
+    211|         512, // width / 2
+    212|         614.4, // height * 0.8
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:303:28
+    301|         pointerDownCallback();
+    302|         
+    303|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    304|       });
+    305|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:356:37
+    354| 
+    355|       expect(mockAdd.image).toHaveBeenCalledWith(0, 0, 'logo');
+    356|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);…
+       |                                     ^
+    357|       expect(mockImage.setScale).toHaveBeenCalledWith(1); // min(1024/…
+    358|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:381:37
+    379|       expect(mockAdd.image).not.toHaveBeenCalledWith(0, 0, 'logo');
+    380|       // Should still update position and scale
+    381|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);
+       |                                     ^
+    382|       expect(mockImage.setScale).toHaveBeenCalledWith(1);
+    383|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:434:36
+    432|       (splashScreen as any).refreshLayout();
+    433| 
+    434|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 537.6); /…
+       |                                    ^
+    435|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 614.4); /…
+    436|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:807:38
+    805| 
+    806|     it('should implement proper scene key for scene management', () =>…
+    807|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    808|     });
+    809| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 54 passed (62)
+   Start at  10:26:19
+   Duration  254ms (transform 57ms, setup 0ms, collect 57ms, tests 48ms, environment 0ms, prepare 37ms)
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x1 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 8 failed) 62ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 6ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 1ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   × SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 3ms
+     → expected "spy" to be called with arguments: [ 512, 537.6, 'Start Game', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m    "Start Game",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#3498DB",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "bold",[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[32m-   "Start Game",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#3498DB",[90m
+[31m+   614,[90m
+[31m+   "How to Play",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#95A5A6",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "bold",[90m
+[31m+     "fontStyle": "normal",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   × SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+     → expected "spy" to be called with arguments: [ 512, 614.4, 'How to Play', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[32m-   "How to Play",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#95A5A6",[90m
+[31m+   538,[90m
+[31m+   "Start Game",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#3498DB",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "normal",[90m
+[31m+     "fontStyle": "bold",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[31m+   614,[90m
+[2m    "How to Play",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#95A5A6",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "normal",[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 1ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 0ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 0ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 2ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   × SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   × SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 0ms
+   × SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 1ms
+     → expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 1ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 1ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 1ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 2ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 1ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 1ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 2ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 3ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   × SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 2ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > should create Start Game button with correct properties
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6, 'Start Game', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m    "Start Game",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#3498DB",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "bold",[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[32m-   "Start Game",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#3498DB",[90m
+[31m+   614,[90m
+[31m+   "How to Play",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#95A5A6",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "bold",[90m
+[31m+     "fontStyle": "normal",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:193:28
+    191|       (splashScreen as any).createButtons();
+    192| 
+    193|       expect(mockAdd.text).toHaveBeenCalledWith(
+       |                            ^
+    194|         512, // width / 2
+    195|         537.6, // height * 0.7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > should create How to Play button with correct properties
+AssertionError: expected "spy" to be called with arguments: [ 512, 614.4, 'How to Play', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[32m-   "How to Play",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#95A5A6",[90m
+[31m+   538,[90m
+[31m+   "Start Game",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#3498DB",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "normal",[90m
+[31m+     "fontStyle": "bold",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[31m+   614,[90m
+[2m    "How to Play",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#95A5A6",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "normal",[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:211:28
+    209|       (splashScreen as any).createButtons();
+    210| 
+    211|       expect(mockAdd.text).toHaveBeenCalledWith(
+       |                            ^
+    212|         512, // width / 2
+    213|         614.4, // height * 0.8
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:304:28
+    302|         pointerDownCallback();
+    303|         
+    304|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    305|       });
+    306|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:357:37
+    355| 
+    356|       expect(mockAdd.image).toHaveBeenCalledWith(0, 0, 'logo');
+    357|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);…
+       |                                     ^
+    358|       expect(mockImage.setScale).toHaveBeenCalledWith(1); // min(1024/…
+    359|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:382:37
+    380|       expect(mockAdd.image).not.toHaveBeenCalledWith(0, 0, 'logo');
+    381|       // Should still update position and scale
+    382|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);
+       |                                     ^
+    383|       expect(mockImage.setScale).toHaveBeenCalledWith(1);
+    384|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:435:36
+    433|       (splashScreen as any).refreshLayout();
+    434| 
+    435|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 537.6); /…
+       |                                    ^
+    436|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 614.4); /…
+    437|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:808:38
+    806| 
+    807|     it('should implement proper scene key for scene management', () =>…
+    808|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    809|     });
+    810| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 54 passed (62)
+   Start at  10:26:52
+   Duration  111ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x2 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 7 failed) 61ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 7ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 1ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   ✓ SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 1ms
+   × SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 3ms
+     → expected "spy" to be called with arguments: [ 512, 614.4, 'How to Play', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[32m-   "How to Play",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#95A5A6",[90m
+[31m+   538,[90m
+[31m+   "Start Game",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#3498DB",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "normal",[90m
+[31m+     "fontStyle": "bold",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[31m+   614,[90m
+[2m    "How to Play",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#95A5A6",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "normal",[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 0ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 0ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 0ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 1ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   × SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 1ms
+   × SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 0ms
+   × SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 1ms
+     → expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 1ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 2ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 2ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 2ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 2ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   × SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 2ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > should create How to Play button with correct properties
+AssertionError: expected "spy" to be called with arguments: [ 512, 614.4, 'How to Play', …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[33m@@ -1,15 +1,15 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[32m-   "How to Play",[90m
+[32m-   ObjectContaining {[90m
+[32m-     "backgroundColor": "#95A5A6",[90m
+[31m+   538,[90m
+[31m+   "Start Game",[90m
+[31m+   {[90m
+[31m+     "backgroundColor": "#3498DB",[90m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[32m-     "fontStyle": "normal",[90m
+[31m+     "fontStyle": "bold",[90m
+[2m      "padding": {[22m
+[2m        "x": 25,[22m
+[2m        "y": 12,[22m
+[2m      },[22m
+[2m    },[22m
+
+[1m  2nd spy call:
+
+[22m[33m@@ -1,10 +1,10 @@[90m
+[2m  [[22m
+[2m    512,[22m
+[32m-   614.4,[90m
+[31m+   614,[90m
+[2m    "How to Play",[22m
+[32m-   ObjectContaining {[90m
+[31m+   {[90m
+[2m      "backgroundColor": "#95A5A6",[22m
+[2m      "color": "#ffffff",[22m
+[2m      "fontFamily": "Poppins",[22m
+[2m      "fontSize": "20px",[22m
+[2m      "fontStyle": "normal",[22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:211:28
+    209|       (splashScreen as any).createButtons();
+    210| 
+    211|       expect(mockAdd.text).toHaveBeenCalledWith(
+       |                            ^
+    212|         512, // width / 2
+    213|         614.4, // height * 0.8
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:304:28
+    302|         pointerDownCallback();
+    303|         
+    304|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    305|       });
+    306|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:357:37
+    355| 
+    356|       expect(mockAdd.image).toHaveBeenCalledWith(0, 0, 'logo');
+    357|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);…
+       |                                     ^
+    358|       expect(mockImage.setScale).toHaveBeenCalledWith(1); // min(1024/…
+    359|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:382:37
+    380|       expect(mockAdd.image).not.toHaveBeenCalledWith(0, 0, 'logo');
+    381|       // Should still update position and scale
+    382|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);
+       |                                     ^
+    383|       expect(mockImage.setScale).toHaveBeenCalledWith(1);
+    384|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:435:36
+    433|       (splashScreen as any).refreshLayout();
+    434| 
+    435|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 537.6); /…
+       |                                    ^
+    436|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 614.4); /…
+    437|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:808:38
+    806| 
+    807|     it('should implement proper scene key for scene management', () =>…
+    808|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    809|     });
+    810| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 55 passed (62)
+   Start at  10:27:01
+   Duration  91ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x3 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 6 failed) 65ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 7ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 1ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   ✓ SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 0ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 1ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 1ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 1ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   × SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   × SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 1ms
+   × SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 1ms
+     → expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 1ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 1ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 1ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 1ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 2ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 1ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 2ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 2ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   × SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 2ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:304:28
+    302|         pointerDownCallback();
+    303|         
+    304|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    305|       });
+    306|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:357:37
+    355| 
+    356|       expect(mockAdd.image).toHaveBeenCalledWith(0, 0, 'logo');
+    357|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);…
+       |                                     ^
+    358|       expect(mockImage.setScale).toHaveBeenCalledWith(1); // min(1024/…
+    359|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:382:37
+    380|       expect(mockAdd.image).not.toHaveBeenCalledWith(0, 0, 'logo');
+    381|       // Should still update position and scale
+    382|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);
+       |                                     ^
+    383|       expect(mockImage.setScale).toHaveBeenCalledWith(1);
+    384|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:435:36
+    433|       (splashScreen as any).refreshLayout();
+    434| 
+    435|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 537.6); /…
+       |                                    ^
+    436|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 614.4); /…
+    437|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:808:38
+    806| 
+    807|     it('should implement proper scene key for scene management', () =>…
+    808|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    809|     });
+    810| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 56 passed (62)
+   Start at  10:27:08
+   Duration  94ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x4 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 5 failed) 77ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 12ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 1ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   ✓ SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 2ms
+   ✓ SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 1ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 3ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 1ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 2ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   × SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 1ms
+     → expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 2ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 2ms
+   × SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 1ms
+     → expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 1ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 1ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 2ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 2ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 4ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 2ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 3ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 2ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   × SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 2ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:304:28
+    302|         pointerDownCallback();
+    303|         
+    304|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    305|       });
+    306|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating
+AssertionError: expected "spy" to be called with arguments: [ 512, 291.84 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   291.84,[90m
+[31m+   292,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:382:37
+    380|       expect(mockAdd.image).not.toHaveBeenCalledWith(0, 0, 'logo');
+    381|       // Should still update position and scale
+    382|       expect(mockImage.setPosition).toHaveBeenCalledWith(512, 291.84);
+       |                                     ^
+    383|       expect(mockImage.setScale).toHaveBeenCalledWith(1);
+    384|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:435:36
+    433|       (splashScreen as any).refreshLayout();
+    434| 
+    435|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 537.6); /…
+       |                                    ^
+    436|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 614.4); /…
+    437|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:808:38
+    806| 
+    807|     it('should implement proper scene key for scene management', () =>…
+    808|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    809|     });
+    810| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 57 passed (62)
+   Start at  10:27:14
+   Duration  102ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x5 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 4 failed) 63ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 8ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 1ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   ✓ SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 0ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 1ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 1ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 1ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 1ms
+   × SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 2ms
+     → expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 4ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 1ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 2ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 2ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   × SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 2ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:304:28
+    302|         pointerDownCallback();
+    303|         
+    304|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    305|       });
+    306|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist
+AssertionError: expected "spy" to be called with arguments: [ 512, 537.6 ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   384,[90m
+[2m  ][22m
+
+[1m  2nd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   538,[90m
+[2m  ][22m
+
+[1m  3rd spy call:
+
+[22m[2m  [[22m
+[2m    512,[22m
+[32m-   537.6,[90m
+[31m+   614,[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:435:36
+    433|       (splashScreen as any).refreshLayout();
+    434| 
+    435|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 537.6); /…
+       |                                    ^
+    436|       expect(mockText.setPosition).toHaveBeenCalledWith(512, 614.4); /…
+    437|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:808:38
+    806| 
+    807|     it('should implement proper scene key for scene management', () =>…
+    808|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    809|     });
+    810| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 58 passed (62)
+   Start at  10:27:18
+   Duration  85ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x6 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 3 failed) 57ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 6ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 0ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   ✓ SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 1ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 0ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 1ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 2ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 1ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 1ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 1ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 1ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 2ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 2ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 2ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 2ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   × SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 2ms
+     → expected undefined to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:304:28
+    302|         pointerDownCallback();
+    303|         
+    304|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    305|       });
+    306|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management
+AssertionError: expected undefined to be 'SplashScreen' // Object.is equality
+
+[32m- Expected:[39m 
+"SplashScreen"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:808:38
+    806| 
+    807|     it('should implement proper scene key for scene management', () =>…
+    808|       expect(splashScreen.scene.key).toBe('SplashScreen');
+       |                                      ^
+    809|     });
+    810| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 59 passed (62)
+   Start at  10:27:24
+   Duration  85ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x7 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 2 failed) 54ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 6ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 1ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   ✓ SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 0ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 1ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 0ms
+   × SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 1ms
+     → expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 0ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 1ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 2ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 2ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 2ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 1ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation)
+AssertionError: expected "log" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[39m[90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:304:28
+    302|         pointerDownCallback();
+    303|         
+    304|         expect(consoleSpy).toHaveBeenCalledWith('How to Play clicked -…
+       |                            ^
+    305|       });
+    306|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 60 passed (62)
+   Start at  10:27:30
+   Duration  79ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  src/client/game/scenes/__tests__/SplashScreen.test.ts x8 
+        Filename pattern: src/client/game/scenes/__tests__/SplashScreen.test.ts
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts (62 tests | 1 failed) 78ms
+   × SplashScreen Scene > Constructor > should initialize with correct scene key 7ms
+     → expected 'Object' to be 'SplashScreen' // Object.is equality
+   ✓ SplashScreen Scene > Constructor > should initialize all game object references as null 1ms
+   ✓ SplashScreen Scene > init() method > should reset all game object references to null 1ms
+   ✓ SplashScreen Scene > init() method > should handle multiple init calls without errors 1ms
+   ✓ SplashScreen Scene > create() method > should call refreshLayout on creation 0ms
+   ✓ SplashScreen Scene > create() method > should register resize event listener 1ms
+   ✓ SplashScreen Scene > create() method > should call createButtons 0ms
+   ✓ SplashScreen Scene > create() method > should handle resize events by calling refreshLayout 0ms
+   ✓ SplashScreen Scene > createButtons() method > should create Start Game button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should create How to Play button with correct properties 1ms
+   ✓ SplashScreen Scene > createButtons() method > should make buttons interactive with hand cursor 0ms
+   ✓ SplashScreen Scene > createButtons() method > should not recreate buttons if they already exist 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register hover events for scale animation 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should register click events 1ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale up on hover 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should scale down on pointer down 0ms
+   ✓ SplashScreen Scene > createButtons() method > Start Game button interactions > should start Game scene and launch UI scene on click 1ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should register interaction events 1ms
+   ✓ SplashScreen Scene > createButtons() method > How to Play button interactions > should log TODO message on click (temporary implementation) 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should resize cameras to current viewport 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position background image with null safety 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null background image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing background image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create and position logo with correct scaling and null safety 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle null logo image gracefully 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should handle existing logo image without recreating 0ms
+   ✓ SplashScreen Scene > refreshLayout() method > should create title with Color Rush text and proper styling 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should add color-shifting tween animation to title 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should calculate correct scale factor for different screen sizes 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should update existing button positions if they exist 1ms
+   ✓ SplashScreen Scene > refreshLayout() method > should not recreate existing game objects 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use correct Color Rush color palette 0ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should use Poppins font family throughout 1ms
+   ✓ SplashScreen Scene > Color Rush Design System Compliance > should implement proper button sizing for accessibility (44px minimum) 0ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should handle multiple create calls without memory leaks 1ms
+   ✓ SplashScreen Scene > Performance and Memory Management > should properly clean up on scene restart 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle portrait orientation 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very small screens 1ms
+   ✓ SplashScreen Scene > Responsive Design > should handle very large screens 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should transition to correct scenes when Start Game is clicked 0ms
+   ✓ SplashScreen Scene > Scene Transitions > should maintain concurrent UI scene architecture 0ms
+   ✓ SplashScreen Scene > Animation System > should create color-shifting animation for title 1ms
+   ✓ SplashScreen Scene > Animation System > should cycle through Color Rush palette colors 1ms
+   ✓ SplashScreen Scene > Animation System > should implement smooth button hover animations 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing assets gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null background image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle null logo image creation 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle partial asset loading failures 2ms
+   ✓ SplashScreen Scene > Error Handling > should handle all assets failing to load 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle scale calculation edge cases 1ms
+   ✓ SplashScreen Scene > Error Handling > should handle missing scene manager gracefully 1ms
+   ✓ SplashScreen Scene > Error Handling > should continue layout updates even with null objects 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle background image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should safely handle logo image creation and updates 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle mixed success/failure scenarios 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should maintain object references across multiple layout refreshes 1ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle asset loading failures without breaking subsequent operations 6ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should validate object existence before method calls 4ms
+   ✓ SplashScreen Scene > Null Safety and Defensive Programming > should handle Phaser object creation returning undefined 7ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should follow Phaser scene lifecycle pattern 5ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should implement proper scene key for scene management 4ms
+   ✓ SplashScreen Scene > Integration with Color Rush Architecture > should support the Boot → Preloader → SplashScreen → Game+UI flow 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/client/game/scenes/__tests__/SplashScreen.test.ts > SplashScreen Scene > Constructor > should initialize with correct scene key
+AssertionError: expected 'Object' to be 'SplashScreen' // Object.is equality
+
+Expected: [32m"SplashScreen"[39m
+Received: [31m"Object"[39m
+
+ ❯ src/client/game/scenes/__tests__/SplashScreen.test.ts:105:45
+    103|     it('should initialize with correct scene key', () => {
+    104|       // Scene key is set during Phaser initialization, not in constru…
+    105|       expect(splashScreen.constructor.name).toBe('SplashScreen');
+       |                                             ^
+    106|     });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 61 passed (62)
+   Start at  10:27:39
+   Duration  106ms
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+Cancelling test run. Press CTRL+c again to exit forcefully.
+

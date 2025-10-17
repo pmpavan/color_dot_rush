@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "Auto Documentation Update",
+  "description": "Automatically updates project documentation when task completion is detected through file changes in source code, tests, or configuration files",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.ts",
+      "src/**/*.js",
+      "src/**/*.tsx",
+      "src/**/*.jsx",
+      "**/*.test.ts",
+      "**/*.test.js",
+      "package.json",
+      "devvit.json",
+      "README.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A task appears to have been completed based on recent file changes. Please review the modified files and update the relevant documentation in the docs/ folder. Focus on:\n\n1. Update development-journal.md with progress made\n2. Update any relevant technical documentation if architecture or features changed\n3. Update the Project Hub.md if major milestones were reached\n4. Ensure documentation reflects the current state of the codebase\n\nConsider what was accomplished and document it clearly for future reference and team collaboration."
+  }
+}

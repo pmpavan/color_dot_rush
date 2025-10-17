@@ -1,0 +1,10 @@
+{
+  "name": "Track Architecture Implementation",
+  "description": "Document progress on implementing Color Rush architectural patterns and how Kiro assists",
+  "trigger": {
+    "type": "manual",
+    "buttonText": "🏗️ Log Architecture Progress"
+  },
+  "enabled": true,
+  "prompt": "Help me document architectural implementation progress for Color Rush. Ask me:\n1. Which architectural component am I implementing? (Scene management, Object pooling, Service singletons, State machine, etc.)\n2. How is Kiro helping with this implementation vs how I would have approached it in Cursor + BMAD?\n3. Any challenges with Phaser.js patterns or Devvit constraints?\n4. How are the development principles (TDD, SOLID, DRY, KISS) being applied to this architecture?\n5. Any performance optimizations or CSP compliance considerations?\n6. Testing strategy for this architectural component?\n\nThen update the docs/development-journal.md with this architectural progress, specifically highlighting how Kiro's integrated guidance improves implementation of complex architectural patterns for the panel presentation."
+}
