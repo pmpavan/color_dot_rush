@@ -1,12 +1,11 @@
 import { Scene, GameObjects } from 'phaser';
-import { GameColor, UIColor } from '../../../shared/types/game';
 
 export class SplashScreen extends Scene {
-  background: GameObjects.Image | null = null;
-  logo: GameObjects.Image | null = null;
-  title: GameObjects.Text | null = null;
-  startButton: GameObjects.Text | null = null;
-  howToPlayButton: GameObjects.Text | null = null;
+  background: GameObjects.Rectangle | null = null;
+  logo: GameObjects.Container | null = null;
+  title: GameObjects.Container | null = null;
+  startButton: GameObjects.Container | null = null;
+  howToPlayButton: GameObjects.Container | null = null;
 
   constructor() {
     super('SplashScreen');
@@ -47,71 +46,98 @@ export class SplashScreen extends Scene {
   private createButtons(): void {
     const { width, height } = this.scale;
     
-    // Start Game button (Primary - Bright Blue)
+    // Start Game button (Primary - Bright Blue) - Graphics only
     if (!this.startButton) {
-      this.startButton = this.add
-        .text(Math.round(width / 2), Math.round(height * 0.7), 'Start Game', {
-          fontFamily: 'Poppins',
-          fontSize: '20px',
-          fontStyle: 'bold',
-          color: '#ffffff',
-          backgroundColor: '#3498DB', // Bright Blue
-          padding: { x: 25, y: 12 },
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
+      const buttonBg = this.add.rectangle(
+        Math.round(width / 2), 
+        Math.round(height * 0.7), 
+        200, 60, 
+        0x3498DB
+      );
+      buttonBg.setStrokeStyle(2, 0xFFFFFF, 0.8);
+      
+      // Add play triangle icon
+      const playIcon = this.add.triangle(
+        Math.round(width / 2), 
+        Math.round(height * 0.7), 
+        0, 0, 
+        0, 20, 
+        15, 10, 
+        0xFFFFFF
+      );
+      
+      // Create container for button
+      const buttonContainer = this.add.container(0, 0);
+      buttonContainer.add(buttonBg);
+      buttonContainer.add(playIcon);
+      buttonContainer
+        .setInteractive(new Phaser.Geom.Rectangle(
+          Math.round(width / 2) - 100, 
+          Math.round(height * 0.7) - 30, 
+          200, 60
+        ), Phaser.Geom.Rectangle.Contains)
         .on('pointerover', () => {
-          this.startButton!.setScale(1.1); // Scale-up on hover
+          buttonContainer.setScale(1.1);
         })
         .on('pointerout', () => {
-          this.startButton!.setScale(1.0);
+          buttonContainer.setScale(1.0);
         })
         .on('pointerdown', () => {
-          this.startButton!.setScale(0.95); // Scale-down on press
-          // Smooth transition to game with 250ms cross-fade (with safety check for tests)
-          if (this.cameras?.main?.fadeOut) {
-            this.cameras.main.fadeOut(250, 0, 0, 0);
-            this.cameras.main.once('camerafadeoutcomplete', () => {
-              this.scene.start('Game');
-              this.scene.launch('UI'); // Launch UIScene concurrently
-            });
-          } else {
-            // Fallback for test environment
-            this.scene.start('Game');
-            this.scene.launch('UI'); // Launch UIScene concurrently
-          }
+          console.log('SplashScreen: Play button clicked!');
+          buttonContainer.setScale(0.95);
+          
+          // Immediate transition without fade to debug
+          console.log('SplashScreen: Available scenes:', this.scene.manager.scenes.map(s => s.scene.key));
+          console.log('SplashScreen: Starting Game scene...');
+          this.scene.start('Game');
+          console.log('SplashScreen: Launching UI scene...');
+          this.scene.launch('UI');
+          console.log('SplashScreen: Scene transitions completed');
         })
         .on('pointerup', () => {
-          this.startButton!.setScale(1.1);
+          buttonContainer.setScale(1.1);
         });
     }
 
-    // How to Play button (Secondary - Mid Grey)
+    // How to Play button (Secondary - Mid Grey) - Graphics only
     if (!this.howToPlayButton) {
-      this.howToPlayButton = this.add
-        .text(Math.round(width / 2), Math.round(height * 0.8), 'How to Play', {
-          fontFamily: 'Poppins',
-          fontSize: '20px',
-          fontStyle: 'normal',
-          color: '#ffffff',
-          backgroundColor: '#95A5A6', // Mid Grey
-          padding: { x: 25, y: 12 },
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
+      const helpButtonBg = this.add.rectangle(
+        Math.round(width / 2), 
+        Math.round(height * 0.8), 
+        180, 50, 
+        0x95A5A6
+      );
+      helpButtonBg.setStrokeStyle(2, 0xFFFFFF, 0.6);
+      
+      // Add question mark icon
+      const questionMark = this.add.circle(
+        Math.round(width / 2), 
+        Math.round(height * 0.8), 
+        12, 
+        0xFFFFFF
+      );
+      
+      const helpContainer = this.add.container(0, 0);
+      helpContainer.add(helpButtonBg);
+      helpContainer.add(questionMark);
+      helpContainer
+        .setInteractive(new Phaser.Geom.Rectangle(
+          Math.round(width / 2) - 90, 
+          Math.round(height * 0.8) - 25, 
+          180, 50
+        ), Phaser.Geom.Rectangle.Contains)
         .on('pointerover', () => {
-          this.howToPlayButton!.setScale(1.1); // Scale-up on hover
+          helpContainer.setScale(1.1);
         })
         .on('pointerout', () => {
-          this.howToPlayButton!.setScale(1.0);
+          helpContainer.setScale(1.0);
         })
         .on('pointerdown', () => {
-          this.howToPlayButton!.setScale(0.95); // Scale-down on press
-          // TODO: Show how to play instructions
+          helpContainer.setScale(0.95);
           console.log('How to Play clicked - TODO: Implement instructions');
         })
         .on('pointerup', () => {
-          this.howToPlayButton!.setScale(1.1);
+          helpContainer.setScale(1.1);
         });
     }
   }
@@ -126,78 +152,69 @@ export class SplashScreen extends Scene {
     // Resize camera to new viewport to prevent black bars
     this.cameras.resize(width, height);
 
-    // Background – stretch to fill the whole canvas
+    // Background – solid color rectangle
     if (!this.background) {
-      const backgroundImage = this.add.image(0, 0, 'background');
-      if (backgroundImage) {
-        this.background = backgroundImage.setOrigin(0);
-      }
+      this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
     }
     if (this.background) {
       this.background.setDisplaySize(width, height);
     }
 
-    // Logo – keep aspect but scale down for very small screens
+    // Logo – graphics-based logo
     const scaleFactor = Math.min(width / 1024, height / 768);
 
     if (!this.logo) {
-      const logoImage = this.add.image(0, 0, 'logo');
-      if (logoImage) {
-        this.logo = logoImage;
-      }
-    }
-    if (this.logo) {
-      // Use Math.round for pixel-perfect positioning
-      this.logo.setPosition(Math.round(width / 2), Math.round(height * 0.38)).setScale(scaleFactor);
+      const logoContainer = this.add.container(Math.round(width / 2), Math.round(height * 0.25));
+      
+      // Create a simple logo with circles
+      const mainCircle = this.add.circle(0, 0, 40 * scaleFactor, 0x3498DB);
+      mainCircle.setStrokeStyle(4, 0xFFFFFF, 1);
+      
+      const innerCircle = this.add.circle(0, 0, 20 * scaleFactor, 0xFFFFFF);
+      
+      logoContainer.add(mainCircle);
+      logoContainer.add(innerCircle);
+      this.logo = logoContainer;
     }
 
-    // Title text with color-shifting gradient effect (72pt Poppins Bold)
-    const baseFontSize = 72;
+    // Title using colored circles to represent "COLOR RUSH" (graphics-only)
     if (!this.title) {
-      const titleText = this.add
-        .text(0, 0, 'Color Rush', {
-          fontFamily: 'Poppins',
-          fontSize: `${Math.round(baseFontSize * scaleFactor)}px`,
-          fontStyle: 'bold',
-          color: '#ffffff',
-          stroke: '#000000',
-          strokeThickness: Math.round(8 * scaleFactor),
-          align: 'center',
-        });
+      const titleContainer = this.add.container(Math.round(width / 2), Math.round(height * 0.4));
       
-      if (titleText) {
-        this.title = titleText.setOrigin(0.5);
+      // Create colorful dots to spell out the game concept
+      const colors = [0xE74C3C, 0x2ECC71, 0x3498DB, 0xF1C40F, 0x9B59B6];
+      const dotRadius = 25 * scaleFactor;
+      const spacing = 60 * scaleFactor;
+      
+      // Create a row of colored dots
+      for (let i = 0; i < 5; i++) {
+        const x = (i - 2) * spacing; // Center the dots
+        const dot = this.add.circle(x, 0, dotRadius, colors[i]);
+        dot.setStrokeStyle(3, 0xFFFFFF, 0.8);
+        titleContainer.add(dot);
         
-        // Add subtle color-shifting gradient effect using game colors
-        const gameColors = [
-          GameColor.RED,
-          GameColor.GREEN, 
-          GameColor.BLUE,
-          GameColor.YELLOW,
-          GameColor.PURPLE
-        ];
-        
-        let colorIndex = 0;
+        // Add pulsing animation
         this.tweens.add({
-          targets: this.title,
-          duration: 3000,
-          repeat: -1,
+          targets: dot,
+          scaleX: 1.1,
+          scaleY: 1.1,
+          duration: 1000 + (i * 200),
           yoyo: true,
-          ease: 'Sine.easeInOut',
-          onUpdate: () => {
-            if (this.title) {
-              // Cycle through colors based on time
-              const timeBasedIndex = Math.floor((Date.now() / 1000) % gameColors.length);
-              const currentColor = gameColors[timeBasedIndex];
-              this.title.setTint(parseInt(currentColor.replace('#', '0x')));
-            }
-          }
+          repeat: -1,
+          ease: 'Sine.easeInOut'
         });
       }
-    }
-    if (this.title) {
-      this.title.setPosition(Math.round(width / 2), Math.round(height * 0.5));
-      // Title already scaled in creation, don't double-scale
+      
+      // Add central logo circle
+      const centerLogo = this.add.circle(0, -dotRadius * 2, dotRadius * 1.5, 0xFFFFFF);
+      centerLogo.setStrokeStyle(4, 0x3498DB, 1);
+      titleContainer.add(centerLogo);
+      
+      // Add play symbol in center
+      const playSymbol = this.add.triangle(0, -dotRadius * 2, 0, 0, 0, 20, 15, 10, 0x3498DB);
+      titleContainer.add(playSymbol);
+      
+      this.title = titleContainer;
     }
 
     // Update button positions if they exist

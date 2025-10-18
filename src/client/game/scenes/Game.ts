@@ -17,7 +17,7 @@ enum GameState {
 
 export class Game extends Scene {
   private camera: Phaser.Cameras.Scene2D.Camera;
-  private background: Phaser.GameObjects.Rectangle;
+  private background: Phaser.GameObjects.Rectangle | null = null;
   private currentState: GameState = GameState.READY;
   private uiScene: UIScene | null = null;
 
@@ -36,8 +36,8 @@ export class Game extends Scene {
   private slowMoTween: Phaser.Tweens.Tween | null = null;
 
   // Object management
-  private objectPool: ObjectPoolManager;
-  private objectSpawner: ObjectSpawner;
+  private objectPool: ObjectPoolManager | null = null;
+  private objectSpawner: ObjectSpawner | null = null;
 
   // Debug and difficulty management
   private debugService: IDebugService;
@@ -115,7 +115,7 @@ export class Game extends Scene {
       // Initialize object management systems
       this.objectPool = new ObjectPoolManager(this);
       this.objectSpawner = new ObjectSpawner(this, this.objectPool, this.difficultyManager);
-      
+
       console.log('Game: Core systems initialized');
     } catch (error) {
       console.error('Game: Error in create():', error);
@@ -127,7 +127,9 @@ export class Game extends Scene {
     this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
       const { width, height } = gameSize;
       this.updateLayout(width, height);
-      this.objectSpawner.updateScreenBounds(width, height);
+      if (this.objectSpawner) {
+        this.objectSpawner.updateScreenBounds(width, height);
+      }
     });
 
     // Initialize debug system
@@ -258,6 +260,8 @@ export class Game extends Scene {
    * Checks all active game objects for collision with tap point
    */
   private checkCollisionAtPoint(x: number, y: number): Dot | Bomb | SlowMoDot | null {
+    if (!this.objectPool) return null;
+
     // Check dots first (highest priority for gameplay)
     const activeDots = this.objectPool.getActiveDots();
     for (const dot of activeDots) {
@@ -309,7 +313,9 @@ export class Game extends Scene {
       // Change target color occasionally for variety (30% chance)
       if (Math.random() < 0.3) {
         this.targetColor = this.getRandomColor();
-        this.objectSpawner.setTargetColor(this.targetColor);
+        if (this.objectSpawner) {
+          this.objectSpawner.setTargetColor(this.targetColor);
+        }
       }
 
       console.log(`Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
@@ -899,7 +905,7 @@ export class Game extends Scene {
       onComplete: () => {
         // Clean up vignette
         if (this.slowMoVignette) {
-          this.slowMoVignette.destroy();
+          this.slowMoVignette.setVisible(false);
           this.slowMoVignette = null;
         }
 
@@ -990,7 +996,7 @@ export class Game extends Scene {
     this.isSlowMoActive = false;
     this.slowMoStartTime = 0;
     if (this.slowMoVignette) {
-      this.slowMoVignette.destroy();
+      this.slowMoVignette.setVisible(false);
       this.slowMoVignette = null;
     }
     if (this.slowMoTween) {
@@ -999,8 +1005,10 @@ export class Game extends Scene {
     }
 
     // Reset object systems
-    this.objectSpawner.reset();
-    this.objectSpawner.setTargetColor(this.targetColor);
+    if (this.objectSpawner) {
+      this.objectSpawner.reset();
+      this.objectSpawner.setTargetColor(this.targetColor);
+    }
 
     // Update UI
     this.updateUI();
@@ -1018,25 +1026,40 @@ export class Game extends Scene {
     });
 
     // Start object spawning
-    this.objectSpawner.resume();
-
-    // Force spawn a few objects immediately for immediate gameplay
-    this.objectSpawner.forceSpawn(2, 1000);
+    if (this.objectSpawner) {
+      this.objectSpawner.resume();
+      // Force spawn a few objects immediately for immediate gameplay
+      this.objectSpawner.forceSpawn(2, 1000);
+    }
 
     console.log('Game started!');
   }
 
   private endGame(): void {
     // Stop object spawning immediately
-    this.objectSpawner.pause();
+    try {
+      if (this.objectSpawner) {
+        this.objectSpawner.pause();
+      }
+    } catch (error) {
+      console.warn('Error pausing objectSpawner:', error);
+    }
 
     // Force deactivate slow-motion if active
     if (this.isSlowMoActive) {
-      this.forceDeactivateSlowMotion();
+      try {
+        this.forceDeactivateSlowMotion();
+      } catch (error) {
+        console.warn('Error force deactivating slow motion:', error);
+      }
     }
 
     // Clear any remaining visual effects
-    this.tweens.killAll();
+    try {
+      this.tweens.killAll();
+    } catch (error) {
+      console.warn('Error killing tweens:', error);
+    }
 
     // Calculate final session time in seconds and milliseconds
     const sessionTimeSeconds = Math.floor(this.elapsedTime / 1000);
@@ -1064,8 +1087,14 @@ export class Game extends Scene {
 
     // Transition to GameOver scene
     this.time.delayedCall(1000, () => {
-      this.scene.stop('UI'); // Stop UIScene
-      this.scene.start('GameOver', gameOverData); // Start GameOver scene with data
+      try {
+        console.log('Transitioning to GameOver scene');
+        // Keep UIScene running but hide it, start GameOver on top
+        this.scene.setVisible(false, 'UI'); // Hide UI scene instead of pausing/stopping
+        this.scene.start('GameOver', gameOverData); // Start GameOver scene with data
+      } catch (error) {
+        console.error('Error during scene transition to GameOver:', error);
+      }
     });
   }
 
@@ -1222,8 +1251,13 @@ export class Game extends Scene {
 
     // Clean up vignette immediately
     if (this.slowMoVignette) {
-      this.tweens.killTweensOf(this.slowMoVignette);
-      this.slowMoVignette.destroy();
+      try {
+        this.tweens.killTweensOf(this.slowMoVignette);
+        // Don't manually destroy - let Phaser handle it
+        this.slowMoVignette.setVisible(false);
+      } catch (error) {
+        console.warn('Error hiding slowMoVignette in forceDeactivate:', error);
+      }
       this.slowMoVignette = null;
     }
 
@@ -1293,7 +1327,7 @@ export class Game extends Scene {
     this.hitboxGraphics.fillStyle(0x00ff00, 0.1); // Semi-transparent green fill
 
     // Draw hitboxes for all active game objects
-    if (this.currentState === GameState.PLAYING && this.hitboxGraphics) {
+    if (this.currentState === GameState.PLAYING && this.hitboxGraphics && this.objectPool) {
       // Draw hitboxes for active dots
       const activeDots = this.objectPool.getActiveDots();
       activeDots.forEach(dot => {
@@ -1351,10 +1385,14 @@ export class Game extends Scene {
 
     if (this.currentState === GameState.PLAYING) {
       // Update object spawner
-      this.objectSpawner.update(delta, this.elapsedTime);
+      if (this.objectSpawner) {
+        this.objectSpawner.update(delta, this.elapsedTime);
+      }
 
       // Update object pool
-      this.objectPool.update(delta);
+      if (this.objectPool) {
+        this.objectPool.update(delta);
+      }
 
       // Update difficulty display for debugging
       this.updateDifficultyDisplay();
@@ -1373,11 +1411,11 @@ export class Game extends Scene {
         this.tweens.timeScale = 1;
       }
 
-      // Clean up all temporary objects
+      // Clean up temporary objects we created
       this.cleanupAllTemporaryObjects();
 
-      // Clean up debug service
-      if (this.debugService instanceof DebugService) {
+      // Clean up debug service (non-Phaser object)
+      if (this.debugService && this.debugService instanceof DebugService) {
         try {
           this.debugService.destroy();
         } catch (error) {
@@ -1385,36 +1423,7 @@ export class Game extends Scene {
         }
       }
 
-      // Clean up slow-mo effects
-      if (this.slowMoVignette && this.slowMoVignette.active) {
-        try {
-          this.slowMoVignette.destroy();
-        } catch (error) {
-          console.warn('Error destroying slowMoVignette:', error);
-        }
-        this.slowMoVignette = null;
-      }
-
-      if (this.slowMoTween) {
-        try {
-          this.slowMoTween.remove();
-        } catch (error) {
-          console.warn('Error removing slowMoTween:', error);
-        }
-        this.slowMoTween = null;
-      }
-
-      // Clean up graphics objects
-      if (this.hitboxGraphics && this.hitboxGraphics.active) {
-        try {
-          this.hitboxGraphics.destroy();
-        } catch (error) {
-          console.warn('Error destroying hitboxGraphics:', error);
-        }
-        this.hitboxGraphics = null;
-      }
-
-      // Clean up object pools
+      // Clean up object pools (non-Phaser object)
       if (this.objectPool) {
         try {
           this.objectPool.destroy();
@@ -1423,22 +1432,17 @@ export class Game extends Scene {
         }
       }
 
-      // Clean up timers
-      if (this.gameTimer && this.gameTimer.hasDispatched === false) {
+      // Stop tweens but don't destroy Phaser objects - let Phaser handle cleanup
+      if (this.slowMoTween) {
+        this.slowMoTween.remove();
+      }
+
+      // Clean up timers (Phaser objects that need manual cleanup)
+      if (this.gameTimer && !this.gameTimer.hasDispatched) {
         try {
           this.gameTimer.destroy();
         } catch (error) {
           console.warn('Error destroying gameTimer:', error);
-        }
-        this.gameTimer = null;
-      }
-
-      // Clean up background
-      if (this.background && this.background.active) {
-        try {
-          this.background.destroy();
-        } catch (error) {
-          console.warn('Error destroying background:', error);
         }
       }
 
@@ -1446,6 +1450,14 @@ export class Game extends Scene {
       if (this.physics && this.physics.world) {
         this.physics.world.timeScale = 1;
       }
+
+      // Reset references to null but don't manually destroy Phaser objects
+      this.slowMoVignette = null;
+      this.slowMoTween = null;
+      this.hitboxGraphics = null;
+      this.objectPool = null;
+      this.gameTimer = null;
+      this.background = null;
 
     } catch (error) {
       console.warn('Error during scene shutdown:', error);

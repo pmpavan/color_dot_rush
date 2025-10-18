@@ -26,6 +26,32 @@ export class DifficultyManager {
   }
 
   /**
+   * Calculate responsive size based on screen dimensions
+   * @param elapsedTimeSeconds - Elapsed time in seconds
+   * @param screenWidth - Screen width in pixels
+   * @param screenHeight - Screen height in pixels
+   * @returns Current size in pixels, adjusted for screen size
+   */
+  public calculateResponsiveSize(elapsedTimeSeconds: number, screenWidth: number, screenHeight: number): number {
+    const baseSize = this.calculateSize(elapsedTimeSeconds);
+    
+    // Calculate responsive scale factor based on screen size
+    // Use the smaller dimension to ensure dots fit on all screen orientations
+    const minDimension = Math.min(screenWidth, screenHeight);
+    
+    // Base scale factor: assume 800px as reference screen size
+    // On smaller screens, dots should be proportionally smaller
+    // On larger screens, dots should be proportionally larger
+    const referenceSize = 800;
+    const scaleFactor = minDimension / referenceSize;
+    
+    // Apply scale factor with reasonable bounds (0.5x to 2x)
+    const clampedScaleFactor = Math.max(0.5, Math.min(2.0, scaleFactor));
+    
+    return Math.round(baseSize * clampedScaleFactor);
+  }
+
+  /**
    * Calculate dot count increase: +1 dot every 15 seconds
    * @param elapsedTimeSeconds - Elapsed time in seconds
    * @returns Number of dots that should be on screen
@@ -82,9 +108,9 @@ export class DifficultyManager {
     const sizeAtTarget = this.calculateSize(targetSessionSeconds);
     
     // Define reasonable limits for playability based on PRD parameters
-    // At 90 seconds with default params: speed ~3400, size ~13
+    // At 90 seconds with increased baseSize (100px): speed ~3400, size ~16.3
     const MAX_PLAYABLE_SPEED = 5000; // px/sec - allows for PRD parameters
-    const MIN_PLAYABLE_SIZE = 10; // px - allows for PRD parameters
+    const MIN_PLAYABLE_SIZE = 12; // px - increased to account for larger base size
     
     return speedAtTarget <= MAX_PLAYABLE_SPEED && sizeAtTarget >= MIN_PLAYABLE_SIZE;
   }

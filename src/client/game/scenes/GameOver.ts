@@ -10,16 +10,35 @@ interface GameOverData {
 
 export class GameOver extends Scene {
   private camera: Phaser.Cameras.Scene2D.Camera;
-  private background: Phaser.GameObjects.Image;
+  private background: Phaser.GameObjects.Rectangle;
   private dimmedOverlay: Phaser.GameObjects.Rectangle;
-  private modalCard: Phaser.GameObjects.Container;
+  private modalCard: Phaser.GameObjects.Container | null = null;
   private gameOverData: GameOverData;
-  private playAgainButton: Phaser.GameObjects.Text | null = null;
-  private leaderboardButton: Phaser.GameObjects.Text | null = null;
-  private mainMenuButton: Phaser.GameObjects.Text | null = null;
+  private playAgainButton: Phaser.GameObjects.Container | null = null;
+  private leaderboardButton: Phaser.GameObjects.Container | null = null;
+  private mainMenuButton: Phaser.GameObjects.Container | null = null;
 
   constructor() {
     super('GameOver');
+  }
+
+  shutdown(): void {
+    try {
+      // Clean up button references
+      this.playAgainButton = null;
+      this.leaderboardButton = null;
+      this.mainMenuButton = null;
+      
+      // Clean up container reference
+      this.modalCard = null;
+      
+      // Kill all tweens
+      if (this.tweens) {
+        this.tweens.killAll();
+      }
+    } catch (error) {
+      console.warn('Error during GameOver scene shutdown:', error);
+    }
   }
 
   init(data: GameOverData): void {
@@ -47,11 +66,8 @@ export class GameOver extends Scene {
       this.cameras.main.fadeIn(250, 0, 0, 0);
     }
 
-    // Create frozen game state background
-    const backgroundImage = this.add.image(0, 0, 'background');
-    if (backgroundImage) {
-      this.background = backgroundImage.setOrigin(0).setAlpha(0.3);
-    }
+    // Create frozen game state background (graphics-only)
+    this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x34495E, 0.3).setOrigin(0);
 
     // Create dimmed overlay for modal effect (overlaying frozen game state)
     this.dimmedOverlay = this.add.rectangle(
@@ -90,73 +106,51 @@ export class GameOver extends Scene {
 
     // Modal background with rounded corners effect
     const modalBg = this.add.rectangle(0, 0, modalWidth, modalHeight, 0x34495E, 0.98);
-    if (modalBg) {
-      modalBg.setStrokeStyle(4, 0xECF0F1, 0.8);
-      this.modalCard.add(modalBg);
+    modalBg.setStrokeStyle(4, 0xECF0F1, 0.8);
+    this.modalCard.add(modalBg);
+
+    // "GAME OVER" title (graphics-only representation)
+    const gameOverIcon = this.add.circle(0, -modalHeight * 0.35, 30, 0xFF0000, 1);
+    gameOverIcon.setStrokeStyle(4, 0xFFFFFF, 1);
+    this.modalCard.add(gameOverIcon);
+
+    // Final score display (graphics-only - use colored circles to represent score level)
+    const scoreLevel = this.gameOverData.finalScore > 20 ? 3 : this.gameOverData.finalScore > 10 ? 2 : 1;
+    const scoreColors = [0xFF0000, 0xFFD700, 0x2ECC71]; // Red, Gold, Green
+    const scoreIndicator = this.add.circle(0, -modalHeight * 0.2, 25, scoreColors[scoreLevel - 1], 1);
+    scoreIndicator.setStrokeStyle(3, 0xFFFFFF, 1);
+    this.modalCard.add(scoreIndicator);
+
+    // Session time display (graphics-only - rotating clock hand)
+    const timeCircle = this.add.circle(0, -modalHeight * 0.1, 20, 0x2ECC71, 0.8);
+    if (timeCircle) {
+      timeCircle.setStrokeStyle(2, 0xFFFFFF, 0.8);
+      this.modalCard.add(timeCircle);
+    }
+    
+    const timeHand = this.add.line(0, -modalHeight * 0.1, 0, 0, 0, -15, 0xFFFFFF, 1);
+    if (timeHand) {
+      timeHand.setLineWidth(2);
+      const rotation = (this.gameOverData.sessionTime / 1000 * 6) * (Math.PI / 180);
+      timeHand.setRotation(rotation);
+      this.modalCard.add(timeHand);
     }
 
-    // "GAME OVER" title (48pt Poppins Bold as per spec)
-    const gameOverTitle = this.add
-      .text(0, -modalHeight * 0.35, 'GAME OVER', {
-        fontFamily: 'Poppins',
-        fontSize: '48px',
-        fontStyle: 'bold',
-        color: '#ffffff',
-        align: 'center',
-      });
-    if (gameOverTitle) {
-      gameOverTitle.setOrigin(0.5);
-      this.modalCard.add(gameOverTitle);
-    }
-
-    // Final score display (prominent)
-    const scoreText = this.add
-      .text(0, -modalHeight * 0.2, `Final Score: ${this.gameOverData.finalScore}`, {
-        fontFamily: 'Poppins',
-        fontSize: '28px',
-        fontStyle: 'bold',
-        color: '#3498DB', // Bright Blue for emphasis
-        align: 'center',
-      });
-    if (scoreText) {
-      scoreText.setOrigin(0.5);
-      this.modalCard.add(scoreText);
-    }
-
-    // Session time display
-    const timeText = this.add
-      .text(0, -modalHeight * 0.1, `Session Time: ${this.formatTime(this.gameOverData.sessionTime)}`, {
-        fontFamily: 'Poppins',
-        fontSize: '22px',
-        color: '#ECF0F1',
-        align: 'center',
-      });
-    if (timeText) {
-      timeText.setOrigin(0.5);
-      this.modalCard.add(timeText);
-    }
-
-    // Best score display (if it's a new record, highlight it)
+    // Best score display (graphics-only - trophy icon for new record)
     const isNewRecord = this.gameOverData.finalScore === this.gameOverData.bestScore && this.gameOverData.finalScore > 0;
-    const bestScoreColor = isNewRecord ? '#F1C40F' : '#95A5A6'; // Gold for new record, grey otherwise
-    const bestScorePrefix = isNewRecord ? '🏆 NEW BEST: ' : 'Best Score: ';
-
-    const bestScoreText = this.add
-      .text(0, modalHeight * 0.02, `${bestScorePrefix}${this.gameOverData.bestScore}`, {
-        fontFamily: 'Poppins',
-        fontSize: '20px',
-        fontStyle: isNewRecord ? 'bold' : 'normal',
-        color: bestScoreColor,
-        align: 'center',
-      });
-    if (bestScoreText) {
-      bestScoreText.setOrigin(0.5);
-      this.modalCard.add(bestScoreText);
-
-      // Add new record celebration effect if applicable
-      if (isNewRecord) {
-        this.createNewRecordEffect(bestScoreText);
-      }
+    const bestScoreColor = isNewRecord ? 0xF1C40F : 0x95A5A6; // Gold for new record, grey otherwise
+    
+    const bestScoreIcon = this.add.circle(0, modalHeight * 0.02, 18, bestScoreColor, 1);
+    bestScoreIcon.setStrokeStyle(3, 0xFFFFFF, 1);
+    this.modalCard.add(bestScoreIcon);
+    
+    if (isNewRecord) {
+      // Add crown effect for new record
+      const crown = this.add.triangle(0, modalHeight * 0.02 - 10, 0, 0, -8, 12, 8, 12, 0xF1C40F);
+      this.modalCard.add(crown);
+      
+      // Add new record celebration effect
+      this.createNewRecordEffect(0, modalHeight * 0.02);
     }
 
 
@@ -193,78 +187,82 @@ export class GameOver extends Scene {
     });
   }
 
-  private createNewRecordEffect(textObject: Phaser.GameObjects.Text): void {
-    // Create sparkle particles for new record celebration
-    const sparkles = this.add.particles(textObject.x, textObject.y, 'dot-yellow', {
-      tint: 0xF1C40F,
-      speed: { min: 50, max: 150 },
-      scale: { start: 0.3, end: 0 },
-      lifespan: 1000,
-      quantity: 2,
-      frequency: 200,
-      blendMode: 'ADD'
-    });
-
-    // Stop sparkles after 3 seconds
-    this.time.delayedCall(3000, () => {
-      sparkles.destroy();
-    });
+  private createNewRecordEffect(x: number, y: number): void {
+    // Create sparkle effect with simple graphics for new record celebration
+    for (let i = 0; i < 5; i++) {
+      const sparkle = this.add.circle(x, y, 3, 0xF1C40F, 1);
+      const angle = (i / 5) * Math.PI * 2;
+      const distance = 30 + Math.random() * 20;
+      
+      this.tweens.add({
+        targets: sparkle,
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        alpha: 0,
+        duration: 1000,
+        ease: 'Power2.easeOut',
+        onComplete: () => sparkle.destroy()
+      });
+    }
   }
 
   private createModalButtons(modalHeight: number): void {
-    // Play Again button (auto-focused, primary action)
-    const playAgainText = this.add
-      .text(0, modalHeight * 0.2, 'Play Again', {
-        fontFamily: 'Poppins',
-        fontSize: '24px',
-        fontStyle: 'bold',
-        color: '#ffffff',
-        backgroundColor: '#3498DB', // Bright Blue
-        padding: { x: 30, y: 15 },
-      });
-
-    if (playAgainText) {
-      this.playAgainButton = playAgainText
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
+    // Play Again button (graphics-only - blue rectangle with play icon)
+    const playAgainBg = this.add.rectangle(0, modalHeight * 0.2, 200, 50, 0x3498DB, 1);
+    playAgainBg.setStrokeStyle(2, 0xFFFFFF, 0.8);
+    
+    // Add play triangle icon
+    const playIcon = this.add.triangle(0, modalHeight * 0.2, 0, 0, 0, 15, 12, 7.5, 0xFFFFFF);
+    
+    // Create container for button
+    const playAgainContainer = this.add.container(0, 0);
+    playAgainContainer.add(playAgainBg);
+    playAgainContainer.add(playIcon);
+    
+    if (playAgainContainer && this.modalCard) {
+      this.playAgainButton = playAgainContainer;
+      this.modalCard.add(playAgainContainer);
+      
+      playAgainContainer
+        .setInteractive(new Phaser.Geom.Rectangle(-100, modalHeight * 0.2 - 25, 200, 50), Phaser.Geom.Rectangle.Contains)
         .on('pointerover', () => {
-          if (this.playAgainButton) {
-            this.playAgainButton.setScale(1.1);
-            this.tweens.killTweensOf(this.playAgainButton); // Stop auto-focus animation
-            this.playAgainButton.setAlpha(1);
-          }
+          playAgainContainer.setScale(1.1);
+          this.tweens.killTweensOf(playAgainContainer);
+          playAgainContainer.setAlpha(1);
         })
         .on('pointerout', () => {
-          if (this.playAgainButton) {
-            this.playAgainButton.setScale(1.05);
-          }
+          playAgainContainer.setScale(1.05);
         })
         .on('pointerdown', () => {
-          if (this.playAgainButton) {
-            this.playAgainButton.setScale(0.95);
-            // Smooth transition back to game with cross-fade
-            this.tweens.add({
-              targets: this.modalCard,
-              scaleX: 0.1,
-              scaleY: 0.1,
-              alpha: 0,
-              duration: 200,
-              ease: 'Back.easeIn',
-              onComplete: () => {
+          playAgainContainer.setScale(0.95);
+          // Smooth transition back to game with cross-fade
+          this.tweens.add({
+            targets: this.modalCard,
+            scaleX: 0.1,
+            scaleY: 0.1,
+            alpha: 0,
+            duration: 200,
+            ease: 'Back.easeIn',
+            onComplete: () => {
+              try {
                 if (this.cameras?.main?.fadeOut) {
                   this.cameras.main.fadeOut(250, 0, 0, 0);
                   this.cameras.main.once('camerafadeoutcomplete', () => {
                     this.scene.start('Game');
+                    // Launch UI scene again
                     this.scene.launch('UI');
                   });
                 } else {
                   // Fallback for test environment
                   this.scene.start('Game');
+                  // Launch UI scene again
                   this.scene.launch('UI');
                 }
+              } catch (error) {
+                console.error('Error restarting game:', error);
               }
-            });
-          }
+            }
+          });
         })
         .on('pointerup', () => {
           if (this.playAgainButton) {
@@ -274,20 +272,22 @@ export class GameOver extends Scene {
       this.modalCard.add(this.playAgainButton);
     }
 
-    // View Leaderboard button (secondary action)
-    const leaderboardText = this.add
-      .text(0, modalHeight * 0.32, 'View Leaderboard', {
-        fontFamily: 'Poppins',
-        fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#95A5A6', // Mid Grey
-        padding: { x: 25, y: 12 },
-      });
-
-    if (leaderboardText) {
-      this.leaderboardButton = leaderboardText
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
+    // View Leaderboard button (graphics-only - grey rectangle with trophy icon)
+    const leaderboardBg = this.add.rectangle(0, modalHeight * 0.32, 180, 40, 0x95A5A6, 1);
+    leaderboardBg.setStrokeStyle(2, 0xFFFFFF, 0.6);
+    
+    // Add trophy icon
+    const trophyIcon = this.add.circle(0, modalHeight * 0.32, 8, 0xF1C40F);
+    trophyIcon.setStrokeStyle(2, 0xFFFFFF, 1);
+    
+    const leaderboardContainer = this.add.container(0, 0);
+    leaderboardContainer.add(leaderboardBg);
+    leaderboardContainer.add(trophyIcon);
+    
+    if (leaderboardContainer) {
+      this.leaderboardButton = leaderboardContainer;
+      leaderboardContainer
+        .setInteractive(new Phaser.Geom.Rectangle(-90, modalHeight * 0.32 - 20, 180, 40), Phaser.Geom.Rectangle.Contains)
         .on('pointerover', () => {
           if (this.leaderboardButton) this.leaderboardButton.setScale(1.1);
         })
@@ -306,14 +306,18 @@ export class GameOver extends Scene {
               duration: 200,
               ease: 'Back.easeIn',
               onComplete: () => {
-                if (this.cameras?.main?.fadeOut) {
-                  this.cameras.main.fadeOut(250, 0, 0, 0);
-                  this.cameras.main.once('camerafadeoutcomplete', () => {
+                try {
+                  if (this.cameras?.main?.fadeOut) {
+                    this.cameras.main.fadeOut(250, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                      this.scene.start('Leaderboard');
+                    });
+                  } else {
+                    // Fallback for test environment
                     this.scene.start('Leaderboard');
-                  });
-                } else {
-                  // Fallback for test environment
-                  this.scene.start('Leaderboard');
+                  }
+                } catch (error) {
+                  console.error('Error navigating to leaderboard:', error);
                 }
               }
             });
@@ -322,23 +326,28 @@ export class GameOver extends Scene {
         .on('pointerup', () => {
           if (this.leaderboardButton) this.leaderboardButton.setScale(1.1);
         });
-      this.modalCard.add(this.leaderboardButton);
+      if (this.modalCard) {
+        this.modalCard.add(this.leaderboardButton);
+      }
     }
 
-    // Main Menu button (tertiary action, smaller)
-    const mainMenuText = this.add
-      .text(0, modalHeight * 0.42, 'Main Menu', {
-        fontFamily: 'Poppins',
-        fontSize: '18px',
-        color: '#ffffff',
-        backgroundColor: '#34495E', // Near Black
-        padding: { x: 20, y: 10 },
-      });
-
-    if (mainMenuText) {
-      this.mainMenuButton = mainMenuText
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
+    // Main Menu button (graphics-only - dark rectangle with home icon)
+    const mainMenuBg = this.add.rectangle(0, modalHeight * 0.42, 160, 35, 0x34495E, 1);
+    mainMenuBg.setStrokeStyle(2, 0xFFFFFF, 0.4);
+    
+    // Add home icon (simple house shape)
+    const homeIcon = this.add.rectangle(0, modalHeight * 0.42, 12, 8, 0xFFFFFF);
+    const homeRoof = this.add.triangle(0, modalHeight * 0.42 - 6, 0, 0, -6, 8, 6, 8, 0xFFFFFF);
+    
+    const mainMenuContainer = this.add.container(0, 0);
+    mainMenuContainer.add(mainMenuBg);
+    mainMenuContainer.add(homeIcon);
+    mainMenuContainer.add(homeRoof);
+    
+    if (mainMenuContainer) {
+      this.mainMenuButton = mainMenuContainer;
+      mainMenuContainer
+        .setInteractive(new Phaser.Geom.Rectangle(-80, modalHeight * 0.42 - 17.5, 160, 35), Phaser.Geom.Rectangle.Contains)
         .on('pointerover', () => {
           if (this.mainMenuButton) this.mainMenuButton.setScale(1.1);
         })
@@ -357,14 +366,18 @@ export class GameOver extends Scene {
               duration: 200,
               ease: 'Back.easeIn',
               onComplete: () => {
-                if (this.cameras?.main?.fadeOut) {
-                  this.cameras.main.fadeOut(250, 0, 0, 0);
-                  this.cameras.main.once('camerafadeoutcomplete', () => {
+                try {
+                  if (this.cameras?.main?.fadeOut) {
+                    this.cameras.main.fadeOut(250, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                      this.scene.start('SplashScreen');
+                    });
+                  } else {
+                    // Fallback for test environment
                     this.scene.start('SplashScreen');
-                  });
-                } else {
-                  // Fallback for test environment
-                  this.scene.start('SplashScreen');
+                  }
+                } catch (error) {
+                  console.error('Error navigating to main menu:', error);
                 }
               }
             });
@@ -373,7 +386,9 @@ export class GameOver extends Scene {
         .on('pointerup', () => {
           if (this.mainMenuButton) this.mainMenuButton.setScale(1.1);
         });
-      this.modalCard.add(this.mainMenuButton);
+      if (this.modalCard) {
+        this.modalCard.add(this.mainMenuButton);
+      }
     }
   }
 
@@ -381,11 +396,7 @@ export class GameOver extends Scene {
 
 
 
-  private formatTime(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }
+
 
   private updateLayout(width: number, height: number): void {
     // Resize camera viewport to prevent black bars

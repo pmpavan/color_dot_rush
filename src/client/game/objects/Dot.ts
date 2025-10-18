@@ -1,27 +1,33 @@
 // Dot game object implementation for Color Rush
 
 import Phaser from 'phaser';
-import { GameObject, ICollidable } from './GameObject';
 import { GameColor } from '../../../shared/types/game';
 
 /**
  * Dot class represents the colored dots that players need to tap
  */
-export class Dot extends GameObject {
+export class Dot extends Phaser.GameObjects.Arc {
   public color: GameColor;
   public speed: number;
   public size: number;
   private direction: Phaser.Math.Vector2;
   private hitbox: Phaser.Geom.Rectangle;
+  public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
-    super(scene, 0, 0, 'dot'); // Will be set dynamically based on color
+    // Create as a circle instead of sprite - larger for visibility
+    super(scene, 0, 0, 50, 0, 360, false, 0xE74C3C);
     
     this.color = GameColor.RED; // Default color
     this.speed = 100; // Default speed
-    this.size = 80; // Default size from PRD
+    this.size = 100; // Increased by 150% from 40px (was 60px)
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
+    
+    // Add to scene
+    scene.add.existing(this);
+    
+    // Debug logging removed
     
     // Interactive setup handled by centralized input system in GameScene
   }
@@ -36,13 +42,12 @@ export class Dot extends GameObject {
     this.direction = direction.clone();
     
     // Set visual properties
-    this.setTint(parseInt(color.replace('#', '0x')));
-    this.setDisplaySize(size, size);
+    this.setFillStyle(parseInt(color.replace('#', '0x')));
+    this.setRadius(size / 2);
     
     // Update hitbox - slightly larger than visual sprite for accessibility
     const hitboxSize = Math.max(size, 44); // Minimum 44px tap target
     this.hitbox.setSize(hitboxSize, hitboxSize);
-    this.setSize(hitboxSize, hitboxSize); // For physics body
     
     // Position the dot
     this.setPosition(x, y);
@@ -51,13 +56,20 @@ export class Dot extends GameObject {
   /**
    * Update dot movement and lifecycle
    */
-  protected updateGameObject(delta: number): void {
+  public override update(delta: number): void {
     if (!this.active) return;
 
     // Move the dot based on direction and speed
     const deltaSeconds = delta / 1000;
+    const oldX = this.x;
+    const oldY = this.y;
     this.x += this.direction.x * this.speed * deltaSeconds;
     this.y += this.direction.y * this.speed * deltaSeconds;
+    
+    // Debug: Log movement occasionally
+    if (Math.random() < 0.01) { // 1% chance to log
+      console.log(`Dot moving: speed=${this.speed}, direction=(${this.direction.x.toFixed(2)}, ${this.direction.y.toFixed(2)}), delta=${delta}, from (${oldX.toFixed(1)}, ${oldY.toFixed(1)}) to (${this.x.toFixed(1)}, ${this.y.toFixed(1)})`);
+    }
 
     // Update hitbox position
     this.hitbox.setPosition(
@@ -85,13 +97,13 @@ export class Dot extends GameObject {
       output.setTo(this.hitbox.x, this.hitbox.y, this.hitbox.width, this.hitbox.height);
       return output;
     }
-    return this.hitbox as O;
+    return new Phaser.Geom.Rectangle(this.hitbox.x, this.hitbox.y, this.hitbox.width, this.hitbox.height) as O;
   }
 
   /**
    * Handle collision with another object
    */
-  public onCollision(_other: ICollidable): void {
+  public onCollision(_other: any): void {
     // Handle collision logic if needed
     // For now, dots don't collide with each other
   }
@@ -108,14 +120,23 @@ export class Dot extends GameObject {
    * Create visual feedback when dot is tapped correctly
    */
   public createPopEffect(): void {
-    // Create celebratory pop effect with particles
-    const particles = this.scene.add.particles(this.x, this.y, 'dot', {
-      tint: parseInt(this.color.replace('#', '0x')),
-      speed: { min: 50, max: 150 },
-      scale: { start: 0.3, end: 0 },
-      lifespan: 300,
-      quantity: { min: 5, max: 7 }
-    });
+    // Create celebratory pop effect with simple graphics
+    const color = parseInt(this.color.replace('#', '0x'));
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const distance = 30 + Math.random() * 20;
+      const popDot = this.scene.add.circle(this.x, this.y, 4, color);
+      
+      this.scene.tweens.add({
+        targets: popDot,
+        x: this.x + Math.cos(angle) * distance,
+        y: this.y + Math.sin(angle) * distance,
+        alpha: 0,
+        duration: 300,
+        ease: 'Power2.easeOut',
+        onComplete: () => popDot.destroy()
+      });
+    }
 
     // Shrink dot to nothing
     this.scene.tweens.add({
@@ -126,7 +147,6 @@ export class Dot extends GameObject {
       ease: 'Power2',
       onComplete: () => {
         this.deactivate();
-        particles.destroy();
       }
     });
   }
@@ -151,20 +171,22 @@ export class Dot extends GameObject {
   }
 
   /**
-   * Called when dot is activated from pool
+   * Activate the dot
    */
-  protected override onActivate(): void {
-    super.onActivate();
-    // Reset any visual effects
+  public activate(): void {
+    this.active = true;
+    this.setVisible(true);
     this.setScale(1);
     this.setAlpha(1);
+    // Debug logging removed
   }
 
   /**
-   * Called when dot is deactivated to pool
+   * Deactivate the dot
    */
-  protected override onDeactivate(): void {
-    super.onDeactivate();
+  public deactivate(): void {
+    this.active = false;
+    this.setVisible(false);
     // Clean up any ongoing tweens
     this.scene.tweens.killTweensOf(this);
   }

@@ -17,6 +17,27 @@ export class UIScene extends Scene {
     super('UI');
   }
 
+  shutdown(): void {
+    try {
+      // Kill all tweens to prevent issues during shutdown
+      if (this.tweens) {
+        this.tweens.killAll();
+      }
+
+      // Clear container references but don't manually destroy - let Phaser handle it
+      this.scoreContainer = null;
+      this.timeContainer = null;
+      this.targetColorCircle = null;
+      this.targetColorBg = null;
+      this.slowMoCharges = [];
+      this.slowMoClockIcons = [];
+
+      console.log('UIScene: Shutdown completed');
+    } catch (error) {
+      console.warn('Error during UIScene shutdown:', error);
+    }
+  }
+
   init(): void {
     // Reset UI elements
     this.scoreContainer = null;
@@ -32,17 +53,11 @@ export class UIScene extends Scene {
   }
 
   create(): void {
-    console.log('UIScene: create() method called');
-    console.log('UIScene: Scene dimensions:', this.scale.width, 'x', this.scale.height);
-    console.log('UIScene: Scene active:', this.scene.isActive());
-    console.log('UIScene: Scene visible:', this.scene.isVisible());
+    console.log('UIScene: Initializing UI');
 
     try {
       this.createHUD();
-      console.log('UIScene: HUD created successfully');
-
       this.setupLayout();
-      console.log('UIScene: Layout setup complete');
 
       // Listen for resize events
       this.scale.on('resize', () => this.setupLayout());
@@ -53,7 +68,7 @@ export class UIScene extends Scene {
       this.events.on('updateTargetColor', this.updateTargetColor, this);
       this.events.on('updateSlowMoCharges', this.updateSlowMoCharges, this);
 
-      console.log('UIScene: All setup complete - scene should be visible');
+      console.log('UIScene: Ready');
     } catch (error) {
       console.error('UIScene: Error in create():', error);
       throw error;
@@ -62,14 +77,6 @@ export class UIScene extends Scene {
 
   private createHUD(): void {
     const { width } = this.scale;
-    console.log('UIScene: createHUD called, width:', width);
-
-    // Add a bright test rectangle to see if UIScene is visible (graphics only)
-    this.add.rectangle(width / 2, 50, 300, 40, 0x00FF00, 1);
-
-    // Add visual indicator instead of text (graphics only)
-    const indicator = this.add.circle(width / 2, 50, 15, 0x0000FF, 1);
-    indicator.setStrokeStyle(3, 0xFFFFFF, 1);
 
     // Header bar with transparent background
     this.add.rectangle(width / 2, 30, width, 60, 0x000000, 0.3).setOrigin(0.5, 0.5);
@@ -88,14 +95,16 @@ export class UIScene extends Scene {
     const scoreIndicator = this.add.circle(0, 0, 8, 0xFFFFFF, 1);
     scoreIndicator.setStrokeStyle(2, 0x3498DB, 1);
 
-    this.scoreContainer.add([scoreBg, scoreIndicator]);
+    this.scoreContainer.add(scoreBg);
+    this.scoreContainer.add(scoreIndicator);
 
     // Time display (center)
     this.timeContainer = this.add.container(width / 2, 30);
     const timeBg = this.add.circle(0, 0, 18, 0x2ECC71, 0.8);
     timeBg.setStrokeStyle(2, 0xFFFFFF, 0.8);
     const timeHand = this.add.line(0, 0, 0, 0, 0, -12, 0xFFFFFF, 1).setLineWidth(2);
-    this.timeContainer.add([timeBg, timeHand]);
+    this.timeContainer.add(timeBg);
+    this.timeContainer.add(timeHand);
 
     // Slow-mo charges (right side) - Responsive positioning
     const chargeStartX = width - margin - 15; // Start from right edge with margin

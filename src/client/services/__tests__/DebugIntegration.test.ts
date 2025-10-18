@@ -69,7 +69,7 @@ describe('Debug System Integration', () => {
       debugService.updateDifficultyParams({ 
         baseSpeed: 100, 
         growthRate: 1.04,
-        baseSize: 80,
+        baseSize: 100,
         shrinkRate: 0.98
       });
 

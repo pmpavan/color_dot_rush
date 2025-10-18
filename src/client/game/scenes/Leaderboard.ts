@@ -63,7 +63,7 @@ export class Leaderboard extends Scene {
 
     // Title
     const title = this.add.text(width / 2, 80, 'Weekly Leaderboard', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '48px',
       fontStyle: 'bold',
       color: '#FFFFFF',
@@ -72,7 +72,7 @@ export class Leaderboard extends Scene {
 
     // Subtitle with week info
     this.add.text(width / 2, 130, 'Top Players This Week', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '24px',
       color: '#ECF0F1',
       align: 'center',
@@ -92,7 +92,7 @@ export class Leaderboard extends Scene {
   private createBackButton(): void {
 
     this.backButton = this.add.text(50, 50, '← Back', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '24px',
       color: '#FFFFFF',
       backgroundColor: '#34495E',
@@ -121,7 +121,7 @@ export class Leaderboard extends Scene {
     const { width, height } = this.scale;
 
     this.loadingText = this.add.text(width / 2, height / 2, 'Loading leaderboard...', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '24px',
       color: '#3498DB',
       align: 'center',
@@ -181,7 +181,7 @@ export class Leaderboard extends Scene {
     this.leaderboardContainer.add(headerBg);
 
     const headerText = this.add.text(0, 0, 'Rank    Player    Score', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '20px',
       fontStyle: 'bold',
       color: '#FFFFFF',
@@ -202,7 +202,7 @@ export class Leaderboard extends Scene {
     // Show total players
     this.add.text(width / 2, height - 120, 
       `Total Players This Week: ${data.totalPlayers}`, {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '18px',
       color: '#95A5A6',
       align: 'center',
@@ -235,7 +235,7 @@ export class Leaderboard extends Scene {
     else if (displayRank === 3) rankText = '🥉';
 
     const rank = this.add.text(-width * 0.35, yPosition, rankText, {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '18px',
       fontStyle: isUserEntry ? 'bold' : 'normal',
       color: textColor,
@@ -248,7 +248,7 @@ export class Leaderboard extends Scene {
       entry.username.substring(0, 12) + '...' : entry.username;
     
     const player = this.add.text(-width * 0.1, yPosition, playerName, {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '18px',
       fontStyle: isUserEntry ? 'bold' : 'normal',
       color: textColor,
@@ -258,7 +258,7 @@ export class Leaderboard extends Scene {
 
     // Score
     const score = this.add.text(width * 0.25, yPosition, entry.score.toString(), {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '18px',
       fontStyle: isUserEntry ? 'bold' : 'normal',
       color: textColor,
@@ -277,7 +277,7 @@ export class Leaderboard extends Scene {
     // Add "YOU" indicator for user's entry
     if (isUserEntry) {
       const youIndicator = this.add.text(width * 0.38, yPosition, 'YOU', {
-        fontFamily: 'Poppins',
+        fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
         fontStyle: 'bold',
         color: '#F1C40F',
@@ -293,7 +293,7 @@ export class Leaderboard extends Scene {
 
     const userRankText = this.add.text(width / 2, height - 180, 
       `Your Rank: ${userRank} of ${totalPlayers}`, {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '22px',
       fontStyle: 'bold',
       color: '#F1C40F',
@@ -319,14 +319,14 @@ export class Leaderboard extends Scene {
 
     this.add.text(width / 2, height / 2, 
       'No scores yet this week!\nBe the first to play and set a record!', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '24px',
       color: '#95A5A6',
       align: 'center',
     }).setOrigin(0.5);
 
     const playButton = this.add.text(width / 2, height / 2 + 80, 'Play Now', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '24px',
       fontStyle: 'bold',
       color: '#FFFFFF',
@@ -349,14 +349,14 @@ export class Leaderboard extends Scene {
 
     this.add.text(width / 2, height / 2, 
       '⚠️ Could not load leaderboard\nPlease check your connection and try again', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '20px',
       color: '#E74C3C',
       align: 'center',
     }).setOrigin(0.5);
 
     const retryButton = this.add.text(width / 2, height / 2 + 80, 'Retry', {
-      fontFamily: 'Poppins',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '20px',
       color: '#FFFFFF',
       backgroundColor: '#95A5A6',

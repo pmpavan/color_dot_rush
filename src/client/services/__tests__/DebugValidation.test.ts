@@ -94,7 +94,7 @@ describe('Debug Panel and Development Tools Validation', () => {
       debugService.updateDifficultyParams({ 
         baseSpeed: 100, 
         growthRate: 1.04,
-        baseSize: 80,
+        baseSize: 100,
         shrinkRate: 0.98
       });
 
@@ -112,7 +112,7 @@ describe('Debug Panel and Development Tools Validation', () => {
 
       // Verify formulas work correctly
       const expectedSpeed = 120 * Math.pow(1.04, 30);
-      const expectedSize = 80 * Math.pow(0.98, 30);
+      const expectedSize = 100 * Math.pow(0.98, 30);
 
       expect(speed30s).toBeCloseTo(expectedSpeed, 2);
       expect(size30s).toBeCloseTo(expectedSize, 2);
@@ -132,7 +132,7 @@ describe('Debug Panel and Development Tools Validation', () => {
       debugService.updateDifficultyParams({ 
         baseSpeed: 100, 
         growthRate: 1.04,
-        baseSize: 80,
+        baseSize: 100,
         shrinkRate: 0.98
       });
 

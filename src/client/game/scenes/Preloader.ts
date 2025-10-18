@@ -27,12 +27,28 @@ export class Preloader extends Scene {
     //  This is the progress bar itself. It will increase in size from the left based on the % of progress.
     const bar = this.add.rectangle(width / 2 - 230, height / 2, 4, 28, 0xffffff);
 
-    // Add loading text
-    this.add.text(width / 2, height / 2 - 50, 'Loading Color Rush Assets...', {
-      fontFamily: 'Arial',
-      fontSize: '20px',
-      color: '#ffffff'
-    }).setOrigin(0.5);
+    // Create animated loading dots instead of text (CSP-compliant)
+    const dotSpacing = 20;
+    const dots: Phaser.GameObjects.Arc[] = [];
+    for (let i = 0; i < 3; i++) {
+      const dot = this.add.circle(
+        width / 2 - dotSpacing + (i * dotSpacing),
+        height / 2 - 50,
+        5,
+        0xffffff
+      );
+      dots.push(dot);
+      
+      // Animate each dot with a delay
+      this.tweens.add({
+        targets: dot,
+        alpha: 0.3,
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        delay: i * 200
+      });
+    }
 
     //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
     this.load.on('progress', (progress: number) => {
@@ -43,54 +59,89 @@ export class Preloader extends Scene {
   }
 
   preload() {
-    // Validate asset manifest before loading
-    const validation = validateAssets();
-    if (!validation.valid) {
-      console.error('Asset manifest validation failed. Missing assets:', validation.missing);
-    }
-
-    // Load all Color Rush game assets - CSP compliant (all local)
-    GAME_ASSETS.forEach(asset => {
-      if (asset.type === 'image') {
-        this.load.image(asset.key, asset.path);
-      }
+    console.log('Color Rush: Using graphics-only mode for Reddit webview compatibility');
+    
+    // Create graphics-based assets instead of loading external files
+    this.createGraphicsAssets();
+    
+    // Simulate loading progress for visual feedback
+    let progress = 0;
+    const progressTimer = this.time.addEvent({
+      delay: 50,
+      callback: () => {
+        progress += 0.2;
+        this.load.emit('progress', Math.min(progress, 1));
+        if (progress >= 1) {
+          progressTimer.destroy();
+          // Manually trigger the create method after loading is "complete"
+          this.time.delayedCall(100, () => {
+            this.scene.start('SplashScreen');
+          });
+        }
+      },
+      repeat: 5
     });
+  }
 
-    // Progress tracking
-    this.load.on('complete', () => {
-      console.log('All Color Rush assets loaded successfully');
-      console.log(`Loaded ${GAME_ASSETS.length} assets`);
+  private createGraphicsAssets(): void {
+    // Create graphics-based textures for game objects
+    const graphics = this.add.graphics();
+    
+    // Create colored dot textures
+    const colors = {
+      'dot-red': 0xE74C3C,
+      'dot-green': 0x2ECC71,
+      'dot-blue': 0x3498DB,
+      'dot-yellow': 0xF1C40F,
+      'dot-purple': 0x9B59B6
+    };
+    
+    Object.entries(colors).forEach(([key, color]) => {
+      graphics.clear();
+      graphics.fillStyle(color, 1);
+      graphics.fillCircle(25, 25, 25);
+      graphics.generateTexture(key, 50, 50);
     });
-
-    this.load.on('loaderror', (file: any) => {
-      console.error('Failed to load asset:', file.key);
-    });
-
-    this.load.on('progress', (progress: number) => {
-      // Optional: Add more detailed progress logging
-      if (progress === 1) {
-        console.log('Asset loading complete');
-      }
-    });
+    
+    // Create bomb texture
+    graphics.clear();
+    graphics.fillStyle(0x34495E, 1);
+    graphics.fillCircle(25, 25, 25);
+    graphics.fillStyle(0xFF0000, 1);
+    graphics.fillRect(22, 5, 6, 15); // Fuse
+    graphics.generateTexture('bomb', 50, 50);
+    
+    // Create slow-mo dot texture
+    graphics.clear();
+    graphics.fillStyle(0x3498DB, 1);
+    graphics.fillCircle(25, 25, 25);
+    graphics.lineStyle(3, 0xFFFFFF, 1);
+    graphics.strokeCircle(25, 25, 15);
+    graphics.lineBetween(25, 25, 25, 15); // Clock hand
+    graphics.generateTexture('slowmo-dot', 50, 50);
+    
+    graphics.destroy();
+    console.log('Graphics-based assets created successfully');
   }
 
   create() {
     console.log('Color Rush: Preloader create started');
     
-    //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
-    //  For example, you can define global animations here, so we can use them in other scenes.
-
-    // Add a brief delay to show completion
-    this.add.text(this.scale.width / 2, this.scale.height / 2 + 50, 'Loading Complete!', {
-      fontFamily: 'Arial',
-      fontSize: '16px',
-      color: '#2ECC71'
-    }).setOrigin(0.5);
-
-    //  Move to the SplashScreen. You could also swap this for a Scene Transition, such as a camera fade.
-    this.time.delayedCall(500, () => {
-      console.log('Color Rush: Starting SplashScreen');
-      this.scene.start('SplashScreen');
+    // Show completion with a green checkmark circle (CSP-compliant)
+    const checkmark = this.add.circle(
+      this.scale.width / 2,
+      this.scale.height / 2 + 50,
+      20,
+      0x2ECC71
+    );
+    
+    // Animate checkmark
+    this.tweens.add({
+      targets: checkmark,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 200,
+      yoyo: true
     });
   }
 }

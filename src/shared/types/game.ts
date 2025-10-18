@@ -60,7 +60,7 @@ export interface TypographyScale {
 export const DEFAULT_GAME_CONFIG: GameConfig = {
   baseSpeed: 100, // px/sec
   growthRate: 1.04,
-  baseSize: 80, // px diameter
+  baseSize: 100, // px diameter (increased by 150% from 40)
   shrinkRate: 0.98,
   slowMoCharges: 3, // Initial charges
   slowMoDuration: 3000, // 3 seconds in ms

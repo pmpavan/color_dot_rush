@@ -197,7 +197,7 @@ describe('SplashScreen Scene', () => {
         538, // height * 0.7 (rounded)
         'Start Game',
         expect.objectContaining({
-          fontFamily: 'Poppins',
+          fontFamily: 'Arial, sans-serif',
           fontSize: '20px',
           fontStyle: 'bold',
           color: '#ffffff',
@@ -215,7 +215,7 @@ describe('SplashScreen Scene', () => {
         614, // height * 0.8 (rounded)
         'How to Play',
         expect.objectContaining({
-          fontFamily: 'Poppins',
+          fontFamily: 'Arial, sans-serif',
           fontSize: '20px',
           fontStyle: 'normal',
           color: '#ffffff',
@@ -395,7 +395,7 @@ describe('SplashScreen Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, 0, 'Color Rush',
         expect.objectContaining({
-          fontFamily: 'Poppins',
+          fontFamily: 'Arial, sans-serif',
           fontSize: '72px',
           fontStyle: 'bold',
           color: '#ffffff',
@@ -479,13 +479,13 @@ describe('SplashScreen Scene', () => {
       // Check title uses Poppins Bold
       expect(mockAdd.text).toHaveBeenCalledWith(
         expect.any(Number), expect.any(Number), 'Color Rush',
-        expect.objectContaining({ fontFamily: 'Poppins', fontStyle: 'bold' })
+        expect.objectContaining({ fontFamily: 'Arial, sans-serif', fontStyle: 'bold' })
       );
 
       // Check buttons use Poppins
       expect(mockAdd.text).toHaveBeenCalledWith(
         expect.any(Number), expect.any(Number), 'Start Game',
-        expect.objectContaining({ fontFamily: 'Poppins' })
+        expect.objectContaining({ fontFamily: 'Arial, sans-serif' })
       );
     });
 

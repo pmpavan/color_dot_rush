@@ -14,7 +14,7 @@ describe('DifficultyManager PRD Verification', () => {
     
     expect(params.baseSpeed).toBe(100); // px/sec
     expect(params.growthRate).toBe(1.023); // Optimized for 90+ second target
-    expect(params.baseSize).toBe(80); // px
+    expect(params.baseSize).toBe(100); // px (increased by 150%)
     expect(params.shrinkRate).toBe(0.9895); // Optimized for 90+ second target
   });
 
@@ -33,14 +33,14 @@ describe('DifficultyManager PRD Verification', () => {
 
   it('should implement size formula: size = baseSize * shrinkRate^t', () => {
     // Test at various time points with optimized parameters
-    expect(manager.calculateSize(0)).toBe(80); // At t=0: 80 * 0.9895^0 = 80
+    expect(manager.calculateSize(0)).toBe(100); // At t=0: 100 * 0.9895^0 = 100
     
     const size30 = manager.calculateSize(30);
-    const expected30 = 80 * Math.pow(0.9895, 30);
+    const expected30 = 100 * Math.pow(0.9895, 30);
     expect(size30).toBeCloseTo(expected30, 2);
     
     const size60 = manager.calculateSize(60);
-    const expected60 = 80 * Math.pow(0.9895, 60);
+    const expected60 = 100 * Math.pow(0.9895, 60);
     expect(size60).toBeCloseTo(expected60, 2);
   });
 
@@ -128,8 +128,33 @@ describe('DifficultyManager PRD Verification', () => {
       
       // Size should decrease over time
       if (time > 0) {
-        expect(metrics.size).toBeLessThan(80);
+        expect(metrics.size).toBeLessThan(100);
       }
     });
+  });
+
+  it('should calculate responsive size based on screen dimensions', () => {
+    // Test responsive sizing with different screen sizes
+    const elapsedTime = 30; // 30 seconds
+    const baseSize = manager.calculateSize(elapsedTime);
+
+    // Test different screen sizes
+    const smallScreen = manager.calculateResponsiveSize(elapsedTime, 400, 600); // Mobile portrait
+    const mediumScreen = manager.calculateResponsiveSize(elapsedTime, 800, 600); // Reference size
+    const largeScreen = manager.calculateResponsiveSize(elapsedTime, 1200, 800); // Desktop
+
+    // Verify responsive scaling
+    expect(smallScreen).toBeLessThan(mediumScreen);
+    expect(largeScreen).toBeGreaterThan(mediumScreen);
+    
+    // Medium screen should be reasonably close to base size (within 30%)
+    const sizeDifference = Math.abs(mediumScreen - baseSize) / baseSize;
+    expect(sizeDifference).toBeLessThan(0.3);
+
+    // Verify scale factors are within reasonable bounds
+    expect(smallScreen).toBeGreaterThan(baseSize * 0.4); // Allow for rounding
+    expect(largeScreen).toBeLessThanOrEqual(baseSize * 2.0);
+
+    console.log('Responsive sizes:', { small: smallScreen, medium: mediumScreen, large: largeScreen, base: baseSize });
   });
 });

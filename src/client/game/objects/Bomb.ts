@@ -1,22 +1,22 @@
 // Bomb game object implementation for Color Rush
 
 import Phaser from 'phaser';
-import { GameObject, ICollidable } from './GameObject';
-import { UIColor } from '../../../shared/types/game';
 
 /**
  * Bomb class represents dangerous objects that end the game when tapped
  */
-export class Bomb extends GameObject {
+export class Bomb extends Phaser.GameObjects.Arc {
   public explosionRadius: number;
   public speed: number;
   public size: number;
   private direction: Phaser.Math.Vector2;
   private hitbox: Phaser.Geom.Rectangle;
-  private fuseIcon: Phaser.GameObjects.Image;
+  private fuseIcon: Phaser.GameObjects.Rectangle;
+  public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
-    super(scene, 0, 0, 'bomb');
+    // Create as a dark circle instead of sprite
+    super(scene, 0, 0, 40, 0, 360, false, 0x34495E);
     
     this.explosionRadius = 100; // Default explosion radius
     this.speed = 100; // Default speed
@@ -24,13 +24,11 @@ export class Bomb extends GameObject {
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
-    // Create fuse icon as child object
-    this.fuseIcon = scene.add.image(0, 0, 'fuse-icon');
-    this.fuseIcon.setTint(0xFFFFFF); // White fuse icon
-    this.fuseIcon.setScale(0.5);
+    // Create fuse as a red rectangle
+    this.fuseIcon = scene.add.rectangle(0, 0, 6, 15, 0xFF0000);
     
-    // Set bomb color (Near Black)
-    this.setTint(parseInt(UIColor.BOMB.replace('#', '0x')));
+    // Add to scene
+    scene.add.existing(this);
     
     // Interactive setup handled by centralized input system in GameScene
   }
@@ -45,23 +43,22 @@ export class Bomb extends GameObject {
     this.explosionRadius = size * 1.5; // Explosion radius based on size
     
     // Set visual properties
-    this.setDisplaySize(size, size);
+    this.setRadius(size / 2);
     
     // Update hitbox - slightly larger than visual sprite for accessibility
     const hitboxSize = Math.max(size, 44); // Minimum 44px tap target
     this.hitbox.setSize(hitboxSize, hitboxSize);
-    this.setSize(hitboxSize, hitboxSize); // For physics body
     
     // Position the bomb and fuse icon
     this.setPosition(x, y);
     this.fuseIcon.setPosition(x, y - size * 0.3); // Position fuse above bomb
-    this.fuseIcon.setScale(size / 160); // Scale fuse icon relative to bomb size
+    this.fuseIcon.setDisplaySize(6, 15); // Set fuse size
   }
 
   /**
    * Update bomb movement and lifecycle
    */
-  protected updateGameObject(delta: number): void {
+  public override update(delta: number): void {
     if (!this.active) return;
 
     // Move the bomb based on direction and speed
@@ -98,13 +95,13 @@ export class Bomb extends GameObject {
       output.setTo(this.hitbox.x, this.hitbox.y, this.hitbox.width, this.hitbox.height);
       return output;
     }
-    return this.hitbox as O;
+    return new Phaser.Geom.Rectangle(this.hitbox.x, this.hitbox.y, this.hitbox.width, this.hitbox.height) as O;
   }
 
   /**
    * Handle collision with another object
    */
-  public onCollision(_other: ICollidable): void {
+  public onCollision(_other: any): void {
     // Bombs don't typically collide with other objects
     // But could trigger explosion if needed
   }
@@ -123,17 +120,28 @@ export class Bomb extends GameObject {
   public explode(): void {
     if (!this.active) return;
 
-    // Create explosion particle effect with red/orange/yellow colors
+    // Create explosion effect with simple graphics
     const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700]; // Red, OrangeRed, DarkOrange, Gold
     
-    const explosion = this.scene.add.particles(this.x, this.y, 'dot', {
-      tint: explosionColors,
-      speed: { min: 100, max: 300 },
-      scale: { start: 0.8, end: 0 },
-      lifespan: { min: 300, max: 600 },
-      quantity: { min: 15, max: 25 },
-      blendMode: 'ADD'
-    });
+    for (let i = 0; i < 20; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 50 + Math.random() * 100;
+      const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
+      const size = 6 + Math.random() * 8;
+      
+      const explosionDot = this.scene.add.circle(this.x, this.y, size, color);
+      
+      this.scene.tweens.add({
+        targets: explosionDot,
+        x: this.x + Math.cos(angle) * distance,
+        y: this.y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 400 + Math.random() * 200,
+        ease: 'Power2.easeOut',
+        onComplete: () => explosionDot.destroy()
+      });
+    }
 
     // Screen shake effect (2-3px, 150ms)
     this.scene.cameras.main.shake(150, 0.02); // 150ms duration, 0.02 intensity (about 2-3px)
@@ -144,7 +152,6 @@ export class Bomb extends GameObject {
 
     // Clean up explosion after animation
     this.scene.time.delayedCall(600, () => {
-      explosion.destroy();
       this.deactivate();
     });
   }
@@ -169,20 +176,22 @@ export class Bomb extends GameObject {
   }
 
   /**
-   * Called when bomb is activated from pool
+   * Activate the bomb
    */
-  protected override onActivate(): void {
-    super.onActivate();
+  public activate(): void {
+    this.active = true;
+    this.setVisible(true);
     this.fuseIcon.setVisible(true);
     this.setScale(1);
     this.setAlpha(1);
   }
 
   /**
-   * Called when bomb is deactivated to pool
+   * Deactivate the bomb
    */
-  protected override onDeactivate(): void {
-    super.onDeactivate();
+  public deactivate(): void {
+    this.active = false;
+    this.setVisible(false);
     this.fuseIcon.setVisible(false);
     // Clean up any ongoing tweens
     this.scene.tweens.killTweensOf(this);

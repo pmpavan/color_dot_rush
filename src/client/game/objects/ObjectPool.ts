@@ -48,10 +48,10 @@ export class ObjectPoolManager {
     this.dotPool = this.scene.add.group({
       classType: Dot,
       maxSize: this.MAX_DOTS,
-      runChildUpdate: true,
+      runChildUpdate: false, // We'll handle updates manually
       createCallback: (item: Phaser.GameObjects.GameObject) => {
         const dot = item as Dot;
-        dot.setActive(false);
+        dot.active = false;
         dot.setVisible(false);
       }
     });
@@ -60,10 +60,10 @@ export class ObjectPoolManager {
     this.bombPool = this.scene.add.group({
       classType: Bomb,
       maxSize: this.MAX_BOMBS,
-      runChildUpdate: true,
+      runChildUpdate: false, // We'll handle updates manually
       createCallback: (item: Phaser.GameObjects.GameObject) => {
         const bomb = item as Bomb;
-        bomb.setActive(false);
+        bomb.active = false;
         bomb.setVisible(false);
       }
     });
@@ -72,10 +72,10 @@ export class ObjectPoolManager {
     this.slowMoPool = this.scene.add.group({
       classType: SlowMoDot,
       maxSize: this.MAX_SLOWMO,
-      runChildUpdate: true,
+      runChildUpdate: false, // We'll handle updates manually
       createCallback: (item: Phaser.GameObjects.GameObject) => {
         const slowMo = item as SlowMoDot;
-        slowMo.setActive(false);
+        slowMo.active = false;
         slowMo.setVisible(false);
       }
     });
@@ -85,7 +85,8 @@ export class ObjectPoolManager {
    * Get a dot from the pool or create a new one
    */
   public getDot(): Dot | null {
-    let dot = this.dotPool.getFirstDead() as Dot;
+    // Find an inactive dot
+    let dot = this.dotPool.children.entries.find(item => !(item as Dot).active) as Dot;
     
     if (!dot) {
       if (this.dotPool.children.size < this.MAX_DOTS) {
@@ -104,7 +105,8 @@ export class ObjectPoolManager {
    * Get a bomb from the pool or create a new one
    */
   public getBomb(): Bomb | null {
-    let bomb = this.bombPool.getFirstDead() as Bomb;
+    // Find an inactive bomb
+    let bomb = this.bombPool.children.entries.find(item => !(item as Bomb).active) as Bomb;
     
     if (!bomb) {
       if (this.bombPool.children.size < this.MAX_BOMBS) {
@@ -123,7 +125,8 @@ export class ObjectPoolManager {
    * Get a slow-mo dot from the pool or create a new one
    */
   public getSlowMoDot(): SlowMoDot | null {
-    let slowMo = this.slowMoPool.getFirstDead() as SlowMoDot;
+    // Find an inactive slow-mo dot
+    let slowMo = this.slowMoPool.children.entries.find(item => !(item as SlowMoDot).active) as SlowMoDot;
     
     if (!slowMo) {
       if (this.slowMoPool.children.size < this.MAX_SLOWMO) {
@@ -146,7 +149,7 @@ export class ObjectPoolManager {
     if (!dot) return null;
     
     dot.init(color, speed, size, x, y, direction);
-    dot.activate(x, y);
+    dot.activate();
     
     return dot;
   }
@@ -159,7 +162,7 @@ export class ObjectPoolManager {
     if (!bomb) return null;
     
     bomb.init(speed, size, x, y, direction);
-    bomb.activate(x, y);
+    bomb.activate();
     
     return bomb;
   }
@@ -172,7 +175,7 @@ export class ObjectPoolManager {
     if (!slowMo) return null;
     
     slowMo.init(speed, size, x, y, direction);
-    slowMo.activate(x, y);
+    slowMo.activate();
     
     return slowMo;
   }
@@ -201,9 +204,28 @@ export class ObjectPoolManager {
   /**
    * Update all active objects in pools
    */
-  public update(_delta: number): void {
-    // Phaser Groups automatically call update on active children
-    // when runChildUpdate is true, so no manual update needed
+  public update(delta: number): void {
+    // Manual update to ensure objects move properly
+    this.dotPool.children.entries.forEach((dot: Phaser.GameObjects.GameObject) => {
+      const dotObj = dot as Dot;
+      if (dotObj.active && dotObj.update) {
+        dotObj.update(delta);
+      }
+    });
+
+    this.bombPool.children.entries.forEach((bomb: Phaser.GameObjects.GameObject) => {
+      const bombObj = bomb as Bomb;
+      if (bombObj.active && bombObj.update) {
+        bombObj.update(delta);
+      }
+    });
+
+    this.slowMoPool.children.entries.forEach((slowMo: Phaser.GameObjects.GameObject) => {
+      const slowMoObj = slowMo as SlowMoDot;
+      if (slowMoObj.active && slowMoObj.update) {
+        slowMoObj.update(delta);
+      }
+    });
   }
 
   /**
@@ -322,8 +344,28 @@ export class ObjectPoolManager {
    * Destroy all pools and clean up
    */
   public destroy(): void {
-    this.dotPool.destroy(true);
-    this.bombPool.destroy(true);
-    this.slowMoPool.destroy(true);
+    try {
+      if (this.dotPool && this.dotPool.active) {
+        this.dotPool.destroy(true);
+      }
+    } catch (error) {
+      console.warn('Error destroying dotPool:', error);
+    }
+
+    try {
+      if (this.bombPool && this.bombPool.active) {
+        this.bombPool.destroy(true);
+      }
+    } catch (error) {
+      console.warn('Error destroying bombPool:', error);
+    }
+
+    try {
+      if (this.slowMoPool && this.slowMoPool.active) {
+        this.slowMoPool.destroy(true);
+      }
+    } catch (error) {
+      console.warn('Error destroying slowMoPool:', error);
+    }
   }
 }

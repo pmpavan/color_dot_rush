@@ -60,21 +60,21 @@ export class ObjectSpawner {
   ];
   
   // Spawn margin (objects spawn just outside visible area)
-  private readonly SPAWN_MARGIN = 50;
+  private readonly SPAWN_MARGIN = 20;
 
   constructor(scene: Phaser.Scene, objectPool: ObjectPoolManager, difficultyManager: DifficultyManager) {
     this.scene = scene;
     this.objectPool = objectPool;
     this.difficultyManager = difficultyManager;
     
-    // Default spawn configuration
+    // Default spawn configuration - faster for better gameplay
     this.config = {
-      minSpawnRate: 800, // 0.8 seconds minimum
-      maxSpawnRate: 2000, // 2 seconds maximum
+      minSpawnRate: 300, // 0.3 seconds minimum (faster)
+      maxSpawnRate: 800, // 0.8 seconds maximum (faster)
       bombChance: 0.15, // 15% chance for bombs
       slowMoChance: 0.05, // 5% chance for slow-mo dots
       correctColorRatio: 0.4, // 40% of dots should be correct color
-      baseSpawnRate: 1000, // Base spawn rate for performance scaling
+      baseSpawnRate: 500, // Base spawn rate for performance scaling (faster)
       effectsEnabled: true, // Enable visual effects by default
       particleQuality: 'high' // High particle quality by default
     };
@@ -127,6 +127,13 @@ export class ObjectSpawner {
     // Get current difficulty metrics
     const difficulty = this.difficultyManager.getDifficultyMetrics(elapsedTime / 1000);
     
+    // Calculate responsive size based on screen dimensions
+    const responsiveSize = this.difficultyManager.calculateResponsiveSize(
+      elapsedTime / 1000,
+      this.screenBounds.width,
+      this.screenBounds.height
+    );
+    
     // Get a random spawn edge with fresh coordinates
     const edge = this.getRandomSpawnEdge();
     
@@ -135,13 +142,13 @@ export class ObjectSpawner {
     
     if (spawnRoll < this.config.bombChance) {
       // Spawn a bomb
-      this.spawnBomb(difficulty.speed, difficulty.size, edge.x, edge.y, edge.direction);
+      this.spawnBomb(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     } else if (spawnRoll < this.config.bombChance + this.config.slowMoChance) {
       // Spawn a slow-mo dot
-      this.spawnSlowMoDot(difficulty.speed, difficulty.size, edge.x, edge.y, edge.direction);
+      this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     } else {
       // Spawn a regular dot
-      this.spawnDot(difficulty.speed, difficulty.size, edge.x, edge.y, edge.direction);
+      this.spawnDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     }
   }
 
@@ -228,8 +235,8 @@ export class ObjectSpawner {
     const variationAngle = Phaser.Math.Between(-15, 15) * Math.PI / 180; // ±15 degrees
     const variedDirection = direction.clone().rotate(variationAngle);
     
-    // Add speed variation (±20%)
-    const variedSpeed = speed * Phaser.Math.FloatBetween(0.8, 1.2);
+    // Add speed variation (±20%) and make faster
+    const variedSpeed = speed * Phaser.Math.FloatBetween(1.5, 2.0);
     
     // Spawn the dot
     const dot = this.objectPool.spawnDot(color, variedSpeed, size, x, y, variedDirection);

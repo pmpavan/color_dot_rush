@@ -32,7 +32,7 @@ export interface IDebugService {
 export const DEFAULT_DIFFICULTY_PARAMS: DifficultyParams = {
   baseSpeed: 100, // px/sec
   growthRate: 1.023, // Reduced for 90+ second target (was 1.04)
-  baseSize: 80, // px diameter
+  baseSize: 100, // px diameter (increased by 150% from 40)
   shrinkRate: 0.9895, // Fine-tuned for 90+ second target (was 0.98)
 };
 

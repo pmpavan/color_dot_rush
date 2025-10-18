@@ -1,14 +1,12 @@
 // SlowMoDot power-up implementation for Color Rush
 
 import Phaser from 'phaser';
-import { GameObject, ICollidable } from './GameObject';
-import { UIColor } from '../../../shared/types/game';
 
 /**
  * SlowMoDot class represents the slow-motion power-up
  * Appears as shimmering white with blue clock icon
  */
-export class SlowMoDot extends GameObject {
+export class SlowMoDot extends Phaser.GameObjects.Arc {
   public static readonly DURATION = 3000; // 3 seconds
   public static readonly INITIAL_CHARGES = 3; // Player starts with 3 charges
 
@@ -16,24 +14,30 @@ export class SlowMoDot extends GameObject {
   public size: number;
   private direction: Phaser.Math.Vector2;
   private hitbox: Phaser.Geom.Rectangle;
-  private clockIcon: Phaser.GameObjects.Image;
+  private clockIcon: Phaser.GameObjects.Arc;
+  private clockHand: Phaser.GameObjects.Line;
   private shimmerTween: Phaser.Tweens.Tween | null = null;
+  public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
-    super(scene, 0, 0, 'slowmo-dot');
+    // Create as a blue circle instead of sprite
+    super(scene, 0, 0, 40, 0, 360, false, 0x3498DB);
     
     this.speed = 100; // Default speed
     this.size = 80; // Default size
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
-    // Create clock icon as child object
-    this.clockIcon = scene.add.image(0, 0, 'clock-icon');
-    this.clockIcon.setTint(0x3498DB); // Blue clock icon
-    this.clockIcon.setScale(0.6);
+    // Create clock icon as graphics
+    this.clockIcon = scene.add.circle(0, 0, 15, 0xFFFFFF, 0);
+    this.clockIcon.setStrokeStyle(3, 0xFFFFFF, 1);
     
-    // Set slow-mo dot color (Shimmering White)
-    this.setTint(parseInt(UIColor.SLOW_MO.replace('#', '0x')));
+    // Create clock hand
+    this.clockHand = scene.add.line(0, 0, 0, 0, 0, -8, 0xFFFFFF, 1);
+    this.clockHand.setLineWidth(2);
+    
+    // Add to scene
+    scene.add.existing(this);
     
     // Interactive setup handled by centralized input system in GameScene
   }
@@ -47,17 +51,16 @@ export class SlowMoDot extends GameObject {
     this.direction = direction.clone();
     
     // Set visual properties
-    this.setDisplaySize(size, size);
+    this.setRadius(size / 2);
     
     // Update hitbox - slightly larger than visual sprite for accessibility
     const hitboxSize = Math.max(size, 44); // Minimum 44px tap target
     this.hitbox.setSize(hitboxSize, hitboxSize);
-    this.setSize(hitboxSize, hitboxSize); // For physics body
     
     // Position the dot and clock icon
     this.setPosition(x, y);
     this.clockIcon.setPosition(x, y);
-    this.clockIcon.setScale(size / 133); // Scale clock icon relative to dot size
+    this.clockHand.setPosition(x, y);
     
     // Start shimmering effect
     this.startShimmerEffect();
@@ -66,7 +69,7 @@ export class SlowMoDot extends GameObject {
   /**
    * Update slow-mo dot movement and lifecycle
    */
-  protected updateGameObject(delta: number): void {
+  public override update(delta: number): void {
     if (!this.active) return;
 
     // Move the dot based on direction and speed
@@ -76,6 +79,7 @@ export class SlowMoDot extends GameObject {
 
     // Update clock icon position
     this.clockIcon.setPosition(this.x, this.y);
+    this.clockHand.setPosition(this.x, this.y);
 
     // Update hitbox position
     this.hitbox.setPosition(
@@ -103,13 +107,13 @@ export class SlowMoDot extends GameObject {
       output.setTo(this.hitbox.x, this.hitbox.y, this.hitbox.width, this.hitbox.height);
       return output;
     }
-    return this.hitbox as O;
+    return new Phaser.Geom.Rectangle(this.hitbox.x, this.hitbox.y, this.hitbox.width, this.hitbox.height) as O;
   }
 
   /**
    * Handle collision with another object
    */
-  public onCollision(_other: ICollidable): void {
+  public onCollision(_other: any): void {
     // Slow-mo dots don't typically collide with other objects
   }
 
@@ -135,7 +139,7 @@ export class SlowMoDot extends GameObject {
 
     // Hide the slow-mo dot with a satisfying shrink effect
     this.scene.tweens.add({
-      targets: [this, this.clockIcon],
+      targets: [this, this.clockIcon, this.clockHand],
       scaleX: 0,
       scaleY: 0,
       alpha: 0,
@@ -254,32 +258,38 @@ export class SlowMoDot extends GameObject {
 
 
   /**
-   * Called when slow-mo dot is activated from pool
+   * Activate the slow-mo dot
    */
-  protected override onActivate(): void {
-    super.onActivate();
+  public activate(): void {
+    this.active = true;
+    this.setVisible(true);
     this.clockIcon.setVisible(true);
+    this.clockHand.setVisible(true);
     this.setScale(1);
     this.setAlpha(1);
     this.startShimmerEffect();
   }
 
   /**
-   * Called when slow-mo dot is deactivated to pool
+   * Deactivate the slow-mo dot
    */
-  protected override onDeactivate(): void {
-    super.onDeactivate();
+  public deactivate(): void {
+    this.active = false;
+    this.setVisible(false);
     this.clockIcon.setVisible(false);
+    this.clockHand.setVisible(false);
     
     // Stop shimmer effect
     if (this.shimmerTween) {
-      this.shimmerTween.destroy();
+      this.shimmerTween.stop();
+      this.shimmerTween.remove();
       this.shimmerTween = null;
     }
     
     // Clean up any ongoing tweens
     this.scene.tweens.killTweensOf(this);
     this.scene.tweens.killTweensOf(this.clockIcon);
+    this.scene.tweens.killTweensOf(this.clockHand);
   }
 
   /**
@@ -289,8 +299,13 @@ export class SlowMoDot extends GameObject {
     if (this.clockIcon) {
       this.clockIcon.destroy();
     }
+    if (this.clockHand) {
+      this.clockHand.destroy();
+    }
     if (this.shimmerTween) {
-      this.shimmerTween.destroy();
+      this.shimmerTween.stop();
+      this.shimmerTween.remove();
+      this.shimmerTween = null;
     }
     super.destroy(fromScene);
   }
