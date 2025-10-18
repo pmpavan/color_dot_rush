@@ -6,6 +6,7 @@ export class UIScene extends Scene {
   private timeContainer: Phaser.GameObjects.Container | null = null;
   private targetColorCircle: Phaser.GameObjects.Arc | null = null;
   private targetColorBg: Phaser.GameObjects.Rectangle | null = null;
+  private headerBg: Phaser.GameObjects.Rectangle | null = null;
   private slowMoCharges: Phaser.GameObjects.Arc[] = [];
   private slowMoClockIcons: Phaser.GameObjects.Line[] = [];
 
@@ -16,6 +17,8 @@ export class UIScene extends Scene {
   constructor() {
     super('UI');
   }
+
+
 
   shutdown(): void {
     try {
@@ -29,6 +32,7 @@ export class UIScene extends Scene {
       this.timeContainer = null;
       this.targetColorCircle = null;
       this.targetColorBg = null;
+      this.headerBg = null;
       this.slowMoCharges = [];
       this.slowMoClockIcons = [];
 
@@ -43,6 +47,8 @@ export class UIScene extends Scene {
     this.scoreContainer = null;
     this.timeContainer = null;
     this.targetColorCircle = null;
+    this.targetColorBg = null;
+    this.headerBg = null;
     this.slowMoCharges = [];
     this.slowMoClockIcons = [];
 
@@ -78,59 +84,72 @@ export class UIScene extends Scene {
   private createHUD(): void {
     const { width } = this.scale;
 
-    // Header bar with transparent background
-    this.add.rectangle(width / 2, 30, width, 60, 0x000000, 0.3).setOrigin(0.5, 0.5);
+    // Header bar with transparent background - full width
+    this.headerBg = this.add.rectangle(0, 0, width, 60, 0x000000, 0.3).setOrigin(0, 0);
 
     // Calculate responsive positions and sizes
-    const margin = Math.max(10, width * 0.02); // 2% margin, minimum 10px
-    const scoreWidth = Math.min(100, width * 0.25); // Max 25% of screen width, max 100px
-    const chargeSpacing = Math.min(30, width * 0.08); // Responsive spacing
+    const margin = Math.max(20, width * 0.03); // 3% margin, minimum 20px
+    const headerY = 30; // Center of header bar
 
-    // Score display (left side) - Responsive sizing (graphics only)
-    this.scoreContainer = this.add.container(margin + scoreWidth / 2, 30);
-    const scoreBg = this.add.rectangle(0, 0, scoreWidth, 30, 0x3498DB, 0.8);
+    // Score display (left side) - Graphics-only approach
+    this.scoreContainer = this.add.container(margin, headerY);
+    
+    // Create score indicator with dots representing score level
+    const scoreBg = this.add.rectangle(0, 0, 80, 30, 0x3498DB, 0.8);
     scoreBg.setStrokeStyle(2, 0xFFFFFF, 0.6);
-
-    // Add score indicator dots instead of text (graphics only)
+    
+    // Score indicator dots (will update based on score)
     const scoreIndicator = this.add.circle(0, 0, 8, 0xFFFFFF, 1);
     scoreIndicator.setStrokeStyle(2, 0x3498DB, 1);
-
+    
     this.scoreContainer.add(scoreBg);
     this.scoreContainer.add(scoreIndicator);
 
-    // Time display (center)
-    this.timeContainer = this.add.container(width / 2, 30);
+    // Time display (center) - Graphics-only clock
+    this.timeContainer = this.add.container(width / 2, headerY);
+    
+    // Clock face
     const timeBg = this.add.circle(0, 0, 18, 0x2ECC71, 0.8);
     timeBg.setStrokeStyle(2, 0xFFFFFF, 0.8);
+    
+    // Clock hand (will rotate based on time)
     const timeHand = this.add.line(0, 0, 0, 0, 0, -12, 0xFFFFFF, 1).setLineWidth(2);
+    
     this.timeContainer.add(timeBg);
     this.timeContainer.add(timeHand);
 
-    // Slow-mo charges (right side) - Responsive positioning
-    const chargeStartX = width - margin - 15; // Start from right edge with margin
+    // Slow-mo charges (right side) - Clock icons as per Frontend Spec
+    const chargeSpacing = 35; // Fixed spacing for clock icons
+    const chargeStartX = width - margin - 60; // Start from right edge with margin
+    
     for (let i = 0; i < 3; i++) {
       const chargeX = chargeStartX - (i * chargeSpacing);
 
+      // Clock icon background circle
       const charge = this.add
-        .circle(chargeX, 30, 12, 0xECF0F1) // Slightly smaller for better fit
+        .circle(chargeX, headerY, 15, 0xECF0F1)
         .setStrokeStyle(2, 0x3498DB);
 
-      // Add clock icon representation (simple lines) - smaller for responsive design
-      const hourHand = this.add.line(chargeX, 30, 0, 0, 0, -6, 0x3498DB, 1).setLineWidth(2);
-      const minuteHand = this.add.line(chargeX, 30, 0, 0, 4, 0, 0x3498DB, 1).setLineWidth(2);
+      // Clock hands - simple clock icon
+      const hourHand = this.add.line(chargeX, headerY, 0, 0, 0, -8, 0x3498DB, 1).setLineWidth(2);
+      const minuteHand = this.add.line(chargeX, headerY, 0, 0, 6, 0, 0x3498DB, 1).setLineWidth(2);
 
       this.slowMoCharges.push(charge);
       this.slowMoClockIcons.push(hourHand, minuteHand);
     }
 
-    // Target color display (below header) - Responsive width
-    const targetWidth = Math.min(280, width * 0.7); // Max 70% of screen width
-    this.targetColorBg = this.add.rectangle(width / 2, 80, targetWidth, 50, 0x000000, 0.8);
+    // Target color display (below header) - Graphics-only approach
+    const targetY = 100; // Below header
+    const targetWidth = Math.min(300, width * 0.8); // Max 80% of screen width
+    
+    this.targetColorBg = this.add.rectangle(width / 2, targetY, targetWidth, 60, 0x000000, 0.8);
     this.targetColorBg.setStrokeStyle(3, 0xFFFFFF, 0.9);
 
-    // Large target color circle
-    this.targetColorCircle = this.add.circle(width / 2, 80, 22, parseInt(this.targetColor.replace('#', '0x')));
-    this.targetColorCircle.setStrokeStyle(4, 0xFFFFFF, 1);
+    // Large target color circle (visual indicator of what to tap)
+    const targetCircle = this.add.circle(width / 2, targetY, 25, parseInt(this.targetColor.replace('#', '0x')));
+    targetCircle.setStrokeStyle(4, 0xFFFFFF, 1);
+
+    this.targetColorCircle = targetCircle;
 
     // Add subtle pulsing animation
     this.tweens.add({
@@ -147,57 +166,56 @@ export class UIScene extends Scene {
   private setupLayout(): void {
     const { width } = this.scale;
 
-    // Calculate responsive positions and sizes (same as createHUD)
-    const margin = Math.max(10, width * 0.02);
-    const scoreWidth = Math.min(100, width * 0.25);
-    const chargeSpacing = Math.min(30, width * 0.08);
+    // Update header background to full width
+    if (this.headerBg) {
+      this.headerBg.setSize(width, 60);
+    }
+
+    // Calculate responsive positions and sizes
+    const margin = Math.max(20, width * 0.03);
+    const headerY = 30;
+    const chargeSpacing = 35;
 
     // Update score container position
     if (this.scoreContainer) {
-      this.scoreContainer.setPosition(margin + scoreWidth / 2, 30);
-
-      // Update score background width if it exists
-      if (this.scoreContainer.list[0]) {
-        const scoreBg = this.scoreContainer.list[0] as Phaser.GameObjects.Rectangle;
-        scoreBg.setSize(scoreWidth, 30);
-      }
+      this.scoreContainer.setPosition(margin, headerY);
     }
 
     // Update time container position (center)
     if (this.timeContainer) {
-      this.timeContainer.setPosition(width / 2, 30);
+      this.timeContainer.setPosition(width / 2, headerY);
     }
 
-    // Update slow-mo charges positions with responsive spacing
-    const chargeStartX = width - margin - 15;
+    // Update slow-mo charges positions
+    const chargeStartX = width - margin - 60;
     this.slowMoCharges.forEach((charge, index) => {
       const chargeX = chargeStartX - (index * chargeSpacing);
-      charge.setPosition(chargeX, 30);
+      charge.setPosition(chargeX, headerY);
     });
 
     // Update clock icon positions
     this.slowMoClockIcons.forEach((icon, index) => {
       const chargeIndex = Math.floor(index / 2);
       const chargeX = chargeStartX - (chargeIndex * chargeSpacing);
-      icon.setPosition(chargeX, 30);
+      icon.setPosition(chargeX, headerY);
     });
 
     // Update target color display
     if (this.targetColorBg) {
-      const targetWidth = Math.min(280, width * 0.7);
-      this.targetColorBg.setPosition(width / 2, 80);
-      this.targetColorBg.setSize(targetWidth, 50);
+      const targetWidth = Math.min(300, width * 0.8);
+      this.targetColorBg.setPosition(width / 2, 100);
+      this.targetColorBg.setSize(targetWidth, 60);
     }
 
     if (this.targetColorCircle) {
-      this.targetColorCircle.setPosition(width / 2, 80);
+      this.targetColorCircle.setPosition(width / 2, 100);
     }
   }
 
   private updateScore(score: number): void {
     this.score = score;
-    if (score > this.bestScore) {
-      this.bestScore = score;
+    if (this.score > this.bestScore) {
+      this.bestScore = this.score;
       this.saveBestScore(this.bestScore);
     }
 
@@ -205,7 +223,7 @@ export class UIScene extends Scene {
     if (this.scoreContainer && this.scoreContainer.list[1]) {
       const scoreIndicator = this.scoreContainer.list[1] as Phaser.GameObjects.Arc;
       // Change color based on score level
-      const color = score > 10 ? 0xFFD700 : score > 5 ? 0x2ECC71 : 0xFFFFFF;
+      const color = this.score > 10 ? 0xFFD700 : this.score > 5 ? 0x2ECC71 : 0xFFFFFF;
       scoreIndicator.setFillStyle(color);
     }
 
@@ -213,8 +231,8 @@ export class UIScene extends Scene {
     if (this.scoreContainer) {
       this.tweens.add({
         targets: this.scoreContainer,
-        scaleX: 1.2,
-        scaleY: 1.2,
+        scaleX: 1.1,
+        scaleY: 1.1,
         duration: 100,
         yoyo: true,
         ease: 'Power2'
@@ -343,6 +361,9 @@ export class UIScene extends Scene {
    */
   public setVisible(visible: boolean): void {
     // Set visibility for all UI containers
+    if (this.headerBg) {
+      this.headerBg.setVisible(visible);
+    }
     if (this.scoreContainer) {
       this.scoreContainer.setVisible(visible);
     }
