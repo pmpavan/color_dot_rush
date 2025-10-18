@@ -4,6 +4,7 @@ import { FontPreloader } from '../utils/FontPreloader';
 import { FontErrorHandler } from '../utils/FontErrorHandler';
 import { DOMTextRenderer, DOMTextStyle, GradientTextConfig } from '../utils/DOMTextRenderer';
 import { ResponsiveLayoutManager, IResponsiveLayoutManager, ButtonType } from '../utils/ResponsiveLayoutManager';
+import { HowToPlayModal, IHowToPlayModal } from '../utils/HowToPlayModal';
 
 export class SplashScreen extends Scene {
   background: GameObjects.Rectangle | null = null;
@@ -13,6 +14,7 @@ export class SplashScreen extends Scene {
   private fontErrorHandler: FontErrorHandler;
   private domTextRenderer: DOMTextRenderer | null = null;
   private layoutManager: IResponsiveLayoutManager;
+  private howToPlayModal: IHowToPlayModal | null = null;
 
   // Component lifecycle state
   private componentsInitialized: boolean = false;
@@ -67,6 +69,19 @@ export class SplashScreen extends Scene {
     // Initialize DOM text renderer
     this.domTextRenderer = new DOMTextRenderer('game-container');
 
+    // Initialize HowToPlayModal with comprehensive error handling
+    try {
+      this.howToPlayModal = new HowToPlayModal(this.layoutManager);
+      console.log('SplashScreen: HowToPlayModal initialized successfully');
+      
+      // Test modal functionality to ensure it works properly
+      this.validateModalFunctionality();
+    } catch (error) {
+      console.error('SplashScreen: Failed to initialize HowToPlayModal:', error);
+      this.handleModalInitializationError(error as Error);
+      this.howToPlayModal = null;
+    }
+
     console.log('SplashScreen: Component lifecycle management set up');
   }
 
@@ -102,6 +117,16 @@ export class SplashScreen extends Scene {
       this.domTextRenderer.updatePosition('how-to-play-button', howToPlayButtonPos.x, howToPlayButtonPos.y);
     }
 
+    // Update HowToPlayModal layout for responsive behavior
+    if (this.howToPlayModal) {
+      try {
+        this.howToPlayModal.updateLayout();
+        console.log('SplashScreen: HowToPlayModal layout updated for new dimensions');
+      } catch (error) {
+        console.error('SplashScreen: Error updating HowToPlayModal layout:', error);
+      }
+    }
+
     // No font loading indicator to update
   }
 
@@ -113,6 +138,17 @@ export class SplashScreen extends Scene {
 
     // Clean up resize event listeners
     this.cleanupResizeEventHandling();
+
+    // Clean up HowToPlayModal
+    if (this.howToPlayModal) {
+      try {
+        this.howToPlayModal.destroy();
+        console.log('SplashScreen: HowToPlayModal destroyed successfully');
+      } catch (error) {
+        console.error('SplashScreen: Error destroying HowToPlayModal:', error);
+      }
+      this.howToPlayModal = null;
+    }
 
     // Clean up layout manager
     if (this.layoutManager) {
@@ -339,6 +375,13 @@ export class SplashScreen extends Scene {
 
       // Start font preloading process with loading indicators
       this.initializeFontLoading();
+
+      // Test modal responsiveness in development (optional)
+      if (process.env.NODE_ENV === 'development') {
+        this.time.delayedCall(1000, () => {
+          this.testModalResponsiveness();
+        });
+      }
 
     } catch (error) {
       console.error('SplashScreen: Error during scene initialization:', error);
@@ -652,8 +695,160 @@ export class SplashScreen extends Scene {
    */
   private handleHowToPlayClick(): void {
     console.log('SplashScreen: How to Play button clicked');
-    // TODO: Show How to Play modal
-    console.log('How to Play modal not implemented yet');
+    
+    try {
+      if (this.howToPlayModal) {
+        this.howToPlayModal.show();
+        console.log('SplashScreen: HowToPlayModal shown successfully');
+      } else {
+        console.warn('SplashScreen: HowToPlayModal not available, showing fallback');
+        this.showFallbackInstructions();
+      }
+    } catch (error) {
+      console.error('SplashScreen: Error showing HowToPlayModal:', error);
+      this.showFallbackInstructions();
+    }
+  }
+
+  /**
+   * Show fallback instructions if modal fails
+   */
+  private showFallbackInstructions(): void {
+    const instructions = `
+COLOR RUSH - How to Play:
+
+🎯 Tap dots that match the Target Color
+❌ Avoid wrong colors and bombs  
+⚡ Use Slow-Mo charges strategically
+🏆 Survive as long as possible!
+
+Good luck!
+    `.trim();
+
+    alert(instructions);
+    console.log('SplashScreen: Showed fallback instructions');
+  }
+
+  /**
+   * Validate modal functionality during initialization
+   */
+  private validateModalFunctionality(): void {
+    if (!this.howToPlayModal) {
+      throw new Error('Modal not initialized');
+    }
+
+    // Test basic modal methods
+    try {
+      const isVisible = this.howToPlayModal.isVisible();
+      const config = this.howToPlayModal.getConfig();
+      const layout = this.howToPlayModal.getLayout();
+      
+      if (typeof isVisible !== 'boolean') {
+        throw new Error('Modal isVisible() method not working properly');
+      }
+      
+      if (!config || typeof config !== 'object') {
+        throw new Error('Modal getConfig() method not working properly');
+      }
+      
+      if (!layout || typeof layout !== 'object') {
+        throw new Error('Modal getLayout() method not working properly');
+      }
+      
+      console.log('SplashScreen: Modal functionality validation passed');
+    } catch (validationError) {
+      console.error('SplashScreen: Modal functionality validation failed:', validationError);
+      throw validationError;
+    }
+  }
+
+  /**
+   * Handle modal initialization errors with detailed logging
+   */
+  private handleModalInitializationError(error: Error): void {
+    console.error('SplashScreen: Modal initialization failed with error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+
+    // Check for specific error types and provide appropriate fallbacks
+    if (error.message.includes('DOM') || error.message.includes('document')) {
+      console.warn('SplashScreen: DOM-related error detected, modal will use fallback instructions');
+    } else if (error.message.includes('layout') || error.message.includes('responsive')) {
+      console.warn('SplashScreen: Layout-related error detected, modal may have display issues');
+    } else {
+      console.warn('SplashScreen: Unknown modal error, falling back to alert-based instructions');
+    }
+
+    // Log environment information for debugging
+    this.logEnvironmentInfo();
+  }
+
+  /**
+   * Log environment information for debugging modal issues
+   */
+  private logEnvironmentInfo(): void {
+    try {
+      const envInfo = {
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
+        screenSize: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'Unknown',
+        documentReady: typeof document !== 'undefined' ? document.readyState : 'Unknown',
+        gameContainer: typeof document !== 'undefined' ? !!document.getElementById('game-container') : false,
+        layoutManagerAvailable: !!this.layoutManager,
+        domTextRendererAvailable: !!this.domTextRenderer
+      };
+      
+      console.log('SplashScreen: Environment info for modal debugging:', envInfo);
+    } catch (logError) {
+      console.warn('SplashScreen: Could not log environment info:', logError);
+    }
+  }
+
+  /**
+   * Test modal behavior across different screen sizes (for debugging)
+   */
+  private testModalResponsiveness(): void {
+    if (!this.howToPlayModal) {
+      console.warn('SplashScreen: Cannot test modal responsiveness - modal not available');
+      return;
+    }
+
+    try {
+      // Test common screen sizes
+      const testSizes = [
+        { width: 320, height: 568 }, // iPhone SE
+        { width: 375, height: 667 }, // iPhone 8
+        { width: 768, height: 1024 }, // iPad
+        { width: 1920, height: 1080 } // Desktop
+      ];
+
+      testSizes.forEach(size => {
+        try {
+          // Temporarily update layout manager for testing
+          this.layoutManager.updateLayout(size.width, size.height);
+          this.howToPlayModal!.updateLayout();
+          
+          const layout = this.howToPlayModal!.getLayout();
+          console.log(`SplashScreen: Modal layout test for ${size.width}x${size.height}:`, {
+            contentMaxWidth: layout.contentMaxWidth,
+            fontSize: layout.fontSize,
+            spacing: layout.spacing
+          });
+        } catch (testError) {
+          console.error(`SplashScreen: Modal responsiveness test failed for ${size.width}x${size.height}:`, testError);
+        }
+      });
+
+      // Restore original layout
+      const currentDimensions = this.scale;
+      this.layoutManager.updateLayout(currentDimensions.width, currentDimensions.height);
+      this.howToPlayModal.updateLayout();
+      
+      console.log('SplashScreen: Modal responsiveness testing completed');
+    } catch (error) {
+      console.error('SplashScreen: Error during modal responsiveness testing:', error);
+    }
   }
 
   /**

@@ -35,11 +35,20 @@ export type { IResponsiveSystem } from './ResponsiveSystem';
 export { PhaserTextRenderer } from './PhaserTextRenderer';
 export type { ITextRenderer, TextStyle, GradientConfig } from './PhaserTextRenderer';
 
+export { DOMTextRenderer } from './DOMTextRenderer';
+export type { DOMTextStyle, GradientTextConfig, DOMTextElement } from './DOMTextRenderer';
+
 /**
  * Interactive button management system exports
  */
 export { InteractiveButtonManager, ButtonState } from './InteractiveButtonManager';
 export type { IButtonManager, ButtonConfig, InteractiveButton } from './InteractiveButtonManager';
+
+/**
+ * Modal system exports
+ */
+export { HowToPlayModal, ModalState } from './HowToPlayModal';
+export type { IHowToPlayModal } from './HowToPlayModal';
 
 // Re-export existing utilities
 export { CSPComplianceChecker } from './CSPComplianceChecker';
