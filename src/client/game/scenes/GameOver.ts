@@ -42,6 +42,8 @@ export class GameOver extends Scene {
   }
 
   init(data: GameOverData): void {
+    console.log('GameOver scene init called with data:', data);
+    
     // Store game over data passed from Game scene
     this.gameOverData = data || {
       finalScore: 0,
@@ -54,9 +56,13 @@ export class GameOver extends Scene {
     this.playAgainButton = null;
     this.leaderboardButton = null;
     this.mainMenuButton = null;
+    
+    console.log('GameOver scene init completed');
   }
 
   create() {
+    console.log('GameOver scene create called');
+    
     // Configure camera
     this.camera = this.cameras.main;
     this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background
@@ -65,6 +71,8 @@ export class GameOver extends Scene {
     if (this.cameras?.main?.fadeIn) {
       this.cameras.main.fadeIn(250, 0, 0, 0);
     }
+    
+    console.log('GameOver scene camera configured');
 
     // Create frozen game state background (graphics-only)
     this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x34495E, 0.3).setOrigin(0);
@@ -248,15 +256,35 @@ export class GameOver extends Scene {
                 if (this.cameras?.main?.fadeOut) {
                   this.cameras.main.fadeOut(250, 0, 0, 0);
                   this.cameras.main.once('camerafadeoutcomplete', () => {
+                    // Start Game scene and ensure UI scene is running
                     this.scene.start('Game');
-                    // Launch UI scene again
-                    this.scene.launch('UI');
+                    
+                    // Check if UI scene exists, if not launch it
+                    const uiScene = this.scene.get('UI') as any;
+                    if (!uiScene || !uiScene.scene.isActive()) {
+                      this.scene.launch('UI');
+                    } else if (uiScene && uiScene.setVisible) {
+                      uiScene.setVisible(true);
+                    } else if (uiScene) {
+                      // Fallback: make sure UI scene is running and visible
+                      this.scene.setVisible(true, 'UI');
+                    }
                   });
                 } else {
                   // Fallback for test environment
+                  // Start Game scene and ensure UI scene is running
                   this.scene.start('Game');
-                  // Launch UI scene again
-                  this.scene.launch('UI');
+                  
+                  // Check if UI scene exists, if not launch it
+                  const uiScene = this.scene.get('UI') as any;
+                  if (!uiScene || !uiScene.scene.isActive()) {
+                    this.scene.launch('UI');
+                  } else if (uiScene && uiScene.setVisible) {
+                    uiScene.setVisible(true);
+                  } else if (uiScene) {
+                    // Fallback: make sure UI scene is running and visible
+                    this.scene.setVisible(true, 'UI');
+                  }
                 }
               } catch (error) {
                 console.error('Error restarting game:', error);

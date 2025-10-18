@@ -322,6 +322,7 @@ export class Game extends Scene {
     } else {
       // Wrong color - immediate game over (no delay, immediate termination)
       console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
+      this.showDebugMessage(`WRONG COLOR! Expected: ${this.targetColor}`);
       this.createWrongTapEffect(dot);
 
       // Deactivate the wrong dot immediately to prevent further interaction
@@ -439,6 +440,7 @@ export class Game extends Scene {
     if (this.currentState !== GameState.PLAYING) return;
 
     console.log('Bomb tapped! Game Over!');
+    this.showDebugMessage('BOMB TAPPED! Game Over!');
 
     // Create explosion effect with screen shake and particles
     this.createBombExplosionEffect(bomb);
@@ -1036,6 +1038,9 @@ export class Game extends Scene {
   }
 
   private endGame(): void {
+    console.log('endGame() method called');
+    this.showDebugMessage('END GAME CALLED!');
+
     // Stop object spawning immediately
     try {
       if (this.objectSpawner) {
@@ -1088,10 +1093,22 @@ export class Game extends Scene {
     // Transition to GameOver scene
     this.time.delayedCall(1000, () => {
       try {
-        console.log('Transitioning to GameOver scene');
+        console.log('Transitioning to GameOver scene with data:', gameOverData);
+
         // Keep UIScene running but hide it, start GameOver on top
-        this.scene.setVisible(false, 'UI'); // Hide UI scene instead of pausing/stopping
-        this.scene.start('GameOver', gameOverData); // Start GameOver scene with data
+        if (this.uiScene) {
+          console.log('Hiding UIScene');
+          this.uiScene.setVisible(false); // Hide UI instead of pausing/stopping
+        } else {
+          console.warn('UIScene not found when trying to hide it');
+        }
+
+        console.log('Starting GameOver scene...');
+        this.showDebugMessage('LAUNCHING GAMEOVER SCENE');
+
+        // Create a simple game over overlay instead of scene transition
+        this.createSimpleGameOverOverlay(gameOverData);
+        console.log('Simple GameOver overlay created');
       } catch (error) {
         console.error('Error during scene transition to GameOver:', error);
       }
@@ -1233,6 +1250,185 @@ export class Game extends Scene {
 
   public isSlowMotionActive(): boolean {
     return this.isSlowMoActive;
+  }
+
+  /**
+   * Create a polished game over overlay with DOM text
+   */
+  private createSimpleGameOverOverlay(gameOverData: any): void {
+    // Create dark overlay
+    const overlay = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2,
+      this.scale.width,
+      this.scale.height,
+      0x000000,
+      0.8
+    ).setDepth(3000);
+
+    // Create modal background
+    const modalBg = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2,
+      320,
+      280,
+      0x34495E,
+      0.95
+    ).setDepth(3001);
+    modalBg.setStrokeStyle(2, 0xFFFFFF, 0.3);
+
+    // Create restart button
+    const restartButton = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2 + 80,
+      200,
+      50,
+      0x3498DB,
+      1
+    ).setDepth(3002).setInteractive();
+    restartButton.setStrokeStyle(2, 0xFFFFFF, 0.8);
+
+    // Add DOM text elements
+    this.createGameOverText(gameOverData);
+
+    // Button interactions
+    restartButton.on('pointerover', () => {
+      restartButton.setScale(1.05);
+    });
+    restartButton.on('pointerout', () => {
+      restartButton.setScale(1.0);
+    });
+    restartButton.on('pointerdown', () => {
+      restartButton.setScale(0.95);
+      // Clean up DOM elements before restarting
+      this.cleanupGameOverText();
+      // Restart the game
+      this.scene.restart();
+    });
+
+    console.log('Game over overlay created with score:', gameOverData.finalScore);
+  }
+
+  /**
+   * Create DOM text elements for game over screen
+   */
+  private createGameOverText(gameOverData: any): void {
+    const gameContainer = document.getElementById('game-container');
+    if (!gameContainer) return;
+
+    // Game Over title
+    const titleElement = document.createElement('div');
+    titleElement.innerHTML = 'GAME OVER';
+    titleElement.style.position = 'absolute';
+    titleElement.style.left = '50%';
+    titleElement.style.top = '40%';
+    titleElement.style.transform = 'translate(-50%, -50%)';
+    titleElement.style.fontSize = '28px';
+    titleElement.style.color = '#E74C3C';
+    titleElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    titleElement.style.fontWeight = 'bold';
+    titleElement.style.textAlign = 'center';
+    titleElement.style.pointerEvents = 'none';
+    titleElement.style.zIndex = '3003';
+    titleElement.id = 'gameover-title';
+
+    // Score display
+    const scoreElement = document.createElement('div');
+    scoreElement.innerHTML = `Score: ${gameOverData.finalScore}`;
+    scoreElement.style.position = 'absolute';
+    scoreElement.style.left = '50%';
+    scoreElement.style.top = '48%';
+    scoreElement.style.transform = 'translate(-50%, -50%)';
+    scoreElement.style.fontSize = '20px';
+    scoreElement.style.color = '#FFFFFF';
+    scoreElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    scoreElement.style.fontWeight = '500';
+    scoreElement.style.textAlign = 'center';
+    scoreElement.style.pointerEvents = 'none';
+    scoreElement.style.zIndex = '3003';
+    scoreElement.id = 'gameover-score';
+
+    // Best score display
+    const bestScoreElement = document.createElement('div');
+    bestScoreElement.innerHTML = `Best: ${gameOverData.bestScore}`;
+    bestScoreElement.style.position = 'absolute';
+    bestScoreElement.style.left = '50%';
+    bestScoreElement.style.top = '54%';
+    bestScoreElement.style.transform = 'translate(-50%, -50%)';
+    bestScoreElement.style.fontSize = '16px';
+    bestScoreElement.style.color = '#BDC3C7';
+    bestScoreElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    bestScoreElement.style.fontWeight = '400';
+    bestScoreElement.style.textAlign = 'center';
+    bestScoreElement.style.pointerEvents = 'none';
+    bestScoreElement.style.zIndex = '3003';
+    bestScoreElement.id = 'gameover-best';
+
+    // Play Again button text
+    const buttonTextElement = document.createElement('div');
+    buttonTextElement.innerHTML = 'PLAY AGAIN';
+    buttonTextElement.style.position = 'absolute';
+    buttonTextElement.style.left = '50%';
+    buttonTextElement.style.top = '66%';
+    buttonTextElement.style.transform = 'translate(-50%, -50%)';
+    buttonTextElement.style.fontSize = '18px';
+    buttonTextElement.style.color = '#FFFFFF';
+    buttonTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    buttonTextElement.style.fontWeight = 'bold';
+    buttonTextElement.style.textAlign = 'center';
+    buttonTextElement.style.pointerEvents = 'none';
+    buttonTextElement.style.zIndex = '3003';
+    buttonTextElement.id = 'gameover-button-text';
+
+    // Add all elements to container
+    gameContainer.appendChild(titleElement);
+    gameContainer.appendChild(scoreElement);
+    gameContainer.appendChild(bestScoreElement);
+    gameContainer.appendChild(buttonTextElement);
+  }
+
+  /**
+   * Clean up game over DOM text elements
+   */
+  private cleanupGameOverText(): void {
+    const elementsToRemove = ['gameover-title', 'gameover-score', 'gameover-best', 'gameover-button-text'];
+    elementsToRemove.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.remove();
+      }
+    });
+  }
+
+  /**
+   * Show visual debug message on screen using simple graphics
+   */
+  private showDebugMessage(message: string): void {
+    console.log('DEBUG:', message); // Log to console
+
+    // Create different colored rectangles for different messages
+    let color = 0xFF0000; // Default red
+    if (message.includes('WRONG COLOR')) color = 0xFF4500; // Orange red
+    if (message.includes('BOMB')) color = 0xFF0000; // Red
+    if (message.includes('END GAME')) color = 0x8B0000; // Dark red
+    if (message.includes('LAUNCHING')) color = 0x00FF00; // Green
+
+    // Create a simple colored rectangle as debug indicator
+    const debugRect = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2,
+      300,
+      100,
+      color,
+      0.8
+    ).setDepth(2000);
+
+    // Auto-remove after 2 seconds
+    this.time.delayedCall(2000, () => {
+      if (debugRect && debugRect.active) {
+        debugRect.destroy();
+      }
+    });
   }
 
   /**

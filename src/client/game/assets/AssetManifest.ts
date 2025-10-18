@@ -78,6 +78,26 @@ export const GAME_ASSETS: AssetDefinition[] = [
     path: 'assets/clock-icon.svg',
     description: 'Clock icon for slow-mo charges display',
   },
+
+  // Fonts
+  {
+    key: 'poppins-regular',
+    type: 'font',
+    path: 'fonts/poppins-regular.woff2',
+    description: 'Poppins Regular font',
+  },
+  {
+    key: 'poppins-medium',
+    type: 'font',
+    path: 'fonts/poppins-medium.woff2',
+    description: 'Poppins Medium font',
+  },
+  {
+    key: 'poppins-bold',
+    type: 'font',
+    path: 'fonts/poppins-bold.woff2',
+    description: 'Poppins Bold font',
+  },
 ];
 
 /**

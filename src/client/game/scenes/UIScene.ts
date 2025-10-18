@@ -337,4 +337,37 @@ export class UIScene extends Scene {
   public setSlowMoCharges(charges: number): void {
     this.events.emit('updateSlowMoCharges', charges);
   }
+
+  /**
+   * Show or hide the entire UI scene
+   */
+  public setVisible(visible: boolean): void {
+    // Set visibility for all UI containers
+    if (this.scoreContainer) {
+      this.scoreContainer.setVisible(visible);
+    }
+    if (this.timeContainer) {
+      this.timeContainer.setVisible(visible);
+    }
+    if (this.targetColorBg) {
+      this.targetColorBg.setVisible(visible);
+    }
+    if (this.targetColorCircle) {
+      this.targetColorCircle.setVisible(visible);
+    }
+    
+    // Set visibility for slow-mo charges
+    this.slowMoCharges.forEach(charge => {
+      if (charge) {
+        charge.setVisible(visible);
+      }
+    });
+    
+    // Set visibility for slow-mo clock icons
+    this.slowMoClockIcons.forEach(icon => {
+      if (icon) {
+        icon.setVisible(visible);
+      }
+    });
+  }
 }
