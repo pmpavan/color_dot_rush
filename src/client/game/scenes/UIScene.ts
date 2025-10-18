@@ -4,7 +4,7 @@ import { GameColor } from '../../../shared/types/game';
 export class UIScene extends Scene {
   private scoreContainer: Phaser.GameObjects.Container | null = null;
   private timeContainer: Phaser.GameObjects.Container | null = null;
-  private targetColorCircle: Phaser.GameObjects.Arc | null = null;
+  private targetColorText: Phaser.GameObjects.Text | null = null;
   private targetColorBg: Phaser.GameObjects.Rectangle | null = null;
   private headerBg: Phaser.GameObjects.Rectangle | null = null;
   private slowMoCharges: Phaser.GameObjects.Arc[] = [];
@@ -16,6 +16,17 @@ export class UIScene extends Scene {
 
   constructor() {
     super('UI');
+  }
+
+  private getColorName(color: GameColor): string {
+    switch (color) {
+      case GameColor.RED: return 'RED';
+      case GameColor.GREEN: return 'GREEN';
+      case GameColor.BLUE: return 'BLUE';
+      case GameColor.YELLOW: return 'YELLOW';
+      case GameColor.PURPLE: return 'PURPLE';
+      default: return 'RED';
+    }
   }
 
 
@@ -30,7 +41,7 @@ export class UIScene extends Scene {
       // Clear container references but don't manually destroy - let Phaser handle it
       this.scoreContainer = null;
       this.timeContainer = null;
-      this.targetColorCircle = null;
+      this.targetColorText = null;
       this.targetColorBg = null;
       this.headerBg = null;
       this.slowMoCharges = [];
@@ -46,7 +57,7 @@ export class UIScene extends Scene {
     // Reset UI elements
     this.scoreContainer = null;
     this.timeContainer = null;
-    this.targetColorCircle = null;
+    this.targetColorText = null;
     this.targetColorBg = null;
     this.headerBg = null;
     this.slowMoCharges = [];
@@ -62,8 +73,8 @@ export class UIScene extends Scene {
     console.log('UIScene: Initializing UI');
 
     try {
-      this.createHUD();
-      this.setupLayout();
+      // Try to create UI with fonts, fallback to graphics if needed
+      this.createUIWithFallback();
 
       // Listen for resize events
       this.scale.on('resize', () => this.setupLayout());
@@ -81,7 +92,151 @@ export class UIScene extends Scene {
     }
   }
 
+  private createUIWithFallback(): void {
+    try {
+      console.log('UIScene: Attempting to create text-based UI...');
+      this.createHUD();
+      this.setupLayout();
+      console.log('UIScene: Text-based UI created successfully');
+    } catch (error) {
+      console.warn('UIScene: Text UI creation failed, using graphics fallback:', error);
+      try {
+        // Clear any partially created elements
+        this.children.removeAll(true);
+        
+        // Create graphics-only UI
+        console.log('UIScene: Creating graphics-only UI...');
+        this.createGraphicsOnlyHUD();
+        this.setupLayout();
+        console.log('UIScene: Graphics-only UI created successfully');
+      } catch (fallbackError) {
+        console.error('UIScene: Even graphics fallback failed:', fallbackError);
+        // Create minimal UI as last resort
+        this.createMinimalUI();
+      }
+    }
+  }
+
+  private createMinimalUI(): void {
+    console.log('UIScene: Creating minimal UI as last resort...');
+    const { width } = this.scale;
+    
+    // Just create the header background and basic elements
+    this.headerBg = this.add.rectangle(0, 0, width, 60, 0x000000, 0.3).setOrigin(0, 0);
+    
+    // Simple score indicator
+    this.scoreContainer = this.add.container(20, 30);
+    const scoreCircle = this.add.circle(0, 0, 10, 0x3498DB);
+    this.scoreContainer.add(scoreCircle);
+    
+    // Simple time indicator  
+    this.timeContainer = this.add.container(width / 2, 30);
+    const timeCircle = this.add.circle(0, 0, 10, 0x2ECC71);
+    this.timeContainer.add(timeCircle);
+    
+    // Simple target color
+    this.targetColorBg = this.add.rectangle(width / 2, 100, 200, 50, 0x000000, 0.8);
+    this.targetColorText = this.add.circle(width / 2, 100, 20, 0xE74C3C) as any;
+    
+    console.log('UIScene: Minimal UI created');
+  }
+
   private createHUD(): void {
+    console.log('UIScene: Starting createHUD...');
+    const { width } = this.scale;
+
+    try {
+      // Header bar with transparent background - full width
+      console.log('UIScene: Creating header background...');
+      this.headerBg = this.add.rectangle(0, 0, width, 60, 0x000000, 0.3).setOrigin(0, 0);
+
+      // Calculate responsive positions and sizes
+      const margin = Math.max(20, width * 0.03); // 3% margin, minimum 20px
+      const headerY = 30; // Center of header bar
+
+      // Score display (left side) - Text as per Frontend Spec
+      console.log('UIScene: Creating score text...');
+      this.scoreContainer = this.add.container(margin, headerY);
+      const scoreText = this.add.text(0, 0, `Score: ${this.score} | Best: ${this.bestScore}`, {
+        fontFamily: 'Arial, sans-serif', // Use Arial first to avoid font loading issues
+        fontSize: '24px',
+        fontStyle: 'normal',
+        color: '#FFFFFF'
+      }).setOrigin(0, 0.5);
+      this.scoreContainer.add(scoreText);
+      console.log('UIScene: Score text created successfully');
+
+      // Time display (center) - Text as per Frontend Spec
+      console.log('UIScene: Creating time text...');
+      this.timeContainer = this.add.container(width / 2, headerY);
+      const timeText = this.add.text(0, 0, 'Time: 0:00', {
+        fontFamily: 'Arial, sans-serif', // Use Arial first to avoid font loading issues
+        fontSize: '24px',
+        fontStyle: 'normal',
+        color: '#FFFFFF'
+      }).setOrigin(0.5, 0.5);
+      this.timeContainer.add(timeText);
+      console.log('UIScene: Time text created successfully');
+
+      // Slow-mo charges (right side) - Clock icons as per Frontend Spec
+      console.log('UIScene: Creating slow-mo charges...');
+    const chargeSpacing = 35; // Fixed spacing for clock icons
+    const chargeStartX = width - margin - 60; // Start from right edge with margin
+    
+    for (let i = 0; i < 3; i++) {
+      const chargeX = chargeStartX - (i * chargeSpacing);
+
+      // Clock icon background circle
+      const charge = this.add
+        .circle(chargeX, headerY, 15, 0xECF0F1)
+        .setStrokeStyle(2, 0x3498DB);
+
+      // Clock hands - simple clock icon
+      const hourHand = this.add.line(chargeX, headerY, 0, 0, 0, -8, 0x3498DB, 1).setLineWidth(2);
+      const minuteHand = this.add.line(chargeX, headerY, 0, 0, 6, 0, 0x3498DB, 1).setLineWidth(2);
+
+      this.slowMoCharges.push(charge);
+      this.slowMoClockIcons.push(hourHand, minuteHand);
+    }
+
+    // Target color display (below header) - Graphics-only approach
+    const targetY = 100; // Below header
+    const targetWidth = Math.min(300, width * 0.8); // Max 80% of screen width
+    
+    this.targetColorBg = this.add.rectangle(width / 2, targetY, targetWidth, 60, 0x000000, 0.8);
+    this.targetColorBg.setStrokeStyle(3, 0xFFFFFF, 0.9);
+
+      // Target color text with color name
+      const colorName = this.getColorName(this.targetColor);
+      const targetText = this.add.text(width / 2, targetY, `TAP: ${colorName}`, {
+        fontFamily: 'Arial, sans-serif', // Use Arial first to avoid font loading issues
+        fontSize: '32px',
+        fontStyle: 'bold',
+        color: this.targetColor
+      }).setOrigin(0.5, 0.5);
+
+      this.targetColorText = targetText;
+      console.log('UIScene: Target color text created successfully');
+
+      // Add subtle pulsing animation
+      this.tweens.add({
+        targets: [this.targetColorBg, this.targetColorText],
+        scaleX: 1.05,
+        scaleY: 1.05,
+        duration: 800,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1
+      });
+      
+      console.log('UIScene: createHUD completed successfully');
+    } catch (error) {
+      console.error('UIScene: Error in createHUD:', error);
+      throw error;
+    }
+  }
+
+  private createGraphicsOnlyHUD(): void {
     const { width } = this.scale;
 
     // Header bar with transparent background - full width
@@ -91,7 +246,7 @@ export class UIScene extends Scene {
     const margin = Math.max(20, width * 0.03); // 3% margin, minimum 20px
     const headerY = 30; // Center of header bar
 
-    // Score display (left side) - Graphics-only approach
+    // Score display (left side) - Graphics-only fallback
     this.scoreContainer = this.add.container(margin, headerY);
     
     // Create score indicator with dots representing score level
@@ -149,11 +304,12 @@ export class UIScene extends Scene {
     const targetCircle = this.add.circle(width / 2, targetY, 25, parseInt(this.targetColor.replace('#', '0x')));
     targetCircle.setStrokeStyle(4, 0xFFFFFF, 1);
 
-    this.targetColorCircle = targetCircle;
+    // Store as text property for compatibility with existing update methods
+    this.targetColorText = targetCircle as any;
 
     // Add subtle pulsing animation
     this.tweens.add({
-      targets: [this.targetColorBg, this.targetColorCircle],
+      targets: [this.targetColorBg, this.targetColorText],
       scaleX: 1.05,
       scaleY: 1.05,
       duration: 800,
@@ -207,8 +363,8 @@ export class UIScene extends Scene {
       this.targetColorBg.setSize(targetWidth, 60);
     }
 
-    if (this.targetColorCircle) {
-      this.targetColorCircle.setPosition(width / 2, 100);
+    if (this.targetColorText) {
+      this.targetColorText.setPosition(width / 2, 100);
     }
   }
 
@@ -219,12 +375,24 @@ export class UIScene extends Scene {
       this.saveBestScore(this.bestScore);
     }
 
-    // Update score indicator (graphics only - change color based on score)
-    if (this.scoreContainer && this.scoreContainer.list[1]) {
-      const scoreIndicator = this.scoreContainer.list[1] as Phaser.GameObjects.Arc;
-      // Change color based on score level
-      const color = this.score > 10 ? 0xFFD700 : this.score > 5 ? 0x2ECC71 : 0xFFFFFF;
-      scoreIndicator.setFillStyle(color);
+    // Update score display (works for both text and graphics modes)
+    if (this.scoreContainer && this.scoreContainer.list[0]) {
+      const firstElement = this.scoreContainer.list[0];
+      
+      if (firstElement instanceof Phaser.GameObjects.Text) {
+        // Text mode
+        const scoreText = firstElement as Phaser.GameObjects.Text;
+        scoreText.setText(`Score: ${this.score} | Best: ${this.bestScore}`);
+        
+        // Change color based on score level for visual feedback
+        const color = this.score > 10 ? '#FFD700' : this.score > 5 ? '#2ECC71' : '#FFFFFF';
+        scoreText.setColor(color);
+      } else if (this.scoreContainer.list[1]) {
+        // Graphics mode - update the indicator circle
+        const scoreIndicator = this.scoreContainer.list[1] as Phaser.GameObjects.Arc;
+        const color = this.score > 10 ? 0xFFD700 : this.score > 5 ? 0x2ECC71 : 0xFFFFFF;
+        scoreIndicator.setFillStyle(color);
+      }
     }
 
     // Visual feedback for score change - flash the score container
@@ -241,28 +409,52 @@ export class UIScene extends Scene {
   }
 
   private updateTime(elapsedTime: number): void {
-    const seconds = Math.floor(elapsedTime / 1000);
-
-    // Rotate the time hand based on elapsed time
-    if (this.timeContainer && this.timeContainer.list[1]) {
-      const timeHand = this.timeContainer.list[1] as Phaser.GameObjects.Line;
-      const rotation = (seconds * 6) * (Math.PI / 180); // 6 degrees per second
-      timeHand.setRotation(rotation);
+    const totalSeconds = Math.floor(elapsedTime / 1000);
+    
+    // Update time display (works for both text and graphics modes)
+    if (this.timeContainer && this.timeContainer.list[0]) {
+      const firstElement = this.timeContainer.list[0];
+      
+      if (firstElement instanceof Phaser.GameObjects.Text) {
+        // Text mode
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        const timeText = firstElement as Phaser.GameObjects.Text;
+        timeText.setText(`Time: ${timeString}`);
+      } else if (this.timeContainer.list[1]) {
+        // Graphics mode - rotate the clock hand
+        const timeHand = this.timeContainer.list[1] as Phaser.GameObjects.Line;
+        const rotation = (totalSeconds * 6) * (Math.PI / 180); // 6 degrees per second
+        timeHand.setRotation(rotation);
+      }
     }
   }
 
   private updateTargetColor(color: GameColor): void {
     this.targetColor = color;
 
-    // Update target color circle
-    if (this.targetColorCircle) {
-      this.targetColorCircle.setFillStyle(parseInt(color.replace('#', '0x')));
+    // Update target color display (works for both text and graphics modes)
+    if (this.targetColorText) {
+      if (this.targetColorText instanceof Phaser.GameObjects.Text) {
+        // Text mode
+        const colorName = this.getColorName(color);
+        this.targetColorText.setText(`TAP: ${colorName}`);
+        this.targetColorText.setColor(color);
+      } else {
+        // Graphics mode - update circle color
+        const targetCircle = this.targetColorText as any;
+        if (targetCircle.setFillStyle) {
+          targetCircle.setFillStyle(parseInt(color.replace('#', '0x')));
+        }
+      }
 
       // Flash effect when color changes
       this.tweens.add({
-        targets: this.targetColorCircle,
-        scaleX: 1.3,
-        scaleY: 1.3,
+        targets: this.targetColorText,
+        scaleX: 1.2,
+        scaleY: 1.2,
         duration: 200,
         yoyo: true,
         ease: 'Power2'
@@ -373,8 +565,8 @@ export class UIScene extends Scene {
     if (this.targetColorBg) {
       this.targetColorBg.setVisible(visible);
     }
-    if (this.targetColorCircle) {
-      this.targetColorCircle.setVisible(visible);
+    if (this.targetColorText) {
+      this.targetColorText.setVisible(visible);
     }
     
     // Set visibility for slow-mo charges
