@@ -35,7 +35,7 @@ export class CSPComplianceChecker {
     'assets/bomb.svg',
     'assets/slowmo-dot.svg',
     'assets/clock-icon.svg',
-    
+
     // Fonts
     'fonts/poppins-regular.woff2',
     'fonts/poppins-medium.woff2',
@@ -58,25 +58,25 @@ export class CSPComplianceChecker {
    */
   public async checkCompliance(): Promise<CSPComplianceReport> {
     const issues: CSPIssue[] = [];
-    
+
     // Check for external resources in HTML
     await this.checkHTMLResources(issues);
-    
+
     // Check for external resources in CSS
     await this.checkCSSResources(issues);
-    
+
     // Check for missing required assets
     await this.checkRequiredAssets(issues);
-    
+
     // Check for external script sources
     await this.checkScriptSources(issues);
-    
+
     // Check network requests (if possible)
     this.checkNetworkRequests(issues);
-    
+
     // Generate summary
     const summary = this.generateSummary(issues);
-    
+
     return {
       compliant: issues.filter(issue => issue.severity === 'high').length === 0,
       issues,
@@ -137,10 +137,12 @@ export class CSPComplianceChecker {
   private async checkCSSResources(issues: CSPIssue[]): Promise<void> {
     // Check all stylesheets
     const stylesheets = document.styleSheets;
-    
+
     for (let i = 0; i < stylesheets.length; i++) {
       try {
         const stylesheet = stylesheets[i];
+        if (!stylesheet) continue; // Skip if stylesheet is undefined
+
         if (stylesheet.href && this.isExternalResource(stylesheet.href)) {
           issues.push({
             type: 'external_resource',
@@ -167,10 +169,10 @@ export class CSPComplianceChecker {
   private checkCSSRules(rules: CSSRuleList, issues: CSPIssue[]): void {
     for (let i = 0; i < rules.length; i++) {
       const rule = rules[i];
-      
+
       if (rule instanceof CSSStyleRule) {
         const style = rule.style;
-        
+
         // Check background-image
         const backgroundImage = style.backgroundImage;
         if (backgroundImage && backgroundImage !== 'none') {
@@ -188,7 +190,7 @@ export class CSPComplianceChecker {
         }
       } else if (rule instanceof CSSFontFaceRule) {
         const style = rule.style;
-        const src = style.src;
+        const src = style.getPropertyValue('src');
         if (src) {
           const urls = this.extractURLsFromCSS(src);
           urls.forEach(url => {
@@ -222,11 +224,13 @@ export class CSPComplianceChecker {
     const urlRegex = /url\(['"]?([^'"]+)['"]?\)/g;
     const urls: string[] = [];
     let match;
-    
+
     while ((match = urlRegex.exec(cssValue)) !== null) {
-      urls.push(match[1]);
+      if (match[1]) {
+        urls.push(match[1]);
+      }
     }
-    
+
     return urls;
   }
 
@@ -260,8 +264,8 @@ export class CSPComplianceChecker {
    * Check script sources for external dependencies
    */
   private async checkScriptSources(issues: CSPIssue[]): Promise<void> {
-    // Check if Phaser is loaded from CDN
-    if (window.Phaser) {
+    // Check if Phaser is loaded from CDN (only in browser environment)
+    if (typeof window !== 'undefined' && window.Phaser) {
       // Try to determine if Phaser was loaded externally
       const scripts = document.querySelectorAll('script[src]');
       scripts.forEach(script => {
@@ -286,10 +290,10 @@ export class CSPComplianceChecker {
   private checkNetworkRequests(issues: CSPIssue[]): void {
     // Override fetch to monitor external requests
     const originalFetch = window.fetch;
-    
+
     window.fetch = async (...args) => {
       const url = args[0] as string;
-      
+
       if (this.isExternalResource(url)) {
         issues.push({
           type: 'external_resource',
@@ -298,10 +302,10 @@ export class CSPComplianceChecker {
           severity: 'medium',
         });
       }
-      
+
       return originalFetch.apply(window, args);
     };
-    
+
     // Note: This only catches fetch requests made after this point
     // XMLHttpRequest and other methods would need similar overrides
   }
@@ -314,12 +318,12 @@ export class CSPComplianceChecker {
     if (url.startsWith('data:') || url.startsWith('blob:')) {
       return false;
     }
-    
+
     // Skip relative URLs
     if (!url.includes('://')) {
       return false;
     }
-    
+
     // Check against known external domains
     return this.externalDomains.some(domain => url.includes(domain));
   }
@@ -328,14 +332,14 @@ export class CSPComplianceChecker {
    * Generate compliance summary
    */
   private generateSummary(issues: CSPIssue[]): CSPComplianceReport['summary'] {
-    const externalAssets = issues.filter(issue => 
+    const externalAssets = issues.filter(issue =>
       issue.type === 'external_resource' || issue.type === 'cdn_usage'
     ).length;
-    
-    const missingAssets = issues.filter(issue => 
+
+    const missingAssets = issues.filter(issue =>
       issue.type === 'missing_asset'
     ).length;
-    
+
     return {
       totalAssets: this.requiredAssets.length,
       localAssets: this.requiredAssets.length - missingAssets,
@@ -350,34 +354,34 @@ export class CSPComplianceChecker {
   public generateReport(report: CSPComplianceReport): string {
     let output = '=== CSP Compliance Report ===\n';
     output += `Status: ${report.compliant ? 'COMPLIANT' : 'NON-COMPLIANT'}\n\n`;
-    
+
     output += 'Summary:\n';
     output += `- Total Required Assets: ${report.summary.totalAssets}\n`;
     output += `- Local Assets: ${report.summary.localAssets}\n`;
     output += `- External Assets: ${report.summary.externalAssets}\n`;
     output += `- Missing Assets: ${report.summary.missingAssets}\n\n`;
-    
+
     if (report.issues.length > 0) {
       output += 'Issues Found:\n';
-      
+
       const highIssues = report.issues.filter(issue => issue.severity === 'high');
       const mediumIssues = report.issues.filter(issue => issue.severity === 'medium');
       const lowIssues = report.issues.filter(issue => issue.severity === 'low');
-      
+
       if (highIssues.length > 0) {
         output += '\nHIGH SEVERITY:\n';
         highIssues.forEach(issue => {
           output += `- ${issue.description}\n`;
         });
       }
-      
+
       if (mediumIssues.length > 0) {
         output += '\nMEDIUM SEVERITY:\n';
         mediumIssues.forEach(issue => {
           output += `- ${issue.description}\n`;
         });
       }
-      
+
       if (lowIssues.length > 0) {
         output += '\nLOW SEVERITY:\n';
         lowIssues.forEach(issue => {
@@ -387,9 +391,9 @@ export class CSPComplianceChecker {
     } else {
       output += 'No issues found - All assets are properly bundled locally!\n';
     }
-    
+
     output += '\n========================\n';
-    
+
     return output;
   }
 
@@ -407,7 +411,7 @@ export class CSPComplianceChecker {
   public async logComplianceReport(): Promise<void> {
     const report = await this.checkCompliance();
     const reportText = this.generateReport(report);
-    
+
     if (report.compliant) {
       console.log(reportText);
     } else {

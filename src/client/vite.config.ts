@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
           // Ensure assets are properly bundled with content hashing
           assetFileNames: (assetInfo) => {
             const info = assetInfo.name?.split('.') || [];
-            const extType = info[info.length - 1];
+            const extType = info[info.length - 1] || '';
             if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
               return `assets/images/[name]-[hash][extname]`;
             }
@@ -51,15 +51,6 @@ export default defineConfig(({ mode }) => {
             comments: false, // Remove comments
           },
         },
-        // Tree shaking optimizations
-        rollupOptions: {
-          ...this.rollupOptions,
-          treeshake: {
-            moduleSideEffects: false,
-            propertyReadSideEffects: false,
-            tryCatchDeoptimization: false,
-          },
-        },
       }),
     },
     // Ensure proper asset handling for CSP compliance
@@ -82,8 +73,6 @@ export default defineConfig(({ mode }) => {
     },
     // Server configuration for development
     server: {
-      // Enable HTTP/2 for better performance in development
-      https: false,
       // Optimize for development performance
       hmr: {
         overlay: false, // Disable error overlay for better performance

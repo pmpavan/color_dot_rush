@@ -131,10 +131,15 @@ export class PerformanceMonitor {
    * Setup input latency tracking
    */
   private setupInputLatencyTracking(): void {
-    // Track pointer down events
-    this.game.input.on('pointerdown', () => {
-      this.inputStartTime = performance.now();
-    });
+    // Track pointer down events using scene input manager
+    if (this.game.scene.scenes.length > 0) {
+      const activeScene = this.game.scene.scenes[0];
+      if (activeScene && activeScene.input) {
+        activeScene.input.on('pointerdown', () => {
+          this.inputStartTime = performance.now();
+        });
+      }
+    }
     
     // This would be called from the game scene when input is processed
     // We'll provide a method for the game to call
@@ -175,7 +180,6 @@ export class PerformanceMonitor {
     if ('memory' in performance) {
       const memory = (performance as any).memory;
       const usedMB = memory.usedJSHeapSize / 1024 / 1024;
-      const totalMB = memory.totalJSHeapSize / 1024 / 1024;
       const limitMB = memory.jsHeapSizeLimit / 1024 / 1024;
       
       // Warn if memory usage is high (>80% of limit)
@@ -189,7 +193,7 @@ export class PerformanceMonitor {
    * Get current performance metrics
    */
   public getMetrics(): PerformanceMetrics {
-    const currentFps = this.fpsHistory.length > 0 ? this.fpsHistory[this.fpsHistory.length - 1] : 0;
+    const currentFps = this.fpsHistory.length > 0 ? (this.fpsHistory[this.fpsHistory.length - 1] || 0) : 0;
     const averageFps = this.fpsHistory.length > 0 ? 
       this.fpsHistory.reduce((sum, fps) => sum + fps, 0) / this.fpsHistory.length : 0;
     
@@ -205,9 +209,9 @@ export class PerformanceMonitor {
     }
     
     return {
-      fps: Math.round(currentFps * 10) / 10,
-      averageFps: Math.round(averageFps * 10) / 10,
-      frameTime: Math.round(currentFrameTime * 100) / 100,
+      fps: Math.round((currentFps || 0) * 10) / 10,
+      averageFps: Math.round((averageFps || 0) * 10) / 10,
+      frameTime: Math.round((currentFrameTime || 0) * 100) / 100,
       inputLatency: Math.round(averageInputLatency * 100) / 100,
       memoryUsage: Math.round(memoryUsage * 10) / 10,
       objectCount: this.getObjectCount(),

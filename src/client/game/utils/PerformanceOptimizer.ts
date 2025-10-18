@@ -37,14 +37,15 @@ export class PerformanceOptimizer {
     targetFPS: 60,
   };
   
-  private readonly MEDIUM_QUALITY_SETTINGS: OptimizationSettings = {
-    maxObjects: 35,
-    particleQuality: 'medium',
-    effectsEnabled: true,
-    antialiasing: true,
-    shadowsEnabled: false,
-    targetFPS: 60,
-  };
+  // Medium quality settings for future use
+  // private readonly MEDIUM_QUALITY_SETTINGS: OptimizationSettings = {
+  //   maxObjects: 35,
+  //   particleQuality: 'medium',
+  //   effectsEnabled: true,
+  //   antialiasing: true,
+  //   shadowsEnabled: false,
+  //   targetFPS: 60,
+  // };
   
   private readonly LOW_QUALITY_SETTINGS: OptimizationSettings = {
     maxObjects: 25,
@@ -274,7 +275,7 @@ export class PerformanceOptimizer {
     const isLowEnd = (
       isMobile ||
       navigator.hardwareConcurrency <= 2 ||
-      (gl && gl.getParameter(gl.MAX_TEXTURE_SIZE) < 4096)
+      (gl && (gl as WebGLRenderingContext).getParameter((gl as WebGLRenderingContext).MAX_TEXTURE_SIZE) < 4096)
     );
     
     if (isLowEnd) {
