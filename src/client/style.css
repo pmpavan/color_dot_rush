@@ -1,9 +1,9 @@
-/* Poppins font family - bundled locally for CSP compliance */
+/* Poppins font family - using TTF format for better compatibility */
 @font-face {
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 400;
-  src: url('./public/fonts/poppins-regular.woff2') format('woff2');
+  src: url('./public/fonts/poppins-regular.ttf') format('truetype');
   font-display: swap; /* Improve loading performance */
 }
 
@@ -11,7 +11,7 @@
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 500;
-  src: url('./public/fonts/poppins-medium.woff2') format('woff2');
+  src: url('./public/fonts/poppins-medium.ttf') format('truetype');
   font-display: swap;
 }
 
@@ -19,7 +19,7 @@
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 700;
-  src: url('./public/fonts/poppins-bold.woff2') format('woff2');
+  src: url('./public/fonts/poppins-bold.ttf') format('truetype');
   font-display: swap;
 }
 

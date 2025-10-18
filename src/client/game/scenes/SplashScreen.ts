@@ -4,6 +4,8 @@ export class SplashScreen extends Scene {
   background: GameObjects.Rectangle | null = null;
   startButton: GameObjects.Container | null = null;
   howToPlayButton: GameObjects.Container | null = null;
+  loadingContainer: GameObjects.Container | null = null;
+  loadingDots: GameObjects.Arc[] = [];
 
   constructor() {
     super('SplashScreen');
@@ -22,7 +24,9 @@ export class SplashScreen extends Scene {
     this.background = null;
     this.startButton = null;
     this.howToPlayButton = null;
-    
+    this.loadingContainer = null;
+    this.loadingDots = [];
+
     // Clean up any existing DOM text elements
     this.cleanupDOMElements();
   }
@@ -45,7 +49,7 @@ export class SplashScreen extends Scene {
     if (this.cameras?.main?.fadeIn) {
       this.cameras.main.fadeIn(250, 0, 0, 0);
     }
-    
+
     this.refreshLayout();
 
     // Re-calculate positions whenever the game canvas is resized (e.g. orientation change).
@@ -82,7 +86,7 @@ export class SplashScreen extends Scene {
     titleElement.style.webkitTextFillColor = 'transparent';
     titleElement.style.animation = 'gradientShift 4s ease-in-out infinite';
     titleElement.id = 'splash-title';
-    
+
     // Add subtitle with proper spacing - much further down
     const subtitleElement = document.createElement('div');
     subtitleElement.innerHTML = 'Test Your Reflexes';
@@ -98,7 +102,7 @@ export class SplashScreen extends Scene {
     subtitleElement.style.pointerEvents = 'none';
     subtitleElement.style.zIndex = '1000';
     subtitleElement.id = 'splash-subtitle';
-    
+
     // Add CSS animation for color shifting
     const style = document.createElement('style');
     style.textContent = `
@@ -109,7 +113,7 @@ export class SplashScreen extends Scene {
       }
     `;
     document.head.appendChild(style);
-    
+
     gameContainer.appendChild(titleElement);
     gameContainer.appendChild(subtitleElement);
   }
@@ -120,14 +124,14 @@ export class SplashScreen extends Scene {
     // Create "Start Game" button (Primary Button - Bright Blue #3498DB)
     const startButtonBg = this.add.rectangle(width / 2, height * 0.55, 240, 70, 0x3498DB, 1);
     startButtonBg.setStrokeStyle(3, 0xFFFFFF, 0.9);
-    
+
     // Create container for button
     const startButtonContainer = this.add.container(0, 0);
     startButtonContainer.add(startButtonBg);
-    
+
     if (startButtonContainer) {
       this.startButton = startButtonContainer;
-      
+
       startButtonContainer
         .setInteractive(new Phaser.Geom.Rectangle(width / 2 - 120, height * 0.55 - 35, 240, 70), Phaser.Geom.Rectangle.Contains)
         .on('pointerover', () => {
@@ -153,6 +157,9 @@ export class SplashScreen extends Scene {
           this.scaleButtonText('start-button-text', 1.0);
         })
         .on('pointerdown', () => {
+          // Disable button to prevent multiple clicks
+          startButtonContainer.disableInteractive();
+
           // Scale down animation (click effect)
           this.tweens.add({
             targets: startButtonContainer,
@@ -162,32 +169,65 @@ export class SplashScreen extends Scene {
             ease: 'Power2.easeOut'
           });
           this.scaleButtonText('start-button-text', 0.95);
-          
+
+          // Show loading state
+          this.showLoadingState();
+
           // Clean up DOM elements before transitioning
           this.cleanupDOMElements();
-          // Smooth transition to game
-          this.tweens.add({
-            targets: [this.background, this.startButton, this.howToPlayButton],
-            alpha: 0,
-            duration: 200,
-            ease: 'Power2.easeIn',
-            onComplete: () => {
-              try {
-                if (this.cameras?.main?.fadeOut) {
-                  this.cameras.main.fadeOut(250, 0, 0, 0);
-                  this.cameras.main.once('camerafadeoutcomplete', () => {
-                    // Start Game scene and launch UI scene concurrently
-                    this.scene.start('Game');
-                    this.scene.launch('UI');
-                  });
-                } else {
-                  // Start Game scene and launch UI scene concurrently
-                  this.scene.start('Game');
-                  this.scene.launch('UI');
+
+          // Add a small delay to show loading state, then transition
+          this.time.delayedCall(800, () => {
+            try {
+              console.log('SplashScreen: Starting game transition...');
+
+              // Smooth transition to game
+              this.tweens.add({
+                targets: [this.background, this.startButton, this.howToPlayButton, this.loadingContainer],
+                alpha: 0,
+                duration: 300,
+                ease: 'Power2.easeIn',
+                onComplete: () => {
+                  try {
+                    console.log('SplashScreen: Fade out complete, starting scenes...');
+
+                    if (this.cameras?.main?.fadeOut) {
+                      this.cameras.main.fadeOut(250, 0, 0, 0);
+                      this.cameras.main.once('camerafadeoutcomplete', () => {
+                        console.log('SplashScreen: Camera fade complete, launching scenes...');
+                        try {
+                          // Start Game scene and launch UI scene concurrently
+                          this.scene.start('Game');
+                          console.log('SplashScreen: Game scene started');
+                          this.scene.launch('UI');
+                          console.log('SplashScreen: UI scene launched');
+                        } catch (sceneError) {
+                          console.error('Error launching scenes:', sceneError);
+                          this.handleLoadingError(sceneError);
+                        }
+                      });
+                    } else {
+                      console.log('SplashScreen: Direct scene transition (no camera fade)...');
+                      try {
+                        // Start Game scene and launch UI scene concurrently
+                        this.scene.start('Game');
+                        console.log('SplashScreen: Game scene started');
+                        this.scene.launch('UI');
+                        console.log('SplashScreen: UI scene launched');
+                      } catch (sceneError) {
+                        console.error('Error launching scenes:', sceneError);
+                        this.handleLoadingError(sceneError);
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error starting game:', error);
+                    this.handleLoadingError(error);
+                  }
                 }
-              } catch (error) {
-                console.error('Error starting game:', error);
-              }
+              });
+            } catch (error) {
+              console.error('Error during transition:', error);
+              this.handleLoadingError(error);
             }
           });
         })
@@ -209,10 +249,10 @@ export class SplashScreen extends Scene {
     // Create "How to Play" button (Secondary Button - Mid Grey #95A5A6)
     const howToPlayBg = this.add.rectangle(width / 2, height * 0.68, 200, 55, 0x95A5A6, 1);
     howToPlayBg.setStrokeStyle(2, 0xFFFFFF, 0.7);
-    
+
     const howToPlayContainer = this.add.container(0, 0);
     howToPlayContainer.add(howToPlayBg);
-    
+
     if (howToPlayContainer) {
       this.howToPlayButton = howToPlayContainer;
       howToPlayContainer
@@ -278,7 +318,7 @@ export class SplashScreen extends Scene {
       // Simple movement: when scaling up, move down and right slightly
       const moveX = (scale - 1) * 3; // Move right by 3px per 0.1 scale
       const moveY = (scale - 1) * 3; // Move down by 3px per 0.1 scale
-      
+
       // Use simple easing to match Phaser's Power2.easeOut
       const duration = scale === 1.0 ? '150ms' : scale > 1.0 ? '150ms' : '100ms';
       element.style.transition = `transform ${duration} ease-out`;
@@ -350,9 +390,128 @@ export class SplashScreen extends Scene {
     if (this.startButton) {
       this.startButton.setPosition(Math.round(width / 2), Math.round(height * 0.55));
     }
-    
+
     if (this.howToPlayButton) {
       this.howToPlayButton.setPosition(Math.round(width / 2), Math.round(height * 0.68));
     }
+  }
+
+  private showLoadingState(): void {
+    const { width, height } = this.scale;
+
+    // Create loading container
+    this.loadingContainer = this.add.container(width / 2, height * 0.75);
+
+    // Create a more sophisticated loading spinner
+    const spinnerRadius = 30;
+    const spinnerThickness = 4;
+
+    // Create multiple arc segments for a modern loading spinner
+    const segments = 8;
+    this.loadingDots = [];
+
+    for (let i = 0; i < segments; i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      const x = Math.cos(angle) * spinnerRadius;
+      const y = Math.sin(angle) * spinnerRadius;
+
+      const dot = this.add.circle(x, y, spinnerThickness, 0x3498DB);
+
+      // Create a fading effect - dots further along the circle are more transparent
+      const alpha = 1 - (i / segments) * 0.8; // From 1.0 to 0.2
+      dot.setAlpha(alpha);
+
+      this.loadingDots.push(dot);
+      this.loadingContainer.add(dot);
+    }
+
+    // Rotate the entire spinner
+    this.tweens.add({
+      targets: this.loadingContainer,
+      rotation: Math.PI * 2,
+      duration: 1200,
+      repeat: -1,
+      ease: 'Linear'
+    });
+
+    // Add a subtle pulsing effect to the center
+    const centerDot = this.add.circle(0, 0, 6, 0x3498DB, 0.8);
+    this.tweens.add({
+      targets: centerDot,
+      scaleX: 1.5,
+      scaleY: 1.5,
+      alpha: 0.3,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    this.loadingContainer.add(centerDot);
+
+    // Fade in the loading state
+    this.loadingContainer.setAlpha(0);
+    this.tweens.add({
+      targets: this.loadingContainer,
+      alpha: 1,
+      duration: 300,
+      ease: 'Power2.easeOut'
+    });
+  }
+
+  private handleLoadingError(error: any): void {
+    console.error('Loading failed:', error);
+
+    // Hide loading state
+    if (this.loadingContainer) {
+      this.loadingContainer.setVisible(false);
+    }
+
+    // Re-enable the start button
+    if (this.startButton) {
+      this.startButton.setInteractive();
+
+      // Reset button scale
+      this.tweens.add({
+        targets: this.startButton,
+        scaleX: 1.0,
+        scaleY: 1.0,
+        duration: 200,
+        ease: 'Power2.easeOut'
+      });
+    }
+
+    // Show error indicator (graphics-only approach)
+    const { width, height } = this.scale;
+    const errorIndicator = this.add.circle(width / 2, height * 0.8, 20, 0xE74C3C, 1);
+    errorIndicator.setStrokeStyle(3, 0xFFFFFF, 1);
+
+    // Add an X mark inside the circle
+    const xMark1 = this.add.line(width / 2, height * 0.8, -10, -10, 10, 10, 0xFFFFFF, 1).setLineWidth(3);
+    const xMark2 = this.add.line(width / 2, height * 0.8, -10, 10, 10, -10, 0xFFFFFF, 1).setLineWidth(3);
+
+    // Pulse animation for error indicator
+    this.tweens.add({
+      targets: [errorIndicator, xMark1, xMark2],
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 300,
+      yoyo: true,
+      repeat: 2,
+      ease: 'Power2.easeInOut'
+    });
+
+    // Fade out error indicator after 3 seconds
+    this.time.delayedCall(3000, () => {
+      this.tweens.add({
+        targets: [errorIndicator, xMark1, xMark2],
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          errorIndicator.destroy();
+          xMark1.destroy();
+          xMark2.destroy();
+        }
+      });
+    });
   }
 }

@@ -158,7 +158,7 @@ export class UIScene extends Scene {
       console.log('UIScene: Creating score text...');
       this.scoreContainer = this.add.container(margin, headerY);
       const scoreText = this.add.text(0, 0, `Score: ${this.score} | Best: ${this.bestScore}`, {
-        fontFamily: 'Arial, sans-serif', // Use Arial first to avoid font loading issues
+        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins with fallback
         fontSize: '24px',
         fontStyle: 'normal',
         color: '#FFFFFF'
@@ -170,7 +170,7 @@ export class UIScene extends Scene {
       console.log('UIScene: Creating time text...');
       this.timeContainer = this.add.container(width / 2, headerY);
       const timeText = this.add.text(0, 0, 'Time: 0:00', {
-        fontFamily: 'Arial, sans-serif', // Use Arial first to avoid font loading issues
+        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins with fallback
         fontSize: '24px',
         fontStyle: 'normal',
         color: '#FFFFFF'
@@ -209,7 +209,7 @@ export class UIScene extends Scene {
       // Target color text with color name
       const colorName = this.getColorName(this.targetColor);
       const targetText = this.add.text(width / 2, targetY, `TAP: ${colorName}`, {
-        fontFamily: 'Arial, sans-serif', // Use Arial first to avoid font loading issues
+        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins with fallback
         fontSize: '32px',
         fontStyle: 'bold',
         color: this.targetColor

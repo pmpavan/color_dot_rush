@@ -97,6 +97,7 @@ export class Game extends Scene {
       // Configure camera & background
       this.camera = this.cameras.main;
       this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background from design spec
+      console.log('Game: Camera configured');
 
       // Create graphics-based textures for particles (since we skipped Preloader)
       this.createGraphicsTextures();

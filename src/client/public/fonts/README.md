@@ -4,9 +4,9 @@ This directory contains locally bundled Poppins font files for CSP compliance.
 
 ## Required font files:
 
-- poppins-regular.woff2 (400 weight)
-- poppins-medium.woff2 (500 weight)
-- poppins-bold.woff2 (700 weight)
+- poppins-regular.ttf (400 weight)
+- poppins-medium.ttf (500 weight)
+- poppins-bold.ttf (700 weight)
 
 ## Usage in Color Rush UI:
 
@@ -17,11 +17,12 @@ This directory contains locally bundled Poppins font files for CSP compliance.
 
 ## Installation Instructions:
 
-1. Visit https://fonts.google.com/specimen/Poppins
-2. Select Regular (400), Medium (500), and Bold (700) weights
-3. Download as WOFF2 format
-4. Replace the placeholder files in this directory with actual font files
-5. Ensure files are named exactly as listed above
+✅ **COMPLETED** - TTF font files have been downloaded from Google Fonts repository:
+1. poppins-regular.ttf (400 weight) - Downloaded from GitHub
+2. poppins-medium.ttf (500 weight) - Downloaded from GitHub  
+3. poppins-bold.ttf (700 weight) - Downloaded from GitHub
+
+**Note:** Switched from WOFF2 to TTF format for better compatibility and reliability.
 
 ## CSP Compliance:
 
