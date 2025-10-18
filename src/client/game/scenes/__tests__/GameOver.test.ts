@@ -538,7 +538,7 @@ describe('GameOver Scene', () => {
       expect(mockScene.start).toHaveBeenCalledWith('SplashScreen');
     });
 
-    it('should show leaderboard placeholder when View Leaderboard is clicked', () => {
+    it('should transition to Leaderboard scene when View Leaderboard is clicked', () => {
       const pointerDownCalls = mockText.on.mock.calls.filter(call => call[0] === 'pointerdown');
       const leaderboardCallback = pointerDownCalls[1][1]; // Second button is View Leaderboard
 
@@ -547,17 +547,32 @@ describe('GameOver Scene', () => {
 
       leaderboardCallback();
 
-      // Should create placeholder text
-      expect(mockAdd.text).toHaveBeenCalledWith(
-        0, expect.any(Number), 'Leaderboard coming soon!',
+      // Mock the modal card
+      (gameOverScene as any).modalCard = mockContainer;
+
+      // Should start transition animation
+      expect(mockTweens.add).toHaveBeenCalledWith(
         expect.objectContaining({
-          fontFamily: 'Poppins',
-          fontSize: '16px',
-          color: '#F1C40F',
-          backgroundColor: '#2C3E50',
-          padding: { x: 15, y: 8 },
+          targets: mockContainer,
+          scaleX: 0.1,
+          scaleY: 0.1,
+          alpha: 0,
+          duration: 200,
+          ease: 'Back.easeIn',
+          onComplete: expect.any(Function)
         })
       );
+
+      // Execute the onComplete callback to test scene transition
+      const tweenCall = mockTweens.add.mock.calls.find(call => 
+        call[0].targets === mockContainer && call[0].scaleX === 0.1
+      );
+      if (tweenCall && tweenCall[0].onComplete) {
+        tweenCall[0].onComplete();
+      }
+
+      // Should transition to Leaderboard scene
+      expect(mockScene.start).toHaveBeenCalledWith('Leaderboard');
     });
   });
 

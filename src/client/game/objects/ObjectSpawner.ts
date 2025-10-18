@@ -14,6 +14,9 @@ interface SpawnConfig {
   bombChance: number; // Probability of spawning a bomb (0-1)
   slowMoChance: number; // Probability of spawning a slow-mo dot (0-1)
   correctColorRatio: number; // Ratio of correct color dots to distractors (0-1)
+  baseSpawnRate: number; // Base spawn rate for performance scaling
+  effectsEnabled: boolean; // Enable/disable visual effects for performance
+  particleQuality: 'high' | 'medium' | 'low'; // Particle quality for performance
 }
 
 /**
@@ -70,7 +73,10 @@ export class ObjectSpawner {
       maxSpawnRate: 2000, // 2 seconds maximum
       bombChance: 0.15, // 15% chance for bombs
       slowMoChance: 0.05, // 5% chance for slow-mo dots
-      correctColorRatio: 0.4 // 40% of dots should be correct color
+      correctColorRatio: 0.4, // 40% of dots should be correct color
+      baseSpawnRate: 1000, // Base spawn rate for performance scaling
+      effectsEnabled: true, // Enable visual effects by default
+      particleQuality: 'high' // High particle quality by default
     };
     
     this.initializeSpawnSystem();
@@ -371,5 +377,31 @@ export class ObjectSpawner {
    */
   public isActive(): boolean {
     return this.lastSpawnTime !== Number.MAX_SAFE_INTEGER;
+  }
+
+  /**
+   * Set maximum objects for performance optimization
+   */
+  public setMaxObjects(maxObjects: number): void {
+    // Adjust spawn rates based on max objects
+    const ratio = maxObjects / 50; // 50 is the default max
+    this.config.baseSpawnRate = Math.max(500, this.config.baseSpawnRate * ratio);
+    console.log(`Adjusted spawn rate for ${maxObjects} max objects: ${this.config.baseSpawnRate}ms`);
+  }
+
+  /**
+   * Enable/disable visual effects for performance optimization
+   */
+  public setEffectsEnabled(enabled: boolean): void {
+    this.config.effectsEnabled = enabled;
+    console.log(`Visual effects ${enabled ? 'enabled' : 'disabled'} for performance`);
+  }
+
+  /**
+   * Set particle quality for performance optimization
+   */
+  public setParticleQuality(quality: 'high' | 'medium' | 'low'): void {
+    this.config.particleQuality = quality;
+    console.log(`Particle quality set to ${quality} for performance`);
   }
 }

@@ -113,6 +113,9 @@ export class Game extends Scene {
     // Setup game object event handlers
     this.setupGameObjectEvents();
 
+    // Setup performance optimization event handlers
+    this.setupPerformanceOptimization();
+
     // Initialize game state
     this.changeState(GameState.READY);
 
@@ -140,9 +143,63 @@ export class Game extends Scene {
     console.log('Game object event system initialized (centralized collision detection)');
   }
 
+  private setupPerformanceOptimization(): void {
+    // Listen for performance optimization events
+    this.events.on('performance_optimization', (data: { event: string; data: any }) => {
+      const { event, data: settings } = data;
+      
+      switch (event) {
+        case 'settings_update':
+          this.applyPerformanceSettings(settings);
+          break;
+        case 'emergency_optimization':
+          this.applyEmergencyOptimizations(settings);
+          break;
+      }
+    });
+  }
+
+  private applyPerformanceSettings(settings: any): void {
+    // Apply performance settings to object spawner and pools
+    if (this.objectSpawner) {
+      this.objectSpawner.setMaxObjects(settings.maxObjects);
+      this.objectSpawner.setEffectsEnabled(settings.effectsEnabled);
+      this.objectSpawner.setParticleQuality(settings.particleQuality);
+    }
+    
+    // Update object pool limits
+    if (this.objectPool) {
+      this.objectPool.updateMaxSizes({
+        dots: Math.floor(settings.maxObjects * 0.7), // 70% dots
+        bombs: Math.floor(settings.maxObjects * 0.2), // 20% bombs
+        slowMo: Math.floor(settings.maxObjects * 0.1), // 10% slow-mo
+      });
+    }
+    
+    console.log('Applied performance settings:', settings);
+  }
+
+  private applyEmergencyOptimizations(settings: any): void {
+    console.warn('Applying emergency performance optimizations');
+    
+    // Immediately reduce active objects
+    if (this.objectPool) {
+      this.objectPool.emergencyCleanup(settings.maxObjects);
+    }
+    
+    // Disable all non-essential visual effects
+    this.tweens.killAll();
+    
+    // Apply settings
+    this.applyPerformanceSettings(settings);
+  }
+
   private handleTap(x: number, y: number): void {
     if (this.currentState !== GameState.PLAYING) return;
 
+    // Record input processing start for performance monitoring
+    const performanceMonitor = (this.game as any).performanceMonitor;
+    
     // Create ripple effect for all taps
     this.createRippleEffect(x, y);
     
@@ -158,6 +215,11 @@ export class Game extends Scene {
       } else if (tappedObject instanceof SlowMoDot) {
         this.handleSlowMoActivation(tappedObject);
       }
+    }
+    
+    // Record input processing completion for performance monitoring
+    if (performanceMonitor && performanceMonitor.recordInputProcessed) {
+      performanceMonitor.recordInputProcessed();
     }
     
     console.log(`Tap at (${x}, ${y}) - Object: ${tappedObject ? tappedObject.constructor.name : 'none'}`);

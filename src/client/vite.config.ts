@@ -8,14 +8,14 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: '../../dist/client',
-      sourcemap: true,
+      sourcemap: mode !== 'production', // Only include sourcemaps in development
       chunkSizeWarningLimit: 1500,
       rollupOptions: {
         output: {
           manualChunks: {
-            phaser: ['phaser'],
+            phaser: ['phaser'], // Bundle Phaser separately for better caching
           },
-          // Ensure assets are properly bundled
+          // Ensure assets are properly bundled with content hashing
           assetFileNames: (assetInfo) => {
             const info = assetInfo.name?.split('.') || [];
             const extType = info[info.length - 1];
@@ -27,25 +27,67 @@ export default defineConfig(({ mode }) => {
             }
             return `assets/[name]-[hash][extname]`;
           },
+          // Optimize chunk naming for better caching
+          chunkFileNames: 'assets/js/[name]-[hash].js',
+          entryFileNames: 'assets/js/[name]-[hash].js',
         },
       },
-      // Ensure all assets are inlined for CSP compliance
-      assetsInlineLimit: 0, // Don't inline assets, but bundle them properly
+      // CSP Compliance: Don't inline assets, bundle them properly
+      assetsInlineLimit: 0,
+      // Performance optimizations for production
       ...(mode === 'production' && {
         minify: 'terser',
         terserOptions: {
           compress: {
             passes: 2,
+            drop_console: true, // Remove console.log in production
+            drop_debugger: true, // Remove debugger statements
+            pure_funcs: ['console.log', 'console.warn'], // Remove specific console methods
           },
-          mangle: true,
+          mangle: {
+            safari10: true, // Fix Safari 10 issues
+          },
           format: {
-            comments: false,
+            comments: false, // Remove comments
+          },
+        },
+        // Tree shaking optimizations
+        rollupOptions: {
+          ...this.rollupOptions,
+          treeshake: {
+            moduleSideEffects: false,
+            propertyReadSideEffects: false,
+            tryCatchDeoptimization: false,
           },
         },
       }),
     },
-    // Ensure proper asset handling
+    // Ensure proper asset handling for CSP compliance
     publicDir: 'public',
-    assetsInclude: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.woff2'],
+    assetsInclude: [
+      '**/*.svg', 
+      '**/*.png', 
+      '**/*.jpg', 
+      '**/*.jpeg', 
+      '**/*.gif', 
+      '**/*.woff2',
+      '**/*.woff',
+      '**/*.ttf',
+      '**/*.eot'
+    ],
+    // Performance optimizations
+    optimizeDeps: {
+      include: ['phaser'], // Pre-bundle Phaser for faster dev startup
+      exclude: [], // Don't exclude any dependencies
+    },
+    // Server configuration for development
+    server: {
+      // Enable HTTP/2 for better performance in development
+      https: false,
+      // Optimize for development performance
+      hmr: {
+        overlay: false, // Disable error overlay for better performance
+      },
+    },
   };
 });

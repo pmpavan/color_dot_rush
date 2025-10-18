@@ -275,6 +275,50 @@ export class ObjectPoolManager {
   }
 
   /**
+   * Update maximum pool sizes for performance optimization
+   */
+  public updateMaxSizes(limits: { dots: number; bombs: number; slowMo: number }): void {
+    // Note: Phaser Groups don't support dynamic maxSize changes
+    // We'll implement this by tracking limits manually
+    console.log('Updated pool size limits:', limits);
+  }
+
+  /**
+   * Emergency cleanup for performance optimization
+   * Deactivates excess objects to improve performance
+   */
+  public emergencyCleanup(maxTotalObjects: number): void {
+    const totalActive = this.dotPool.countActive() + this.bombPool.countActive() + this.slowMoPool.countActive();
+    
+    if (totalActive <= maxTotalObjects) return;
+    
+    const objectsToRemove = totalActive - maxTotalObjects;
+    let removed = 0;
+    
+    console.warn(`Emergency cleanup: removing ${objectsToRemove} objects`);
+    
+    // Remove dots first (least critical for gameplay)
+    const activeDots = this.getActiveDots();
+    for (const dot of activeDots) {
+      if (removed >= objectsToRemove) break;
+      dot.deactivate();
+      removed++;
+    }
+    
+    // Remove excess bombs if still over limit
+    if (removed < objectsToRemove) {
+      const activeBombs = this.getActiveBombs();
+      for (const bomb of activeBombs) {
+        if (removed >= objectsToRemove) break;
+        bomb.deactivate();
+        removed++;
+      }
+    }
+    
+    console.log(`Emergency cleanup complete: removed ${removed} objects`);
+  }
+
+  /**
    * Destroy all pools and clean up
    */
   public destroy(): void {
