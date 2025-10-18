@@ -15,11 +15,11 @@ describe('Leaderboard UI Integration Scenarios', () => {
   describe('successful leaderboard loading', () => {
     it('should provide data for normal leaderboard display', async () => {
       const response = await service.getTopScores();
-      
+
       // UI should be able to display these entries
       expect(response.entries).toHaveLength(10);
       expect(response.totalPlayers).toBe(10);
-      
+
       // Each entry should have required display fields
       response.entries.forEach(entry => {
         expect(entry.username).toBeTruthy();
@@ -33,7 +33,7 @@ describe('Leaderboard UI Integration Scenarios', () => {
       // User submits a score
       await service.submitScore(125, 75000);
       const response = await service.getTopScores();
-      
+
       // UI should show user's rank
       expect(response.userRank).toBeDefined();
       expect(response.userRank).toBeGreaterThan(0);
@@ -43,7 +43,7 @@ describe('Leaderboard UI Integration Scenarios', () => {
     it('should handle user rank display when user is not on leaderboard', async () => {
       service.setCurrentUser('NewPlayer');
       const response = await service.getTopScores();
-      
+
       // UI should handle missing user rank gracefully
       expect(response.userRank).toBeUndefined();
     });
@@ -52,7 +52,7 @@ describe('Leaderboard UI Integration Scenarios', () => {
   describe('error handling scenarios', () => {
     it('should provide clear error message for network failures', async () => {
       service.simulateAPIFailure(true);
-      
+
       try {
         await service.getTopScores();
         expect.fail('Should have thrown an error');
@@ -65,7 +65,7 @@ describe('Leaderboard UI Integration Scenarios', () => {
 
     it('should provide clear error message for network timeouts', async () => {
       service.simulateTimeout(true);
-      
+
       try {
         await service.getTopScores();
         expect.fail('Should have thrown an error');
@@ -79,7 +79,7 @@ describe('Leaderboard UI Integration Scenarios', () => {
     it('should handle empty leaderboard gracefully', async () => {
       service.simulateEmptyResponse(true);
       const response = await service.getTopScores();
-      
+
       // UI should show "No scores yet" or similar message
       expect(response.entries).toHaveLength(0);
       expect(response.totalPlayers).toBe(0);
@@ -88,7 +88,7 @@ describe('Leaderboard UI Integration Scenarios', () => {
 
     it('should handle score submission failures gracefully', async () => {
       service.simulateAPIFailure(true);
-      
+
       try {
         await service.submitScore(100, 60000);
         expect.fail('Should have thrown an error');
@@ -102,18 +102,18 @@ describe('Leaderboard UI Integration Scenarios', () => {
   describe('slow network scenarios', () => {
     it('should handle slow API responses', async () => {
       service.setResponseDelay(2000);
-      
+
       // UI should show loading state during this time
       const startTime = Date.now();
       const response = await service.getTopScores();
-      
+
       // Response should eventually succeed
       expect(response.entries).toHaveLength(10);
     });
 
     it('should handle timeout during score submission', async () => {
       service.simulateTimeout(true);
-      
+
       try {
         await service.submitScore(150, 90000);
         expect.fail('Should have thrown an error');
@@ -127,7 +127,7 @@ describe('Leaderboard UI Integration Scenarios', () => {
   describe('user experience scenarios', () => {
     it('should provide feedback for successful score submission', async () => {
       const result = await service.submitScore(135, 80000);
-      
+
       // UI should show success message with rank
       expect(result.success).toBe(true);
       expect(result.message).toContain('Score submitted successfully');
@@ -140,11 +140,11 @@ describe('Leaderboard UI Integration Scenarios', () => {
       await service.submitScore(100, 60000);
       let response = await service.getTopScores();
       const initialRank = response.userRank;
-      
+
       // Submit better score
       await service.submitScore(140, 85000);
       response = await service.getTopScores();
-      
+
       // UI should show improved rank
       expect(response.userRank).toBeLessThan(initialRank!);
     });
@@ -153,14 +153,14 @@ describe('Leaderboard UI Integration Scenarios', () => {
       // Simulate multiple players submitting scores
       const players = ['Alice', 'Bob', 'Charlie', 'Diana'];
       const scores = [145, 132, 128, 200]; // Diana gets a very high score
-      
+
       for (let i = 0; i < players.length; i++) {
         service.setCurrentUser(players[i]);
         await service.submitScore(scores[i], 70000 + i * 5000);
       }
-      
+
       const response = await service.getTopScores();
-      
+
       // UI should show updated leaderboard with all players
       expect(response.entries.some(e => e.username === 'Diana')).toBe(true);
       expect(response.entries.find(e => e.username === 'Diana')?.rank).toBe(1);
@@ -173,11 +173,11 @@ describe('Leaderboard UI Integration Scenarios', () => {
       await service.submitScore(120, 70000);
       let rank = await service.getCurrentUserRank();
       expect(rank).toBeGreaterThan(0);
-      
+
       // Service fails
       service.simulateAPIFailure(true);
       rank = await service.getCurrentUserRank();
-      
+
       // UI should handle null rank gracefully (hide rank display)
       expect(rank).toBeNull();
     });
@@ -185,37 +185,37 @@ describe('Leaderboard UI Integration Scenarios', () => {
     it('should demonstrate recovery after network issues', async () => {
       // Network fails
       service.simulateTimeout(true);
-      
+
       try {
         await service.getTopScores();
         expect.fail('Should have failed');
       } catch {
         // Expected failure
       }
-      
+
       // Network recovers
       service.simulateTimeout(false);
       const response = await service.getTopScores();
-      
+
       // UI should work normally again
       expect(response.entries).toHaveLength(10);
     });
 
     it('should handle intermittent connectivity issues', async () => {
-      const results = [];
-      
+      const results: Array<{ success: boolean; data?: any; error?: string }> = [];
+
       // Simulate intermittent failures
       for (let i = 0; i < 5; i++) {
         service.simulateAPIFailure(i % 2 === 0); // Fail on even iterations
-        
+
         try {
           const response = await service.getTopScores();
           results.push({ success: true, data: response });
         } catch (error) {
-          results.push({ success: false, error: error.message });
+          results.push({ success: false, error: (error as Error).message });
         }
       }
-      
+
       // UI should handle mixed success/failure results
       expect(results.some(r => r.success)).toBe(true);
       expect(results.some(r => !r.success)).toBe(true);
@@ -230,14 +230,14 @@ describe('Leaderboard UI Integration Scenarios', () => {
       await service.submitScore(150, 75000);
       service.setCurrentUser('Player3');
       await service.submitScore(125, 65000);
-      
+
       const response = await service.getTopScores();
-      
+
       // Validate data consistency for UI display
       expect(response.entries).toHaveLength(10); // Original 10 entries maintained
       expect(response.entries[0].score).toBe(156); // Original top score preserved
       expect(response.entries.find(e => e.username === 'Player2')?.score).toBe(150);
-      
+
       // Validate ranking consistency
       for (let i = 0; i < response.entries.length - 1; i++) {
         expect(response.entries[i].score).toBeGreaterThanOrEqual(response.entries[i + 1].score);
