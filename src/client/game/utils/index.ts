@@ -29,6 +29,18 @@ export type { IViewportManager, ViewportDimensions, CameraBounds } from './Viewp
 export { ResponsiveSystem } from './ResponsiveSystem';
 export type { IResponsiveSystem } from './ResponsiveSystem';
 
+/**
+ * Unified text rendering system exports
+ */
+export { PhaserTextRenderer } from './PhaserTextRenderer';
+export type { ITextRenderer, TextStyle, GradientConfig } from './PhaserTextRenderer';
+
+/**
+ * Interactive button management system exports
+ */
+export { InteractiveButtonManager, ButtonState } from './InteractiveButtonManager';
+export type { IButtonManager, ButtonConfig, InteractiveButton } from './InteractiveButtonManager';
+
 // Re-export existing utilities
 export { CSPComplianceChecker } from './CSPComplianceChecker';
 export { PerformanceMonitor } from './PerformanceMonitor';
