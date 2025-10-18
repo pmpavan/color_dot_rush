@@ -9,38 +9,38 @@ describe('DifficultyManager PRD Verification', () => {
     manager = new DifficultyManager();
   });
 
-  it('should use exact PRD parameter values', () => {
+  it('should use optimized parameter values for 90+ second gameplay', () => {
     const params = manager.getParams();
     
     expect(params.baseSpeed).toBe(100); // px/sec
-    expect(params.growthRate).toBe(1.04);
+    expect(params.growthRate).toBe(1.023); // Optimized for 90+ second target
     expect(params.baseSize).toBe(80); // px
-    expect(params.shrinkRate).toBe(0.98);
+    expect(params.shrinkRate).toBe(0.9895); // Optimized for 90+ second target
   });
 
   it('should implement speed formula: speed = baseSpeed * growthRate^t', () => {
-    // Test at various time points
-    expect(manager.calculateSpeed(0)).toBe(100); // At t=0: 100 * 1.04^0 = 100
+    // Test at various time points with optimized parameters
+    expect(manager.calculateSpeed(0)).toBe(100); // At t=0: 100 * 1.023^0 = 100
     
     const speed30 = manager.calculateSpeed(30);
-    const expected30 = 100 * Math.pow(1.04, 30);
+    const expected30 = 100 * Math.pow(1.023, 30);
     expect(speed30).toBeCloseTo(expected30, 2);
     
     const speed60 = manager.calculateSpeed(60);
-    const expected60 = 100 * Math.pow(1.04, 60);
+    const expected60 = 100 * Math.pow(1.023, 60);
     expect(speed60).toBeCloseTo(expected60, 2);
   });
 
   it('should implement size formula: size = baseSize * shrinkRate^t', () => {
-    // Test at various time points
-    expect(manager.calculateSize(0)).toBe(80); // At t=0: 80 * 0.98^0 = 80
+    // Test at various time points with optimized parameters
+    expect(manager.calculateSize(0)).toBe(80); // At t=0: 80 * 0.9895^0 = 80
     
     const size30 = manager.calculateSize(30);
-    const expected30 = 80 * Math.pow(0.98, 30);
+    const expected30 = 80 * Math.pow(0.9895, 30);
     expect(size30).toBeCloseTo(expected30, 2);
     
     const size60 = manager.calculateSize(60);
-    const expected60 = 80 * Math.pow(0.98, 60);
+    const expected60 = 80 * Math.pow(0.9895, 60);
     expect(size60).toBeCloseTo(expected60, 2);
   });
 

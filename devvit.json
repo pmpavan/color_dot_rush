@@ -32,5 +32,8 @@
   },
   "permissions": {
     "redis": true
+  },
+  "dev": {
+    "subreddit": "color_dot_rush_dev"
   }
 }

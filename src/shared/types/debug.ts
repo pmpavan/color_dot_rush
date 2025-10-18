@@ -28,12 +28,12 @@ export interface IDebugService {
   updateElapsedTime(elapsedTime: number): void;
 }
 
-// Default difficulty parameters from PRD
+// Default difficulty parameters optimized for 90+ second gameplay
 export const DEFAULT_DIFFICULTY_PARAMS: DifficultyParams = {
   baseSpeed: 100, // px/sec
-  growthRate: 1.04,
+  growthRate: 1.023, // Reduced for 90+ second target (was 1.04)
   baseSize: 80, // px diameter
-  shrinkRate: 0.98,
+  shrinkRate: 0.9895, // Fine-tuned for 90+ second target (was 0.98)
 };
 
 // Default debug configuration

@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: '../../dist/client',
       sourcemap: mode !== 'production', // Only include sourcemaps in development
-      chunkSizeWarningLimit: 1500,
+      chunkSizeWarningLimit: 2000, // Increase limit for Phaser bundle
       rollupOptions: {
         output: {
           manualChunks: {
@@ -39,13 +39,19 @@ export default defineConfig(({ mode }) => {
         minify: 'terser',
         terserOptions: {
           compress: {
-            passes: 2,
+            passes: 3, // Multiple compression passes
             drop_console: true, // Remove console.log in production
             drop_debugger: true, // Remove debugger statements
-            pure_funcs: ['console.log', 'console.warn'], // Remove specific console methods
+            pure_funcs: ['console.log', 'console.warn', 'console.info'], // Remove specific console methods
+            unsafe_arrows: true, // Convert arrow functions for better compression
+            unsafe_methods: true, // Optimize method calls
+            unsafe_proto: true, // Optimize prototype access
           },
           mangle: {
             safari10: true, // Fix Safari 10 issues
+            properties: {
+              regex: /^_/, // Mangle private properties starting with _
+            },
           },
           format: {
             comments: false, // Remove comments
