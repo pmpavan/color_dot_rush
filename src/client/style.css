@@ -1,9 +1,10 @@
-/* Poppins font family - using TTF format for better compatibility */
+/* Poppins font family - using WOFF2 format for better performance */
 @font-face {
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 400;
-  src: url('./public/fonts/poppins-regular.ttf') format('truetype');
+  src: url('./fonts/poppins-regular.woff2') format('woff2'),
+       url('./fonts/poppins-regular.ttf') format('truetype');
   font-display: swap; /* Improve loading performance */
 }
 
@@ -11,7 +12,8 @@
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 500;
-  src: url('./public/fonts/poppins-medium.ttf') format('truetype');
+  src: url('./fonts/poppins-medium.woff2') format('woff2'),
+       url('./fonts/poppins-medium.ttf') format('truetype');
   font-display: swap;
 }
 
@@ -19,7 +21,8 @@
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 700;
-  src: url('./public/fonts/poppins-bold.ttf') format('truetype');
+  src: url('./fonts/poppins-bold.woff2') format('woff2'),
+       url('./fonts/poppins-bold.ttf') format('truetype');
   font-display: swap;
 }
 

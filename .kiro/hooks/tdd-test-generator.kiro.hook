@@ -1,23 +1,10 @@
 {
-  "enabled": true,
   "name": "TDD Test Generator",
   "description": "Automatically generates unit tests when new source code files are created or modified, following TDD principles by ensuring tests exist before implementation",
-  "version": "1",
-  "when": {
-    "type": "fileEdited",
-    "patterns": [
-      "src/**/*.ts",
-      "src/**/*.js",
-      "lib/**/*.ts",
-      "lib/**/*.js",
-      "components/**/*.ts",
-      "components/**/*.js",
-      "services/**/*.ts",
-      "services/**/*.js"
-    ]
+  "trigger": {
+    "type": "onFileSave",
+    "filePattern": "src/**/*.{ts,js},lib/**/*.{ts,js},components/**/*.{ts,js},services/**/*.{ts,js}"
   },
-  "then": {
-    "type": "askAgent",
-    "prompt": "A new or modified source code file has been detected. Following TDD principles, generate comprehensive unit tests for this code BEFORE any implementation. Create test files that cover:\n\n1. **Core Functionality Tests**: Test all public methods and their expected behaviors\n2. **Edge Cases**: Test boundary conditions, error scenarios, and invalid inputs  \n3. **Integration Points**: Test interactions with dependencies and services\n4. **Game-Specific Tests** (for Color Rush): Test game mechanics, difficulty scaling, collision detection, scoring logic\n5. **Devvit Integration Tests**: Mock Reddit API calls and test Devvit component interactions\n6. **Performance Tests**: Test object pooling, memory usage, and frame rate requirements\n\nStructure the tests using Jest/Vitest patterns with proper mocking of dependencies. Ensure tests follow the Red-Green-Refactor cycle by initially failing until implementation is complete. Include setup/teardown for Phaser scenes and game objects where applicable."
-  }
+  "enabled": true,
+  "prompt": "A new or modified source code file has been detected. Following TDD principles, generate comprehensive unit tests for this code BEFORE any implementation. Create test files that cover:\n\n1. **Core Functionality Tests**: Test all public methods and their expected behaviors\n2. **Edge Cases**: Test boundary conditions, error scenarios, and invalid inputs  \n3. **Integration Points**: Test interactions with dependencies and services\n4. **Game-Specific Tests** (for Color Rush): Test game mechanics, difficulty scaling, collision detection, scoring logic\n5. **Devvit Integration Tests**: Mock Reddit API calls and test Devvit component interactions\n6. **Performance Tests**: Test object pooling, memory usage, and frame rate requirements\n\nStructure the tests using Jest/Vitest patterns with proper mocking of dependencies. Ensure tests follow the Red-Green-Refactor cycle by initially failing until implementation is complete. Include setup/teardown for Phaser scenes and game objects where applicable."
 }

@@ -1,29 +1,21 @@
 import { Scene, GameObjects } from 'phaser';
 import { FontPreloader } from '../utils/FontPreloader';
-import { FontLoadingIndicator } from '../utils/FontLoadingIndicator';
+// import { FontLoadingIndicator } from '../utils/FontLoadingIndicator'; // Not needed with WOFF2
 import { FontErrorHandler } from '../utils/FontErrorHandler';
-import { PhaserTextRenderer, TextStyle, GradientConfig } from '../utils/PhaserTextRenderer';
+import { DOMTextRenderer, DOMTextStyle, GradientTextConfig } from '../utils/DOMTextRenderer';
+import { ResponsiveLayoutManager, IResponsiveLayoutManager, ButtonType } from '../utils/ResponsiveLayoutManager';
 
 export class SplashScreen extends Scene {
   background: GameObjects.Rectangle | null = null;
-  startButton: GameObjects.Container | null = null;
-  howToPlayButton: GameObjects.Container | null = null;
-  loadingContainer: GameObjects.Container | null = null;
-  loadingDots: GameObjects.Arc[] = [];
-  
-  // Text elements
-  private titleText: GameObjects.Text | null = null;
-  private subtitleText: GameObjects.Text | null = null;
-  private startButtonText: GameObjects.Text | null = null;
-  private howToPlayButtonText: GameObjects.Text | null = null;
-  
-  // Font preloading system
+
+  // Component systems
   private fontPreloader: FontPreloader;
-  private fontLoadingIndicator: FontLoadingIndicator | null = null;
   private fontErrorHandler: FontErrorHandler;
-  
-  // Text rendering system
-  private textRenderer: PhaserTextRenderer | null = null;
+  private domTextRenderer: DOMTextRenderer | null = null;
+  private layoutManager: IResponsiveLayoutManager;
+
+  // Component lifecycle state
+  private componentsInitialized: boolean = false;
 
   constructor() {
     super('SplashScreen');
@@ -31,519 +23,734 @@ export class SplashScreen extends Scene {
     if (this.scene) {
       this.scene.key = 'SplashScreen';
     }
-    
-    // Initialize font preloading system
-    this.fontPreloader = FontPreloader.getInstance();
-    this.fontErrorHandler = FontErrorHandler.getInstance();
+
+    // Initialize core component systems with proper dependency injection
+    this.initializeComponents();
   }
 
   /**
-   * Reset cached GameObject references every time the scene starts.
-   * The same Scene instance is reused by Phaser, so we must ensure
-   * stale (destroyed) objects are cleared out when the scene restarts.
+   * Initialize all component systems with proper dependency injection
    */
-  init(): void {
-    this.background = null;
-    this.startButton = null;
-    this.howToPlayButton = null;
-    this.loadingContainer = null;
-    this.loadingDots = [];
+  private initializeComponents(): void {
+    try {
+      // Initialize font preloading system (singleton)
+      this.fontPreloader = FontPreloader.getInstance();
+      this.fontErrorHandler = FontErrorHandler.getInstance();
 
-    // Reset text elements
-    this.titleText = null;
-    this.subtitleText = null;
-    this.startButtonText = null;
-    this.howToPlayButtonText = null;
-    this.textRenderer = null;
+      // Initialize responsive layout manager
+      this.layoutManager = new ResponsiveLayoutManager();
 
-    // Clean up font loading indicator
-    if (this.fontLoadingIndicator) {
-      this.fontLoadingIndicator.destroy();
-      this.fontLoadingIndicator = null;
+      // Mark components as initialized
+      this.componentsInitialized = true;
+
+      console.log('SplashScreen: Component systems initialized successfully');
+    } catch (error) {
+      console.error('SplashScreen: Failed to initialize component systems:', error);
+      this.componentsInitialized = false;
+      throw error;
     }
   }
 
+  /**
+   * Set up component lifecycle management and cross-component dependencies
+   */
+  private setupComponentLifecycle(): void {
+    if (!this.componentsInitialized) {
+      throw new Error('Components must be initialized before setting up lifecycle');
+    }
 
+    // Set up layout manager resize callbacks to update all visual elements
+    this.layoutManager.onResize((width: number, height: number) => {
+      this.handleLayoutUpdate(width, height);
+    });
+
+    // Initialize DOM text renderer
+    this.domTextRenderer = new DOMTextRenderer('game-container');
+
+    console.log('SplashScreen: Component lifecycle management set up');
+  }
 
   /**
-   * Initialize font loading process with proper error handling
+   * Handle layout updates from ResponsiveLayoutManager
+   */
+  private handleLayoutUpdate(width: number, height: number): void {
+    console.log(`SplashScreen: Handling layout update - ${width}x${height}`);
+
+    // Update camera and background
+    this.cameras.resize(width, height);
+
+    if (this.background) {
+      this.background.setDisplaySize(width, height);
+    }
+
+    // Update DOM text renderer size
+    if (this.domTextRenderer) {
+      this.domTextRenderer.updateSize(width, height);
+
+      // Update text positions
+      const titlePos = this.layoutManager.getTitlePosition();
+      this.domTextRenderer.updatePosition('title', titlePos.x, titlePos.y);
+
+      const subtitlePos = this.layoutManager.getSubtitlePosition();
+      this.domTextRenderer.updatePosition('subtitle', subtitlePos.x, subtitlePos.y);
+
+      // Update button positions
+      const startButtonPos = this.layoutManager.getButtonPosition(ButtonType.PRIMARY);
+      this.domTextRenderer.updatePosition('start-button', startButtonPos.x, startButtonPos.y);
+
+      const howToPlayButtonPos = this.layoutManager.getButtonPosition(ButtonType.SECONDARY);
+      this.domTextRenderer.updatePosition('how-to-play-button', howToPlayButtonPos.x, howToPlayButtonPos.y);
+    }
+
+    // No font loading indicator to update
+  }
+
+  /**
+   * Clean up all component resources
+   */
+  private cleanupComponentResources(): void {
+    console.log('SplashScreen: Cleaning up component resources');
+
+    // Clean up resize event listeners
+    this.cleanupResizeEventHandling();
+
+    // Clean up layout manager
+    if (this.layoutManager) {
+      this.layoutManager.destroy();
+    }
+
+    // No font loading indicator to clean up
+
+    // Clean up DOM text renderer
+    if (this.domTextRenderer) {
+      this.domTextRenderer.destroy();
+      this.domTextRenderer = null;
+    }
+
+    // Clean up visual elements
+    this.cleanupVisualElements();
+
+    // Clean up any running tweens
+    this.cleanupTweens();
+
+    // Reset component state
+    this.componentsInitialized = false;
+  }
+
+  /**
+   * Clean up visual elements to prevent memory leaks
+   */
+  private cleanupVisualElements(): void {
+    console.log('SplashScreen: Cleaning up visual elements');
+
+    // Clean up background
+    if (this.background) {
+      this.background.destroy();
+      this.background = null;
+    }
+  }
+
+  /**
+   * Clean up any running tweens to prevent memory leaks
+   */
+  private cleanupTweens(): void {
+    console.log('SplashScreen: Cleaning up tweens');
+
+    try {
+      // Kill all tweens in this scene
+      this.tweens.killAll();
+
+      // Also clean up any timeline tweens
+      this.tweens.getAllTweens().forEach(tween => {
+        if (tween.isPlaying()) {
+          tween.stop();
+        }
+      });
+
+    } catch (error) {
+      console.warn('SplashScreen: Error cleaning up tweens:', error);
+    }
+  }
+
+  /**
+   * Clean up resize event listeners
+   */
+  private cleanupResizeEventHandling(): void {
+    console.log('SplashScreen: Cleaning up resize event listeners');
+
+    // Remove Phaser resize listener
+    this.scale.off('resize', this.handlePhaserResize, this);
+
+    // Remove orientation change listener
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('orientationchange', this.handleOrientationChange);
+    }
+  }
+
+  /**
+   * Initialize font loading process with proper error handling and loading indicators
    */
   private async initializeFontLoading(): Promise<void> {
     try {
-      console.log('SplashScreen: Starting font preloading...');
-      
+      console.log('SplashScreen: Starting font preloading with loading indicators...');
+
       // Inject font CSS for fallback loading method
       this.fontPreloader.injectFontCSS();
-      
-      // Create and show loading indicator
-      this.fontLoadingIndicator = new FontLoadingIndicator(this, this.fontPreloader);
-      this.fontLoadingIndicator.create();
-      
-      // Start font preloading
+
+      // Start font preloading with WOFF2 fonts
       const fontsLoaded = await this.fontPreloader.preloadFonts();
-      
+
+      // Ensure document fonts are ready before proceeding
+      await document.fonts.ready;
+      console.log('SplashScreen: Document fonts ready');
+
       if (fontsLoaded) {
-        console.log('SplashScreen: Fonts loaded successfully');
+        console.log('SplashScreen: WOFF2 fonts loaded successfully');
       } else {
         console.log('SplashScreen: Using fallback fonts');
       }
-      
+
+      // Brief delay to ensure fonts are fully available
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       // Create UI elements now that fonts are ready
       this.createUIElements();
-      
+
     } catch (error) {
       console.error('SplashScreen: Font loading failed:', error);
       this.fontErrorHandler.handleUnknownError('Poppins', error);
-      
-      // Show error state and proceed with fallbacks
-      if (this.fontLoadingIndicator) {
-        this.fontLoadingIndicator.showError('Font loading failed');
+
+      // No loading indicator to clean up
+
+      // Ensure document fonts are ready even in error case
+      try {
+        await document.fonts.ready;
+      } catch (fontReadyError) {
+        console.warn('SplashScreen: document.fonts.ready failed:', fontReadyError);
       }
-      
+
       // Still create UI with fallback fonts
       this.createUIElements();
     }
   }
 
   /**
-   * Create all UI elements after fonts are ready
+   * Create all UI elements after fonts are ready using DOM text system
    */
   private createUIElements(): void {
-    // Initialize text renderer with loaded font family
-    const fontFamily = this.fontPreloader.getFontFamily();
-    this.textRenderer = new PhaserTextRenderer(this, fontFamily);
+    console.log('SplashScreen: Creating UI elements with DOM text system');
 
-    // Add title with color-shifting gradient
-    this.createTitle();
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOM text renderer not initialized');
+      return;
+    }
 
-    // Create interactive buttons with Phaser text
-    this.createButtons();
+    // Create title and subtitle using DOM text
+    this.createTitleAndSubtitle();
+
+    // Create interactive buttons using DOM text
+    this.createInteractiveButtons();
+
+    console.log('SplashScreen: UI elements created successfully');
+  }
+
+  /**
+   * Create background using current layout dimensions
+   */
+  private createBackground(): void {
+    const { width, height } = this.layoutManager.getCurrentDimensions();
+
+    // Background – solid color rectangle (Dark Slate #2C3E50)
+    this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
+    this.background.setDisplaySize(width, height);
   }
 
   create() {
-    // Fade in from black for smooth transition (with safety check for tests)
-    if (this.cameras?.main?.fadeIn) {
-      this.cameras.main.fadeIn(250, 0, 0, 0);
-    }
+    console.log('SplashScreen: Starting scene creation');
 
-    this.refreshLayout();
+    // Create a simple loading state first
+    this.createLoadingState();
 
-    // Re-calculate positions whenever the game canvas is resized (e.g. orientation change).
-    this.scale.on('resize', () => this.refreshLayout());
-
-    // Start font preloading process
-    this.initializeFontLoading();
+    // Ensure scene is fully ready before proceeding
+    this.time.delayedCall(50, () => {
+      this.initializeScene();
+    });
   }
 
-  private createTitle(): void {
-    if (!this.textRenderer) return;
+  /**
+   * Create a simple loading state while waiting for full initialization
+   */
+  private createLoadingState(): void {
+    try {
+      const { width, height } = this.scale;
 
-    const { width, height } = this.scale;
-    
+      // Create background immediately
+      this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
+
+      // Create simple loading indicator using graphics only
+      const loadingCircle = this.add.circle(width / 2, height / 2, 30, 0x3498DB, 0.3);
+      const loadingDot = this.add.circle(width / 2, height / 2 - 25, 8, 0x3498DB);
+
+      // Animate loading indicator
+      this.tweens.add({
+        targets: loadingDot,
+        angle: 360,
+        duration: 1000,
+        repeat: -1,
+        ease: 'Linear'
+      });
+
+      // Store references for cleanup
+      (this as any).loadingCircle = loadingCircle;
+      (this as any).loadingDot = loadingDot;
+
+    } catch (error) {
+      console.error('SplashScreen: Error creating loading state:', error);
+    }
+  }
+
+  /**
+   * Initialize the scene after ensuring Phaser is fully ready
+   */
+  private initializeScene(): void {
+    try {
+      console.log('SplashScreen: Initializing scene components');
+
+      // Clean up loading state
+      this.cleanupLoadingState();
+
+      // Fade in from black for smooth transition (with safety check for tests)
+      if (this.cameras?.main?.fadeIn) {
+        this.cameras.main.fadeIn(250, 0, 0, 0);
+      }
+
+      // Set up component lifecycle management
+      this.setupComponentLifecycle();
+
+      // Initialize layout with current screen dimensions
+      const { width, height } = this.scale;
+      this.layoutManager.updateLayout(width, height);
+
+      // Set up proper resize event handling with throttling
+      this.setupResizeEventHandling();
+
+      // Recreate background (loading state already created one)
+      this.createBackground();
+
+      // Start font preloading process with loading indicators
+      this.initializeFontLoading();
+
+    } catch (error) {
+      console.error('SplashScreen: Error during scene initialization:', error);
+
+      // Fallback: try again after a longer delay
+      this.time.delayedCall(200, () => {
+        this.createFallbackUI();
+      });
+    }
+  }
+
+  /**
+   * Clean up the loading state elements
+   */
+  private cleanupLoadingState(): void {
+    try {
+      if ((this as any).loadingCircle) {
+        (this as any).loadingCircle.destroy();
+        (this as any).loadingCircle = null;
+      }
+
+      if ((this as any).loadingDot) {
+        (this as any).loadingDot.destroy();
+        (this as any).loadingDot = null;
+      }
+
+    } catch (error) {
+      console.warn('SplashScreen: Error cleaning up loading state:', error);
+    }
+  }
+
+  /**
+   * Create a minimal fallback UI if normal initialization fails
+   */
+  private createFallbackUI(): void {
+    try {
+      console.log('SplashScreen: Creating fallback UI');
+
+      // Create simple background
+      const { width, height } = this.scale;
+      this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
+
+      // Initialize DOM text renderer if not already done
+      if (!this.domTextRenderer) {
+        this.domTextRenderer = new DOMTextRenderer('game-container');
+      }
+
+      // Create simple title
+      const titleStyle: DOMTextStyle = {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '48px',
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+      };
+
+      this.domTextRenderer.createText(
+        'fallback-title',
+        'COLOR RUSH',
+        width / 2,
+        height * 0.3,
+        titleStyle
+      );
+
+      // Create simple subtitle
+      const subtitleStyle: DOMTextStyle = {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '24px',
+        fontWeight: 'normal',
+        color: '#ECF0F1',
+        textAlign: 'center',
+        textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+      };
+
+      this.domTextRenderer.createText(
+        'fallback-subtitle',
+        'Test Your Reflexes',
+        width / 2,
+        height * 0.45,
+        subtitleStyle
+      );
+
+      // Create simple start button
+      const buttonStyle: DOMTextStyle = {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '18px',
+        fontWeight: '500',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        background: '#3498DB',
+        padding: '15px 30px',
+        borderRadius: '8px',
+        textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+      };
+
+      this.domTextRenderer.createButton(
+        'fallback-start-button',
+        'START GAME',
+        width / 2,
+        height * 0.65,
+        200,
+        60,
+        buttonStyle,
+        () => this.handleStartGameClick()
+      );
+
+      console.log('SplashScreen: Fallback UI created successfully');
+
+    } catch (error) {
+      console.error('SplashScreen: Even fallback UI creation failed:', error);
+    }
+  }
+
+  /**
+   * Set up proper resize event handling with throttling to prevent performance issues
+   */
+  private setupResizeEventHandling(): void {
+    console.log('SplashScreen: Setting up resize event handling');
+
+    // Connect to Phaser's resize events with throttling
+    this.scale.on('resize', this.handlePhaserResize, this);
+
+    // Also listen for orientation changes with additional delay
+    if (typeof window !== 'undefined') {
+      window.addEventListener('orientationchange', this.handleOrientationChange.bind(this));
+    }
+
+    console.log('SplashScreen: Resize event handling configured');
+  }
+
+  /**
+   * Handle Phaser resize events with throttling
+   */
+  private handlePhaserResize = (gameSize: Phaser.Structs.Size): void => {
+    console.log(`SplashScreen: Phaser resize event - ${gameSize.width}x${gameSize.height}`);
+
+    // Update layout manager with new dimensions
+    this.layoutManager.updateLayout(gameSize.width, gameSize.height);
+  };
+
+  /**
+   * Handle orientation changes with additional delay to allow completion
+   */
+  private handleOrientationChange = (): void => {
+    console.log('SplashScreen: Orientation change detected');
+
+    // Add delay to allow orientation change to complete
+    setTimeout(() => {
+      const { width, height } = this.scale;
+      console.log(`SplashScreen: Orientation change complete - ${width}x${height}`);
+      this.layoutManager.updateLayout(width, height);
+    }, 100);
+  };
+
+  /**
+   * Create title and subtitle using DOM text with responsive layout positioning
+   */
+  private createTitleAndSubtitle(): void {
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOM text renderer not initialized');
+      return;
+    }
+
     // Log font status for debugging
     const status = this.fontPreloader.getLoadingStatus();
-    console.log('SplashScreen: Creating title with font status:', status);
+    console.log('SplashScreen: Creating title and subtitle with font status:', status);
 
-    // Create the main title with color-shifting gradient (H1: 72pt Bold)
-    const titleStyle: TextStyle = {
+    // Get responsive positions from layout manager
+    const titlePos = this.layoutManager.getTitlePosition();
+    const subtitlePos = this.layoutManager.getSubtitlePosition();
+    const layoutConfig = this.layoutManager.getLayoutConfig();
+
+    // Create the main title with color-shifting gradient using responsive sizing
+    const titleStyle: DOMTextStyle = {
       fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: '72px',
-      fontWeight: 'bold',
-      color: '#FFFFFF', // Base color, will be overridden by gradient
-      align: 'center'
+      fontSize: `${layoutConfig.title.fontSize}px`,
+      fontWeight: layoutConfig.title.fontWeight,
+      color: '#FFFFFF',
+      textAlign: 'center',
+      textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
     };
 
-    const gradientConfig: GradientConfig = {
+    const gradientConfig: GradientTextConfig = {
       colors: ['#E74C3C', '#3498DB', '#2ECC71', '#F1C40F', '#9B59B6'],
-      angle: 45,
       animationDuration: 4000
     };
 
-    this.titleText = this.textRenderer.createGradientText(
-      width / 2,
-      height * 0.18,
+    // Position title centered
+    this.domTextRenderer.createText(
+      'title',
       'COLOR RUSH',
+      titlePos.x,
+      titlePos.y,
       titleStyle,
       gradientConfig
     );
 
-    // Create subtitle with proper spacing
-    const subtitleStyle: TextStyle = {
+    // Create subtitle with responsive sizing and positioning
+    const subtitleStyle: DOMTextStyle = {
       fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: '24px',
-      fontWeight: '400',
-      color: '#ECF0F1', // Light Grey as per spec
-      align: 'center'
+      fontSize: `${layoutConfig.subtitle.fontSize}px`,
+      fontWeight: layoutConfig.subtitle.fontWeight,
+      color: '#ECF0F1',
+      textAlign: 'center',
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
     };
 
-    this.subtitleText = this.textRenderer.createTitle(
-      width / 2,
-      height * 0.38,
+    // Position subtitle centered
+    this.domTextRenderer.createText(
+      'subtitle',
       'Test Your Reflexes',
+      subtitlePos.x,
+      subtitlePos.y,
       subtitleStyle
     );
   }
 
-  private createButtons(): void {
-    const { width, height } = this.scale;
+  /**
+   * Create interactive buttons using DOM text system
+   */
+  private createInteractiveButtons(): void {
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOM text renderer not initialized');
+      return;
+    }
+
+    const layoutConfig = this.layoutManager.getLayoutConfig();
 
     // Create "Start Game" button (Primary Button - Bright Blue #3498DB)
-    const startButtonBg = this.add.rectangle(width / 2, height * 0.55, 240, 70, 0x3498DB, 1);
-    startButtonBg.setStrokeStyle(3, 0xFFFFFF, 0.9);
+    const startButtonPos = this.layoutManager.getButtonPosition(ButtonType.PRIMARY);
+    const startButtonStyle: DOMTextStyle = {
+      fontFamily: this.fontPreloader.getFontFamily(),
+      fontSize: `${layoutConfig.primaryButton.fontSize}px`,
+      fontWeight: '500',
+      color: '#FFFFFF',
+      textAlign: 'center',
+      background: '#3498DB',
+      padding: '12px 24px',
+      borderRadius: '8px',
+      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+    };
 
-    // Create button text using Phaser text renderer
-    if (this.textRenderer) {
-      const startButtonTextStyle: TextStyle = {
-        fontFamily: this.fontPreloader.getFontFamily(),
-        fontSize: '20px',
-        fontWeight: '500',
-        color: '#FFFFFF',
-        align: 'center'
-      };
-
-      this.startButtonText = this.textRenderer.createButtonText(
-        width / 2,
-        height * 0.55,
-        'START GAME',
-        startButtonTextStyle
-      );
-    }
-
-    // Create container for button
-    const startButtonContainer = this.add.container(0, 0);
-    startButtonContainer.add(startButtonBg);
-    if (this.startButtonText) {
-      startButtonContainer.add(this.startButtonText);
-    }
-
-    if (startButtonContainer) {
-      this.startButton = startButtonContainer;
-
-      startButtonContainer
-        .setInteractive(new Phaser.Geom.Rectangle(width / 2 - 120, height * 0.55 - 35, 240, 70), Phaser.Geom.Rectangle.Contains)
-        .on('pointerover', () => {
-          // Simple scale up animation (hover effect)
-          this.tweens.add({
-            targets: startButtonContainer,
-            scaleX: 1.05,
-            scaleY: 1.05,
-            duration: 150,
-            ease: 'Power2.easeOut'
-          });
-        })
-        .on('pointerout', () => {
-          // Return to normal scale
-          this.tweens.add({
-            targets: startButtonContainer,
-            scaleX: 1.0,
-            scaleY: 1.0,
-            duration: 150,
-            ease: 'Power2.easeOut'
-          });
-        })
-        .on('pointerdown', () => {
-          // Disable button to prevent multiple clicks
-          startButtonContainer.disableInteractive();
-
-          // Scale down animation (click effect)
-          this.tweens.add({
-            targets: startButtonContainer,
-            scaleX: 0.95,
-            scaleY: 0.95,
-            duration: 100,
-            ease: 'Power2.easeOut'
-          });
-
-          // Show loading state
-          this.showLoadingState();
-
-          // Add a small delay to show loading state, then transition
-          this.time.delayedCall(800, () => {
-            try {
-              console.log('SplashScreen: Starting game transition...');
-
-              // Smooth transition to game
-              this.tweens.add({
-                targets: [this.background, this.startButton, this.howToPlayButton, this.loadingContainer],
-                alpha: 0,
-                duration: 300,
-                ease: 'Power2.easeIn',
-                onComplete: () => {
-                  try {
-                    console.log('SplashScreen: Fade out complete, starting scenes...');
-
-                    if (this.cameras?.main?.fadeOut) {
-                      this.cameras.main.fadeOut(250, 0, 0, 0);
-                      this.cameras.main.once('camerafadeoutcomplete', () => {
-                        console.log('SplashScreen: Camera fade complete, launching scenes...');
-                        try {
-                          // Start Game scene and launch UI scene concurrently
-                          this.scene.start('Game');
-                          console.log('SplashScreen: Game scene started');
-                          this.scene.launch('UI');
-                          console.log('SplashScreen: UI scene launched');
-                        } catch (sceneError) {
-                          console.error('Error launching scenes:', sceneError);
-                          this.handleLoadingError(sceneError);
-                        }
-                      });
-                    } else {
-                      console.log('SplashScreen: Direct scene transition (no camera fade)...');
-                      try {
-                        // Start Game scene and launch UI scene concurrently
-                        this.scene.start('Game');
-                        console.log('SplashScreen: Game scene started');
-                        this.scene.launch('UI');
-                        console.log('SplashScreen: UI scene launched');
-                      } catch (sceneError) {
-                        console.error('Error launching scenes:', sceneError);
-                        this.handleLoadingError(sceneError);
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error starting game:', error);
-                    this.handleLoadingError(error);
-                  }
-                }
-              });
-            } catch (error) {
-              console.error('Error during transition:', error);
-              this.handleLoadingError(error);
-            }
-          });
-        })
-        .on('pointerup', () => {
-          // Scale back up to hover state
-          if (this.startButton) {
-            this.tweens.add({
-              targets: this.startButton,
-              scaleX: 1.05,
-              scaleY: 1.05,
-              duration: 100,
-              ease: 'Power2.easeOut'
-            });
-          }
-        });
-    }
+    this.domTextRenderer.createButton(
+      'start-button',
+      'START GAME',
+      startButtonPos.x,
+      startButtonPos.y,
+      layoutConfig.primaryButton.width,
+      layoutConfig.primaryButton.height,
+      startButtonStyle,
+      () => this.handleStartGameClick()
+    );
 
     // Create "How to Play" button (Secondary Button - Mid Grey #95A5A6)
-    const howToPlayBg = this.add.rectangle(width / 2, height * 0.68, 200, 55, 0x95A5A6, 1);
-    howToPlayBg.setStrokeStyle(2, 0xFFFFFF, 0.7);
+    const howToPlayButtonPos = this.layoutManager.getButtonPosition(ButtonType.SECONDARY);
+    const howToPlayButtonStyle: DOMTextStyle = {
+      fontFamily: this.fontPreloader.getFontFamily(),
+      fontSize: `${layoutConfig.secondaryButton.fontSize}px`,
+      fontWeight: '500',
+      color: '#FFFFFF',
+      textAlign: 'center',
+      background: '#95A5A6',
+      padding: '10px 20px',
+      borderRadius: '6px',
+      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+    };
 
-    // Create button text using Phaser text renderer
-    if (this.textRenderer) {
-      const howToPlayButtonTextStyle: TextStyle = {
-        fontFamily: this.fontPreloader.getFontFamily(),
-        fontSize: '18px',
-        fontWeight: '500',
-        color: '#FFFFFF',
-        align: 'center'
-      };
+    this.domTextRenderer.createButton(
+      'how-to-play-button',
+      'HOW TO PLAY',
+      howToPlayButtonPos.x,
+      howToPlayButtonPos.y,
+      layoutConfig.secondaryButton.width,
+      layoutConfig.secondaryButton.height,
+      howToPlayButtonStyle,
+      () => this.handleHowToPlayClick()
+    );
 
-      this.howToPlayButtonText = this.textRenderer.createButtonText(
-        width / 2,
-        height * 0.68,
-        'HOW TO PLAY',
-        howToPlayButtonTextStyle
-      );
-    }
-
-    const howToPlayContainer = this.add.container(0, 0);
-    howToPlayContainer.add(howToPlayBg);
-    if (this.howToPlayButtonText) {
-      howToPlayContainer.add(this.howToPlayButtonText);
-    }
-
-    if (howToPlayContainer) {
-      this.howToPlayButton = howToPlayContainer;
-      howToPlayContainer
-        .setInteractive(new Phaser.Geom.Rectangle(width / 2 - 100, height * 0.68 - 27.5, 200, 55), Phaser.Geom.Rectangle.Contains)
-        .on('pointerover', () => {
-          // Simple scale up animation (hover effect)
-          this.tweens.add({
-            targets: howToPlayContainer,
-            scaleX: 1.05,
-            scaleY: 1.05,
-            duration: 150,
-            ease: 'Power2.easeOut'
-          });
-        })
-        .on('pointerout', () => {
-          // Return to normal scale
-          this.tweens.add({
-            targets: howToPlayContainer,
-            scaleX: 1.0,
-            scaleY: 1.0,
-            duration: 150,
-            ease: 'Power2.easeOut'
-          });
-        })
-        .on('pointerdown', () => {
-          // Scale down animation (click effect)
-          this.tweens.add({
-            targets: howToPlayContainer,
-            scaleX: 0.95,
-            scaleY: 0.95,
-            duration: 100,
-            ease: 'Power2.easeOut'
-          });
-          // TODO: Show How to Play modal
-          console.log('How to Play clicked - modal not implemented yet');
-        })
-        .on('pointerup', () => {
-          // Scale back up to hover state
-          this.tweens.add({
-            targets: howToPlayContainer,
-            scaleX: 1.05,
-            scaleY: 1.05,
-            duration: 100,
-            ease: 'Power2.easeOut'
-          });
-        });
-    }
-
+    console.log('SplashScreen: Interactive buttons created successfully');
   }
 
   /**
-   * Positions and (lightly) scales all UI elements based on the current game size.
-   * Call this from create() and from any resize events.
+   * Handle Start Game button click with proper loading state management
    */
-  private refreshLayout(): void {
-    const { width, height } = this.scale;
+  private handleStartGameClick(): void {
+    console.log('SplashScreen: Start Game button clicked');
 
-    // Resize camera to new viewport to prevent black bars
-    this.cameras.resize(width, height);
-
-    // Background – solid color rectangle (Dark Slate #2C3E50)
-    if (!this.background) {
-      this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
-    }
-    if (this.background) {
-      this.background.setDisplaySize(width, height);
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOM text renderer not available');
+      return;
     }
 
-    // Update text positions if they exist
-    if (this.titleText && this.textRenderer) {
-      this.textRenderer.updateTextPosition(this.titleText, width / 2, height * 0.18);
-    }
+    try {
+      // Disable buttons during transition
+      this.domTextRenderer.setVisible('start-button', false);
+      this.domTextRenderer.setVisible('how-to-play-button', false);
 
-    if (this.subtitleText && this.textRenderer) {
-      this.textRenderer.updateTextPosition(this.subtitleText, width / 2, height * 0.38);
-    }
-
-    // Update button positions if they exist
-    if (this.startButton) {
-      this.startButton.setPosition(Math.round(width / 2), Math.round(height * 0.55));
-    }
-
-    if (this.howToPlayButton) {
-      this.howToPlayButton.setPosition(Math.round(width / 2), Math.round(height * 0.68));
-    }
-
-    // Update button text positions if they exist
-    if (this.startButtonText && this.textRenderer) {
-      this.textRenderer.updateTextPosition(this.startButtonText, width / 2, height * 0.55);
-    }
-
-    if (this.howToPlayButtonText && this.textRenderer) {
-      this.textRenderer.updateTextPosition(this.howToPlayButtonText, width / 2, height * 0.68);
-    }
-
-    // Update font loading indicator position if it exists
-    if (this.fontLoadingIndicator) {
-      this.fontLoadingIndicator.updatePosition(
-        Math.round(width / 2), 
-        Math.round(height * 0.85)
-      );
-    }
-  }
-
-  private showLoadingState(): void {
-    const { width, height } = this.scale;
-
-    // Create loading container
-    this.loadingContainer = this.add.container(width / 2, height * 0.75);
-
-    // Create a more sophisticated loading spinner
-    const spinnerRadius = 30;
-    const spinnerThickness = 4;
-
-    // Create multiple arc segments for a modern loading spinner
-    const segments = 8;
-    this.loadingDots = [];
-
-    for (let i = 0; i < segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      const x = Math.cos(angle) * spinnerRadius;
-      const y = Math.sin(angle) * spinnerRadius;
-
-      const dot = this.add.circle(x, y, spinnerThickness, 0x3498DB);
-
-      // Create a fading effect - dots further along the circle are more transparent
-      const alpha = 1 - (i / segments) * 0.8; // From 1.0 to 0.2
-      dot.setAlpha(alpha);
-
-      this.loadingDots.push(dot);
-      this.loadingContainer.add(dot);
-    }
-
-    // Rotate the entire spinner
-    this.tweens.add({
-      targets: this.loadingContainer,
-      rotation: Math.PI * 2,
-      duration: 1200,
-      repeat: -1,
-      ease: 'Linear'
-    });
-
-    // Add a subtle pulsing effect to the center
-    const centerDot = this.add.circle(0, 0, 6, 0x3498DB, 0.8);
-    this.tweens.add({
-      targets: centerDot,
-      scaleX: 1.5,
-      scaleY: 1.5,
-      alpha: 0.3,
-      duration: 1000,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-    this.loadingContainer.add(centerDot);
-
-    // Fade in the loading state
-    this.loadingContainer.setAlpha(0);
-    this.tweens.add({
-      targets: this.loadingContainer,
-      alpha: 1,
-      duration: 300,
-      ease: 'Power2.easeOut'
-    });
-  }
-
-  private handleLoadingError(error: any): void {
-    console.error('Loading failed:', error);
-
-    // Hide loading state
-    if (this.loadingContainer) {
-      this.loadingContainer.setVisible(false);
-    }
-
-    // Re-enable the start button
-    if (this.startButton) {
-      this.startButton.setInteractive();
-
-      // Reset button scale
-      this.tweens.add({
-        targets: this.startButton,
-        scaleX: 1.0,
-        scaleY: 1.0,
-        duration: 200,
-        ease: 'Power2.easeOut'
+      // Add a delay to show loading state, then transition
+      this.time.delayedCall(300, () => {
+        this.performGameTransition();
       });
+    } catch (error) {
+      console.error('SplashScreen: Error handling start game click:', error);
+      this.handleTransitionError(error);
+    }
+  }
+
+  /**
+   * Handle How to Play button click
+   */
+  private handleHowToPlayClick(): void {
+    console.log('SplashScreen: How to Play button clicked');
+    // TODO: Show How to Play modal
+    console.log('How to Play modal not implemented yet');
+  }
+
+  /**
+   * Perform smooth transition to game scenes
+   */
+  private performGameTransition(): void {
+    try {
+      console.log('SplashScreen: Starting game transition...');
+
+      // Hide DOM text elements
+      if (this.domTextRenderer) {
+        this.domTextRenderer.setVisible('title', false);
+        this.domTextRenderer.setVisible('subtitle', false);
+      }
+
+      // Fade out background
+      if (this.background) {
+        this.tweens.add({
+          targets: this.background,
+          alpha: 0,
+          duration: 300,
+          ease: 'Power2.easeIn',
+          onComplete: () => {
+            this.transitionToGameScenes();
+          }
+        });
+      } else {
+        this.transitionToGameScenes();
+      }
+    } catch (error) {
+      console.error('SplashScreen: Error during game transition:', error);
+      this.handleTransitionError(error);
+    }
+  }
+
+  /**
+   * Transition to game scenes with proper error handling
+   */
+  private transitionToGameScenes(): void {
+    try {
+      console.log('SplashScreen: Fade out complete, starting scenes...');
+
+      if (this.cameras?.main?.fadeOut) {
+        this.cameras.main.fadeOut(250, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          console.log('SplashScreen: Camera fade complete, launching scenes...');
+          this.launchGameScenes();
+        });
+      } else {
+        console.log('SplashScreen: Direct scene transition (no camera fade)...');
+        this.launchGameScenes();
+      }
+    } catch (error) {
+      console.error('SplashScreen: Error transitioning to game scenes:', error);
+      this.handleTransitionError(error);
+    }
+  }
+
+  /**
+   * Launch game scenes
+   */
+  private launchGameScenes(): void {
+    try {
+      // Start Game scene and launch UI scene concurrently
+      this.scene.start('Game');
+      console.log('SplashScreen: Game scene started');
+      this.scene.launch('UI');
+      console.log('SplashScreen: UI scene launched');
+    } catch (sceneError) {
+      console.error('SplashScreen: Error launching scenes:', sceneError);
+      this.handleTransitionError(sceneError);
+    }
+  }
+
+  /**
+   * Handle transition errors by restoring button state
+   */
+  private handleTransitionError(error: any): void {
+    console.error('SplashScreen: Transition failed:', error);
+
+    // Restore button visibility
+    if (this.domTextRenderer) {
+      this.domTextRenderer.setVisible('start-button', true);
+      this.domTextRenderer.setVisible('how-to-play-button', true);
     }
 
-    // Show error indicator (graphics-only approach)
+    // Show error indicator
+    this.showTransitionError();
+  }
+
+  /**
+   * Show transition error indicator
+   */
+  private showTransitionError(): void {
     const { width, height } = this.scale;
+
+    // Create error indicator (graphics-only approach)
     const errorIndicator = this.add.circle(width / 2, height * 0.8, 20, 0xE74C3C, 1);
     errorIndicator.setStrokeStyle(3, 0xFFFFFF, 1);
 
@@ -576,4 +783,19 @@ export class SplashScreen extends Scene {
       });
     });
   }
+
+  /**
+   * Override init to ensure proper cleanup on scene restart
+   */
+  init(): void {
+    // Clean up all component resources from previous run
+    this.cleanupComponentResources();
+
+    // Reset visual elements
+    this.background = null;
+
+    // Re-initialize components for scene restart
+    this.initializeComponents();
+  }
+
 }

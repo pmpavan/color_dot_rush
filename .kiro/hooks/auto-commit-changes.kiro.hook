@@ -1,27 +1,10 @@
 {
-  "enabled": true,
   "name": "Auto Commit on Task Completion",
   "description": "Monitors all source files in the repository and automatically commits changes to GitHub when tasks are successfully completed",
-  "version": "1",
-  "when": {
-    "type": "fileEdited",
-    "patterns": [
-      "src/**/*",
-      "*.ts",
-      "*.js",
-      "*.json",
-      "*.md",
-      "*.html",
-      "*.css",
-      "devvit.json",
-      "package.json",
-      "tsconfig.json",
-      "eslint.config.js",
-      "vitest.config.ts"
-    ]
+  "trigger": {
+    "type": "onFileSave",
+    "filePattern": "src/**/*,*.ts,*.js,*.json,*.md,*.html,*.css,devvit.json,package.json,tsconfig.json,eslint.config.js,vitest.config.ts"
   },
-  "then": {
-    "type": "askAgent",
-    "prompt": "Source files have been modified. Please review the changes and if they represent a successful completion of a development task, commit them to GitHub with an appropriate commit message describing what was accomplished."
-  }
+  "enabled": true,
+  "prompt": "Source files have been modified. Please review the changes and if they represent a successful completion of a development task, commit them to GitHub with an appropriate commit message describing what was accomplished."
 }

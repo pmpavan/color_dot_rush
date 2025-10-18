@@ -32,6 +32,7 @@ export interface ITextRenderer {
   createButtonText(x: number, y: number, text: string, style: TextStyle): GameObjects.Text;
   updateTextPosition(textObject: GameObjects.Text, x: number, y: number): void;
   createGradientText(x: number, y: number, text: string, style: TextStyle, gradient: GradientConfig): GameObjects.Text;
+  destroy(): void;
 }
 
 /**
@@ -45,34 +46,123 @@ export class PhaserTextRenderer implements ITextRenderer {
   constructor(scene: Scene, fontFamily: string) {
     this.scene = scene;
     this.fontFamily = fontFamily;
+    
+    // Log initialization and font readiness
+    console.log('PhaserTextRenderer: Initialized with font family:', fontFamily);
+    this.validateFontReadiness();
   }
 
   /**
    * Create a title text object with optional gradient effects
    */
   createTitle(x: number, y: number, text: string, style: TextStyle, gradient?: GradientConfig): GameObjects.Text {
-    const phaserStyle = this.convertToPhaserStyle(style);
-    const textObject = this.scene.add.text(x, y, text, phaserStyle);
-    
-    textObject.setOrigin(0.5, 0.5); // Center the text
-    
-    if (gradient) {
-      this.applyGradientEffect(textObject, gradient);
+    try {
+      // Safety check: ensure scene is ready for text creation
+      if (!this.scene || !this.scene.add) {
+        throw new Error('Scene not ready for text creation');
+      }
+
+      const phaserStyle = this.convertToPhaserStyle(style);
+      
+      // Log font information for debugging
+      console.log('PhaserTextRenderer: Creating title with style:', {
+        fontFamily: phaserStyle.fontFamily,
+        fontSize: phaserStyle.fontSize,
+        text: text.substring(0, 20) + (text.length > 20 ? '...' : '')
+      });
+      
+      const textObject = this.scene.add.text(x, y, text, phaserStyle);
+      
+      textObject.setOrigin(0.5, 0.5); // Center the text
+      
+      if (gradient) {
+        this.applyGradientEffect(textObject, gradient);
+      }
+      
+      return textObject;
+      
+    } catch (error) {
+      console.error('PhaserTextRenderer: Error creating title text:', error);
+      
+      // Fallback: create text with minimal safe styling
+      try {
+        const fallbackStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: style.fontSize,
+          color: style.color,
+          align: 'center'
+        };
+        
+        const textObject = this.scene.add.text(x, y, text, fallbackStyle);
+        textObject.setOrigin(0.5, 0.5);
+        
+        return textObject;
+        
+      } catch (fallbackError) {
+        console.error('PhaserTextRenderer: Even fallback text creation failed:', fallbackError);
+        
+        // Last resort: create a simple rectangle as placeholder
+        const placeholder = this.scene.add.rectangle(x, y, 200, 50, 0x333333);
+        placeholder.setOrigin(0.5, 0.5);
+        
+        // Return a mock text object that won't break the system
+        return placeholder as any;
+      }
     }
-    
-    return textObject;
   }
 
   /**
    * Create button text with consistent styling
    */
   createButtonText(x: number, y: number, text: string, style: TextStyle): GameObjects.Text {
-    const phaserStyle = this.convertToPhaserStyle(style);
-    const textObject = this.scene.add.text(x, y, text, phaserStyle);
-    
-    textObject.setOrigin(0.5, 0.5); // Center the text
-    
-    return textObject;
+    try {
+      // Safety check: ensure scene is ready for text creation
+      if (!this.scene || !this.scene.add) {
+        throw new Error('Scene not ready for text creation');
+      }
+
+      const phaserStyle = this.convertToPhaserStyle(style);
+      
+      console.log('PhaserTextRenderer: Creating button text with style:', {
+        fontFamily: phaserStyle.fontFamily,
+        fontSize: phaserStyle.fontSize,
+        text: text
+      });
+      
+      const textObject = this.scene.add.text(x, y, text, phaserStyle);
+      
+      textObject.setOrigin(0.5, 0.5); // Center the text
+      
+      return textObject;
+      
+    } catch (error) {
+      console.error('PhaserTextRenderer: Error creating button text:', error);
+      
+      // Fallback: create text with minimal safe styling
+      try {
+        const fallbackStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: style.fontSize,
+          color: style.color,
+          align: 'center'
+        };
+        
+        const textObject = this.scene.add.text(x, y, text, fallbackStyle);
+        textObject.setOrigin(0.5, 0.5);
+        
+        return textObject;
+        
+      } catch (fallbackError) {
+        console.error('PhaserTextRenderer: Even fallback button text creation failed:', fallbackError);
+        
+        // Last resort: create a simple rectangle as placeholder
+        const placeholder = this.scene.add.rectangle(x, y, 100, 30, 0x666666);
+        placeholder.setOrigin(0.5, 0.5);
+        
+        // Return a mock text object that won't break the system
+        return placeholder as any;
+      }
+    }
   }
 
   /**
@@ -86,17 +176,28 @@ export class PhaserTextRenderer implements ITextRenderer {
    * Create text with gradient effects using Phaser's built-in capabilities
    */
   createGradientText(x: number, y: number, text: string, style: TextStyle, gradient: GradientConfig): GameObjects.Text {
-    const textObject = this.createTitle(x, y, text, style);
-    this.applyGradientEffect(textObject, gradient);
-    return textObject;
+    try {
+      const textObject = this.createTitle(x, y, text, style);
+      this.applyGradientEffect(textObject, gradient);
+      return textObject;
+      
+    } catch (error) {
+      console.error('PhaserTextRenderer: Error creating gradient text:', error);
+      
+      // Fallback: create simple text without gradient
+      return this.createTitle(x, y, text, style);
+    }
   }
 
   /**
    * Convert TextStyle interface to Phaser's text style format
    */
   private convertToPhaserStyle(style: TextStyle): Phaser.Types.GameObjects.Text.TextStyle {
+    // Ensure we have a valid font family with fallbacks
+    const safeFontFamily = this.getSafeFontFamily(style.fontFamily || this.fontFamily);
+    
     const phaserStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontFamily: style.fontFamily || this.fontFamily,
+      fontFamily: safeFontFamily,
       fontSize: style.fontSize,
       color: style.color,
       align: style.align as 'left' | 'center' | 'right' | 'justify',
@@ -116,6 +217,53 @@ export class PhaserTextRenderer implements ITextRenderer {
     }
 
     return phaserStyle;
+  }
+
+  /**
+   * Ensure font family string includes proper fallbacks
+   */
+  private getSafeFontFamily(fontFamily: string): string {
+    // If font family already includes fallbacks, use as-is
+    if (fontFamily.includes(',')) {
+      return fontFamily;
+    }
+    
+    // Add system font fallbacks to prevent font loading issues
+    const systemFallbacks = [
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      'Arial',
+      'sans-serif'
+    ];
+    
+    return `${fontFamily}, ${systemFallbacks.join(', ')}`;
+  }
+
+  /**
+   * Validate that fonts are ready for text creation
+   */
+  private validateFontReadiness(): boolean {
+    try {
+      // Check if document.fonts is available and ready
+      if (typeof document !== 'undefined' && document.fonts) {
+        const fontsReady = document.fonts.status === 'loaded';
+        console.log('PhaserTextRenderer: Font readiness check:', {
+          status: document.fonts.status,
+          ready: fontsReady
+        });
+        return fontsReady;
+      }
+      
+      // If Font Loading API not available, assume fonts are ready
+      console.log('PhaserTextRenderer: Font Loading API not available, assuming fonts ready');
+      return true;
+      
+    } catch (error) {
+      console.warn('PhaserTextRenderer: Font readiness check failed:', error);
+      return true; // Assume ready to avoid blocking
+    }
   }
 
   /**
@@ -226,5 +374,16 @@ export class PhaserTextRenderer implements ITextRenderer {
     textObject.setOrigin(0.5, 0.5);
     
     return textObject;
+  }
+
+  /**
+   * Clean up text renderer resources
+   */
+  destroy(): void {
+    console.log('PhaserTextRenderer: Cleaning up resources');
+    
+    // Clear references to prevent memory leaks
+    this.scene = null as any;
+    this.fontFamily = '';
   }
 }

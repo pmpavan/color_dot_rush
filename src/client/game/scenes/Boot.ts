@@ -18,7 +18,7 @@ export class Boot extends Scene {
   create() {
     console.log('Color Rush: Boot scene created - transitioning directly to SplashScreen');
     
-    // Skip Preloader for now and go directly to SplashScreen
+    // Skip Preloader to avoid texture generation issues, go directly to SplashScreen
     this.scene.start('SplashScreen');
   }
 }
