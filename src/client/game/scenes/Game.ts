@@ -17,10 +17,10 @@ enum GameState {
 
 export class Game extends Scene {
   private camera: Phaser.Cameras.Scene2D.Camera;
-  private background: Phaser.GameObjects.Image;
+  private background: Phaser.GameObjects.Rectangle;
   private currentState: GameState = GameState.READY;
   private uiScene: UIScene | null = null;
-  
+
   // Game state variables
   private score: number = 0;
   private elapsedTime: number = 0;
@@ -28,7 +28,7 @@ export class Game extends Scene {
   private slowMoCharges: number = 3;
   private gameStartTime: number = 0;
   private gameTimer: Phaser.Time.TimerEvent | null = null;
-  
+
   // Slow-motion state management
   private isSlowMoActive: boolean = false;
   private slowMoStartTime: number = 0;
@@ -45,9 +45,12 @@ export class Game extends Scene {
   private leaderboardService: ILeaderboardService;
   private hitboxGraphics: Phaser.GameObjects.Graphics | null = null;
 
+  // Track temporary objects for proper cleanup
+  private temporaryObjects: Phaser.GameObjects.GameObject[] = [];
+
   constructor() {
     super('Game');
-    
+
     // Initialize services based on environment
     if (process.env.NODE_ENV === 'production') {
       this.debugService = new ProductionDebugService();
@@ -57,8 +60,13 @@ export class Game extends Scene {
       // Use mock service for development to avoid API calls during testing
       this.leaderboardService = new MockLeaderboardService();
     }
-    
+
     this.difficultyManager = new DifficultyManager();
+  }
+
+  private createGraphicsTextures(): void {
+    // Skip texture generation - we'll use pure graphics objects instead
+    console.log('Game scene: Skipping texture generation, using pure graphics objects');
   }
 
   init(): void {
@@ -71,33 +79,48 @@ export class Game extends Scene {
     this.gameStartTime = 0;
     this.gameTimer = null;
     this.uiScene = null;
-    
+
     // Reset slow-motion state
     this.isSlowMoActive = false;
     this.slowMoStartTime = 0;
     this.slowMoVignette = null;
     this.slowMoTween = null;
+
+    // Reset temporary objects tracking
+    this.temporaryObjects = [];
   }
 
   create(): void {
-    // Configure camera & background
-    this.camera = this.cameras.main;
-    this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background from design spec
-    
-    // Fade in from black for smooth transition (with safety check for tests)
-    if (this.cameras?.main?.fadeIn) {
-      this.cameras.main.fadeIn(250, 0, 0, 0);
+    console.log('Game: Initializing game scene');
+
+    try {
+      // Configure camera & background
+      this.camera = this.cameras.main;
+      this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background from design spec
+
+      // Create graphics-based textures for particles (since we skipped Preloader)
+      this.createGraphicsTextures();
+
+      // Fade in from black for smooth transition (with safety check for tests)
+      if (this.cameras?.main?.fadeIn) {
+        this.cameras.main.fadeIn(250, 0, 0, 0);
+      }
+
+      // Background - subtle overlay for game area
+      this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x34495E, 0.3).setOrigin(0);
+
+      // Get reference to UIScene
+      this.uiScene = this.scene.get('UI') as UIScene;
+
+      // Initialize object management systems
+      this.objectPool = new ObjectPoolManager(this);
+      this.objectSpawner = new ObjectSpawner(this, this.objectPool, this.difficultyManager);
+      
+      console.log('Game: Core systems initialized');
+    } catch (error) {
+      console.error('Game: Error in create():', error);
+      throw error;
     }
-
-    // Background image
-    this.background = this.add.image(0, 0, 'background').setOrigin(0).setAlpha(0.3);
-
-    // Get reference to UIScene
-    this.uiScene = this.scene.get('UI') as UIScene;
-
-    // Initialize object management systems
-    this.objectPool = new ObjectPoolManager(this);
-    this.objectSpawner = new ObjectSpawner(this, this.objectPool, this.difficultyManager);
 
     // Setup responsive layout
     this.updateLayout(this.scale.width, this.scale.height);
@@ -126,6 +149,8 @@ export class Game extends Scene {
     this.time.delayedCall(1000, () => {
       this.changeState(GameState.PLAYING);
     });
+
+    console.log('Game: Ready to play');
   }
 
   private setupInputHandling(): void {
@@ -147,7 +172,7 @@ export class Game extends Scene {
     // Listen for performance optimization events
     this.events.on('performance_optimization', (data: { event: string; data: any }) => {
       const { event, data: settings } = data;
-      
+
       switch (event) {
         case 'settings_update':
           this.applyPerformanceSettings(settings);
@@ -166,7 +191,7 @@ export class Game extends Scene {
       this.objectSpawner.setEffectsEnabled(settings.effectsEnabled);
       this.objectSpawner.setParticleQuality(settings.particleQuality);
     }
-    
+
     // Update object pool limits
     if (this.objectPool) {
       this.objectPool.updateMaxSizes({
@@ -175,21 +200,21 @@ export class Game extends Scene {
         slowMo: Math.floor(settings.maxObjects * 0.1), // 10% slow-mo
       });
     }
-    
+
     console.log('Applied performance settings:', settings);
   }
 
   private applyEmergencyOptimizations(settings: any): void {
     console.warn('Applying emergency performance optimizations');
-    
+
     // Immediately reduce active objects
     if (this.objectPool) {
       this.objectPool.emergencyCleanup(settings.maxObjects);
     }
-    
+
     // Disable all non-essential visual effects
     this.tweens.killAll();
-    
+
     // Apply settings
     this.applyPerformanceSettings(settings);
   }
@@ -199,13 +224,13 @@ export class Game extends Scene {
 
     // Record input processing start for performance monitoring
     const performanceMonitor = (this.game as any).performanceMonitor;
-    
+
     // Create ripple effect for all taps
     this.createRippleEffect(x, y);
-    
+
     // Centralized collision detection for all game objects
     const tappedObject = this.checkCollisionAtPoint(x, y);
-    
+
     if (tappedObject) {
       // Handle the tapped object based on its type
       if (tappedObject instanceof Dot) {
@@ -215,13 +240,16 @@ export class Game extends Scene {
       } else if (tappedObject instanceof SlowMoDot) {
         this.handleSlowMoActivation(tappedObject);
       }
+    } else {
+      // Handle taps on empty space - provide feedback but no penalty
+      this.handleEmptySpaceTap(x, y);
     }
-    
+
     // Record input processing completion for performance monitoring
     if (performanceMonitor && performanceMonitor.recordInputProcessed) {
       performanceMonitor.recordInputProcessed();
     }
-    
+
     console.log(`Tap at (${x}, ${y}) - Object: ${tappedObject ? tappedObject.constructor.name : 'none'}`);
   }
 
@@ -271,25 +299,28 @@ export class Game extends Scene {
     if (dot.isCorrectColor(this.targetColor)) {
       // Correct tap - award point (+1 for correct taps)
       this.score++;
-      
+
       // Create celebratory pop effect with particle burst
       this.createCorrectTapEffect(dot);
-      
+
       // Deactivate the dot after successful tap
       dot.deactivate();
-      
+
       // Change target color occasionally for variety (30% chance)
       if (Math.random() < 0.3) {
         this.targetColor = this.getRandomColor();
         this.objectSpawner.setTargetColor(this.targetColor);
       }
-      
+
       console.log(`Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
     } else {
       // Wrong color - immediate game over (no delay, immediate termination)
       console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
       this.createWrongTapEffect(dot);
-      
+
+      // Deactivate the wrong dot immediately to prevent further interaction
+      dot.deactivate();
+
       // Immediate state change to game over - no delays or animations
       this.changeState(GameState.GAME_OVER);
       return;
@@ -307,19 +338,30 @@ export class Game extends Scene {
     const x = dot.x;
     const y = dot.y;
     const color = dot.getColor();
-    
-    // Get the correct dot asset for particles based on color
-    const dotAssetKey = this.getDotAssetByColor(color) || 'dot-red';
-    
-    // Create celebratory particle burst with 5-7 particles of dot's color
-    const particles = this.add.particles(x, y, dotAssetKey, {
-      speed: { min: 120, max: 250 },
-      scale: { start: 0.6, end: 0 },
-      lifespan: 300,
-      quantity: { min: 5, max: 7 },
-      blendMode: 'ADD',
-      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 10), quantity: 7 }
-    });
+
+    // Create celebratory burst effect with simple graphics
+    const burstColor = parseInt(color.replace('#', '0x'));
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const distance = 50 + Math.random() * 30;
+      const burstDot = this.add.circle(
+        x + Math.cos(angle) * 20,
+        y + Math.sin(angle) * 20,
+        8,
+        burstColor
+      );
+
+      this.tweens.add({
+        targets: burstDot,
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 300,
+        ease: 'Power2.easeOut',
+        onComplete: () => burstDot.destroy()
+      });
+    }
 
     // Dot shrinks to nothing with satisfying "pop" animation (300ms)
     this.tweens.add({
@@ -330,22 +372,27 @@ export class Game extends Scene {
       duration: 300,
       ease: 'Back.easeIn',
       onComplete: () => {
-        particles.destroy();
+        // Particles are individual objects that destroy themselves
       }
     });
 
     // Add extra "juice" with a secondary burst effect
-    const secondaryBurst = this.add.particles(x, y, dotAssetKey, {
-      speed: { min: 50, max: 100 },
-      scale: { start: 0.3, end: 0 },
-      lifespan: 200,
-      quantity: { min: 3, max: 5 },
-      blendMode: 'NORMAL',
-      delay: 50
-    });
+    this.time.delayedCall(50, () => {
+      for (let i = 0; i < 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 30 + Math.random() * 20;
+        const smallDot = this.add.circle(x, y, 4, burstColor);
 
-    this.time.delayedCall(250, () => {
-      secondaryBurst.destroy();
+        this.tweens.add({
+          targets: smallDot,
+          x: x + Math.cos(angle) * distance,
+          y: y + Math.sin(angle) * distance,
+          alpha: 0,
+          duration: 200,
+          ease: 'Power2.easeOut',
+          onComplete: () => smallDot.destroy()
+        });
+      }
     });
   }
 
@@ -355,7 +402,7 @@ export class Game extends Scene {
   private createWrongTapEffect(dot: Dot): void {
     // Create red warning ripple effect
     const ripple = this.add.circle(dot.x, dot.y, 10, 0xFF0000, 0.8);
-    
+
     this.tweens.add({
       targets: ripple,
       radius: dot.size * 3,
@@ -367,12 +414,18 @@ export class Game extends Scene {
       }
     });
 
-    // Flash the dot red briefly
-    const originalTint = dot.tintTopLeft;
-    dot.setTint(0xFF0000);
-    
-    this.time.delayedCall(200, () => {
-      dot.setTint(originalTint);
+    // Create red flash overlay on the dot
+    const flashOverlay = this.add.circle(dot.x, dot.y, dot.size / 2, 0xFF0000, 0.8);
+    flashOverlay.setDepth(dot.depth + 1);
+
+    this.tweens.add({
+      targets: flashOverlay,
+      alpha: 0,
+      duration: 200,
+      ease: 'Power2.easeOut',
+      onComplete: () => {
+        flashOverlay.destroy();
+      }
     });
   }
 
@@ -380,10 +433,10 @@ export class Game extends Scene {
     if (this.currentState !== GameState.PLAYING) return;
 
     console.log('Bomb tapped! Game Over!');
-    
+
     // Create explosion effect with screen shake and particles
     this.createBombExplosionEffect(bomb);
-    
+
     // Immediate game termination - no delays, instant state change
     this.changeState(GameState.GAME_OVER);
   }
@@ -396,44 +449,51 @@ export class Game extends Scene {
   private createBombExplosionEffect(bomb: Bomb): void {
     const x = bomb.x;
     const y = bomb.y;
-    
+
     // Screen shake effect (2-3px, 150ms) - exact specification
     this.cameras.main.shake(150, 0.025); // 150ms duration, 0.025 intensity (~2-3px)
-    
+
     // Create explosion particle effect with red/orange/yellow colors
     const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700]; // Red, OrangeRed, DarkOrange, Gold
-    
-    // Main explosion burst using red and yellow dot assets for variety
-    const explosion = this.add.particles(x, y, 'dot-red', {
-      tint: explosionColors,
-      speed: { min: 200, max: 500 },
-      scale: { start: 1.2, end: 0 },
-      lifespan: { min: 500, max: 1000 },
-      quantity: { min: 20, max: 30 },
-      blendMode: 'ADD',
-      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, bomb.size / 2), quantity: 25 }
-    });
 
-    // Secondary explosion ring using yellow dots for more dramatic effect
-    const secondaryExplosion = this.add.particles(x, y, 'dot-yellow', {
-      tint: [0xFF0000, 0xFF4500], // Red and orange tint on yellow base
-      speed: { min: 100, max: 250 },
-      scale: { start: 0.6, end: 0 },
-      lifespan: { min: 300, max: 600 },
-      quantity: { min: 10, max: 15 },
-      blendMode: 'ADD',
-      delay: 50 // Slight delay for layered effect
-    });
+    // Main explosion burst using simple graphics
+    for (let i = 0; i < 25; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 100 + Math.random() * 200;
+      const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
+      const size = 8 + Math.random() * 12;
 
-    // Tertiary explosion with smaller particles for extra detail
-    const tertiaryExplosion = this.add.particles(x, y, 'dot-red', {
-      tint: [0xFFD700, 0xFF8C00], // Gold and dark orange
-      speed: { min: 300, max: 600 },
-      scale: { start: 0.4, end: 0 },
-      lifespan: { min: 200, max: 400 },
-      quantity: { min: 15, max: 20 },
-      blendMode: 'ADD',
-      delay: 25
+      const explosionDot = this.add.circle(x, y, size, color);
+
+      this.tweens.add({
+        targets: explosionDot,
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 500 + Math.random() * 500,
+        ease: 'Power2.easeOut',
+        onComplete: () => explosionDot.destroy()
+      });
+    }
+
+    // Secondary explosion ring
+    this.time.delayedCall(50, () => {
+      for (let i = 0; i < 15; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 50 + Math.random() * 100;
+        const explosionDot = this.add.circle(x, y, 6, 0xFF4500);
+
+        this.tweens.add({
+          targets: explosionDot,
+          x: x + Math.cos(angle) * distance,
+          y: y + Math.sin(angle) * distance,
+          alpha: 0,
+          duration: 400,
+          ease: 'Power2.easeOut',
+          onComplete: () => explosionDot.destroy()
+        });
+      }
     });
 
     // Flash effect for dramatic impact
@@ -461,12 +521,9 @@ export class Game extends Scene {
 
     // Hide bomb immediately
     bomb.setVisible(false);
-    
-    // Clean up explosion effects after animation
+
+    // Clean up bomb after explosion animation
     this.time.delayedCall(1000, () => {
-      explosion.destroy();
-      secondaryExplosion.destroy();
-      tertiaryExplosion.destroy();
       bomb.deactivate();
     });
   }
@@ -475,19 +532,19 @@ export class Game extends Scene {
     if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0 || this.isSlowMoActive) return;
 
     console.log(`Slow-mo activated! Charges remaining: ${this.slowMoCharges - 1}`);
-    
+
     // Consume a slow-mo charge
     this.slowMoCharges--;
-    
+
     // Create radial blue glow and visual feedback
     this.createSlowMoActivationEffect(slowMoDot);
-    
+
     // Activate slow-motion effect with smooth transitions
     this.activateSlowMotion();
-    
+
     // Deactivate the slow-mo dot with special effect
     slowMoDot.activateSlowMo();
-    
+
     this.updateUI();
   }
 
@@ -498,11 +555,11 @@ export class Game extends Scene {
   private createSlowMoActivationEffect(slowMoDot: SlowMoDot): void {
     const x = slowMoDot.x;
     const y = slowMoDot.y;
-    
+
     // Primary radial blue glow emanating from tap point
     const primaryGlow = this.add.circle(x, y, 25, 0x3498DB, 0.8);
     primaryGlow.setDepth(998);
-    
+
     this.tweens.add({
       targets: primaryGlow,
       radius: 350,
@@ -517,7 +574,7 @@ export class Game extends Scene {
     // Secondary glow with different timing for layered effect
     const secondaryGlow = this.add.circle(x, y, 15, 0x5DADE2, 0.9);
     secondaryGlow.setDepth(999);
-    
+
     this.tweens.add({
       targets: secondaryGlow,
       radius: 200,
@@ -533,7 +590,7 @@ export class Game extends Scene {
     // Tertiary pulse effect for extra impact
     const pulseGlow = this.add.circle(x, y, 40, 0x85C1E9, 0.5);
     pulseGlow.setDepth(997);
-    
+
     this.tweens.add({
       targets: pulseGlow,
       radius: 500,
@@ -546,20 +603,31 @@ export class Game extends Scene {
       }
     });
 
-    // Create particle burst with blue theme
-    const particles = this.add.particles(x, y, 'slowmo-dot', {
-      tint: [0x3498DB, 0x5DADE2, 0x85C1E9],
-      speed: { min: 100, max: 250 },
-      scale: { start: 0.5, end: 0 },
-      lifespan: 600,
-      quantity: { min: 8, max: 12 },
-      blendMode: 'ADD',
-      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 15), quantity: 10 }
-    });
+    // Create particle burst with blue theme using simple graphics
+    const blueColors = [0x3498DB, 0x5DADE2, 0x85C1E9];
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2;
+      const distance = 80 + Math.random() * 50;
+      const color = blueColors[Math.floor(Math.random() * blueColors.length)];
 
-    this.time.delayedCall(600, () => {
-      particles.destroy();
-    });
+      const blueDot = this.add.circle(
+        x + Math.cos(angle) * 15,
+        y + Math.sin(angle) * 15,
+        6,
+        color
+      );
+
+      this.tweens.add({
+        targets: blueDot,
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 600,
+        ease: 'Power2.easeOut',
+        onComplete: () => blueDot.destroy()
+      });
+    }
 
     // Shrink the slow-mo dot with satisfying animation
     this.tweens.add({
@@ -573,6 +641,110 @@ export class Game extends Scene {
   }
 
   /**
+   * Create a temporary object that will be tracked for cleanup
+   */
+  private createTemporaryObject<T extends Phaser.GameObjects.GameObject>(
+    createFn: () => T,
+    duration?: number
+  ): T {
+    const obj = createFn();
+    this.temporaryObjects.push(obj);
+
+    // Auto-cleanup after duration if specified
+    if (duration) {
+      this.time.delayedCall(duration, () => {
+        this.cleanupTemporaryObject(obj);
+      });
+    }
+
+    return obj;
+  }
+
+  /**
+   * Clean up a temporary object
+   */
+  private cleanupTemporaryObject(obj: Phaser.GameObjects.GameObject): void {
+    const index = this.temporaryObjects.indexOf(obj);
+    if (index !== -1) {
+      this.temporaryObjects.splice(index, 1);
+    }
+
+    if (obj && obj.active) {
+      try {
+        obj.destroy();
+      } catch (error) {
+        // Ignore errors during cleanup
+        console.warn('Error cleaning up temporary object:', error);
+      }
+    }
+  }
+
+  /**
+   * Clean up all temporary objects
+   */
+  private cleanupAllTemporaryObjects(): void {
+    for (const obj of this.temporaryObjects) {
+      if (obj && obj.active) {
+        try {
+          obj.destroy();
+        } catch (error) {
+          // Ignore errors during cleanup
+          console.warn('Error cleaning up temporary object:', error);
+        }
+      }
+    }
+    this.temporaryObjects = [];
+  }
+
+  /**
+   * Handle taps on empty space (no game objects)
+   * Provides visual feedback but no penalty - taps are consumed
+   */
+  private handleEmptySpaceTap(x: number, y: number): void {
+    if (this.currentState !== GameState.PLAYING) return;
+
+    // Create subtle feedback for empty space taps - different from object taps
+    this.createEmptySpaceEffect(x, y);
+
+    console.log(`Empty space tap at (${x}, ${y}) - consumed with feedback`);
+  }
+
+  /**
+   * Create subtle visual feedback for empty space taps
+   * Different from object tap effects to provide clear feedback
+   */
+  private createEmptySpaceEffect(x: number, y: number): void {
+    // Create a subtle grey ripple to indicate the tap was registered
+    const emptyRipple = this.add.circle(x, y, 6, 0x95A5A6, 0.6); // Mid Grey from design system
+    emptyRipple.setStrokeStyle(2, 0x95A5A6, 0.4);
+
+    this.tweens.add({
+      targets: emptyRipple,
+      radius: 80,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2.easeOut',
+      onComplete: () => {
+        emptyRipple.destroy();
+      }
+    });
+
+    // Add a subtle pulse to indicate the tap was acknowledged
+    const pulse = this.add.circle(x, y, 3, 0xBDC3C7, 0.8); // Light Grey
+
+    this.tweens.add({
+      targets: pulse,
+      radius: 25,
+      alpha: 0,
+      duration: 200,
+      ease: 'Power3.easeOut',
+      onComplete: () => {
+        pulse.destroy();
+      }
+    });
+  }
+
+  /**
    * Create instantaneous expanding ripple effect for all taps
    * Specifications: white, 200ms duration
    */
@@ -580,7 +752,7 @@ export class Game extends Scene {
     // Primary ripple - main visual feedback (white, 200ms)
     const ripple = this.add.circle(x, y, 8, 0xFFFFFF, 0.9);
     ripple.setStrokeStyle(4, 0xFFFFFF, 0.8);
-    
+
     this.tweens.add({
       targets: ripple,
       radius: 120,
@@ -595,7 +767,7 @@ export class Game extends Scene {
     // Secondary inner ripple for extra "juice" and tactile feedback
     const innerRipple = this.add.circle(x, y, 4, 0xFFFFFF, 0.7);
     innerRipple.setStrokeStyle(2, 0xFFFFFF, 0.5);
-    
+
     this.tweens.add({
       targets: innerRipple,
       radius: 60,
@@ -610,7 +782,7 @@ export class Game extends Scene {
 
     // Tertiary micro-ripple for immediate feedback
     const microRipple = this.add.circle(x, y, 2, 0xFFFFFF, 0.5);
-    
+
     this.tweens.add({
       targets: microRipple,
       radius: 30,
@@ -625,12 +797,12 @@ export class Game extends Scene {
 
   private activateSlowMotion(): void {
     if (this.isSlowMoActive) return;
-    
+
     this.isSlowMoActive = true;
     this.slowMoStartTime = this.time.now;
-    
+
     console.log('Slow-motion activated with smooth transitions');
-    
+
     // Create blue vignette effect around screen edges
     this.slowMoVignette = this.add.rectangle(
       this.scale.width / 2,
@@ -641,7 +813,7 @@ export class Game extends Scene {
       0.0
     );
     this.slowMoVignette.setDepth(999);
-    
+
     // Smooth transition to slow-motion with ease-in-out curve (specification requirement)
     this.slowMoTween = this.tweens.add({
       targets: { timeScale: 1.0, vignetteAlpha: 0.0 },
@@ -653,11 +825,11 @@ export class Game extends Scene {
         const progress = tween.getValue();
         const timeScale = 1.0 - (0.7 * progress); // 1.0 -> 0.3
         const vignetteAlpha = 0.35 * progress; // 0.0 -> 0.35
-        
+
         // Apply time scaling to physics and tweens
         this.physics.world.timeScale = timeScale;
         this.tweens.timeScale = timeScale;
-        
+
         // Update vignette alpha with smooth interpolation
         if (this.slowMoVignette) {
           this.slowMoVignette.setAlpha(vignetteAlpha);
@@ -677,32 +849,32 @@ export class Game extends Scene {
         }
       }
     });
-    
+
     // Schedule restoration of normal time after duration
     this.time.delayedCall(SlowMoDot.getDuration(), () => {
       this.deactivateSlowMotion();
     });
   }
-  
+
   /**
    * Deactivate slow-motion with smooth transition back to normal speed
    */
   private deactivateSlowMotion(): void {
     if (!this.isSlowMoActive) return;
-    
+
     console.log('Slow-motion deactivating with smooth transition');
-    
+
     // Stop any ongoing slow-mo tweens
     if (this.slowMoTween) {
-      this.slowMoTween.destroy();
+      this.slowMoTween.remove();
       this.slowMoTween = null;
     }
-    
+
     // Stop vignette pulsing
     if (this.slowMoVignette) {
       this.tweens.killTweensOf(this.slowMoVignette);
     }
-    
+
     // Smooth transition back to normal speed with ease-in-out curve
     this.tweens.add({
       targets: { timeScale: 0.3, vignetteAlpha: this.slowMoVignette?.alpha || 0.35 },
@@ -714,11 +886,11 @@ export class Game extends Scene {
         const progress = tween.getValue();
         const timeScale = 0.3 + (0.7 * progress); // 0.3 -> 1.0
         const vignetteAlpha = (this.slowMoVignette?.alpha || 0.35) * (1 - progress);
-        
+
         // Apply time scaling with smooth interpolation
         this.physics.world.timeScale = timeScale;
         this.tweens.timeScale = timeScale;
-        
+
         // Update vignette alpha with smooth fade
         if (this.slowMoVignette) {
           this.slowMoVignette.setAlpha(vignetteAlpha);
@@ -730,11 +902,11 @@ export class Game extends Scene {
           this.slowMoVignette.destroy();
           this.slowMoVignette = null;
         }
-        
+
         // Reset slow-mo state
         this.isSlowMoActive = false;
         this.slowMoStartTime = 0;
-        
+
         console.log('Slow-motion deactivated - normal speed restored with smooth transition');
       }
     });
@@ -813,7 +985,7 @@ export class Game extends Scene {
     this.elapsedTime = 0;
     this.targetColor = this.getRandomColor();
     this.slowMoCharges = SlowMoDot.getInitialCharges(); // Use constant from SlowMoDot
-    
+
     // Reset slow-motion state
     this.isSlowMoActive = false;
     this.slowMoStartTime = 0;
@@ -822,21 +994,21 @@ export class Game extends Scene {
       this.slowMoVignette = null;
     }
     if (this.slowMoTween) {
-      this.slowMoTween.destroy();
+      this.slowMoTween.remove();
       this.slowMoTween = null;
     }
-    
+
     // Reset object systems
     this.objectSpawner.reset();
     this.objectSpawner.setTargetColor(this.targetColor);
-    
+
     // Update UI
     this.updateUI();
   }
 
   private startGame(): void {
     this.gameStartTime = this.time.now;
-    
+
     // Start game timer to update elapsed time
     this.gameTimer = this.time.addEvent({
       delay: 100, // Update every 100ms
@@ -847,38 +1019,41 @@ export class Game extends Scene {
 
     // Start object spawning
     this.objectSpawner.resume();
-    
+
+    // Force spawn a few objects immediately for immediate gameplay
+    this.objectSpawner.forceSpawn(2, 1000);
+
     console.log('Game started!');
   }
 
   private endGame(): void {
     // Stop object spawning immediately
     this.objectSpawner.pause();
-    
+
     // Force deactivate slow-motion if active
     if (this.isSlowMoActive) {
       this.forceDeactivateSlowMotion();
     }
-    
+
     // Clear any remaining visual effects
     this.tweens.killAll();
-    
+
     // Calculate final session time in seconds and milliseconds
     const sessionTimeSeconds = Math.floor(this.elapsedTime / 1000);
     const sessionTimeMs = Math.floor(this.elapsedTime);
-    
+
     // Store best score in local storage
     const currentBestScore = parseInt(localStorage.getItem('colorRushBestScore') || '0');
     if (this.score > currentBestScore) {
       localStorage.setItem('colorRushBestScore', this.score.toString());
       console.log(`New best score: ${this.score}!`);
     }
-    
+
     // Automatic score submission to leaderboard with graceful error handling
     this.submitScoreToLeaderboard(this.score, sessionTimeMs);
-    
+
     console.log(`Game Over! Final Score: ${this.score}, Time: ${sessionTimeSeconds}s, Best: ${Math.max(this.score, currentBestScore)}`);
-    
+
     // Prepare data for GameOver scene
     const gameOverData = {
       finalScore: this.score,
@@ -886,11 +1061,11 @@ export class Game extends Scene {
       bestScore: Math.max(this.score, currentBestScore),
       targetColor: this.targetColor
     };
-    
-    // Transition to GameOver scene after a brief delay for dramatic effect
-    this.time.delayedCall(1500, () => {
+
+    // Transition to GameOver scene
+    this.time.delayedCall(1000, () => {
       this.scene.stop('UI'); // Stop UIScene
-      this.scene.start('GameOver', gameOverData);
+      this.scene.start('GameOver', gameOverData); // Start GameOver scene with data
     });
   }
 
@@ -901,9 +1076,9 @@ export class Game extends Scene {
   private async submitScoreToLeaderboard(score: number, sessionTime: number): Promise<void> {
     try {
       console.log(`Submitting score to leaderboard: ${score} points, ${sessionTime}ms session`);
-      
+
       const result = await this.leaderboardService.submitScore(score, sessionTime);
-      
+
       if (result.success) {
         console.log('Score submitted successfully:', result.message);
         if (result.rank) {
@@ -913,10 +1088,10 @@ export class Game extends Scene {
         console.warn('Score submission failed:', result.message);
         this.showScoreSubmissionError(result.message || 'Could not submit score');
       }
-      
+
     } catch (error) {
       console.error('Error submitting score to leaderboard:', error);
-      
+
       // Graceful degradation - show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
       this.showScoreSubmissionError(errorMessage);
@@ -928,36 +1103,41 @@ export class Game extends Scene {
    * Provides fallback messaging as required by task specifications
    */
   private showScoreSubmissionError(message: string): void {
-    // Create a temporary error notification that doesn't interrupt gameplay
-    const errorText = this.add.text(
+    // Create a visual error indicator using graphics only
+    const errorIndicator = this.add.rectangle(
       this.scale.width / 2,
       this.scale.height - 100,
-      `⚠️ ${message}`,
-      {
-        fontFamily: 'Poppins',
-        fontSize: '18px',
-        color: '#F39C12', // Orange warning color
-        backgroundColor: '#2C3E50',
-        padding: { x: 20, y: 10 },
-        align: 'center',
-      }
-    ).setOrigin(0.5).setDepth(1000).setAlpha(0);
+      200, 40,
+      0xF39C12, 0.8
+    );
+    errorIndicator.setStrokeStyle(2, 0xFFFFFF, 0.8);
+    errorIndicator.setDepth(1000).setAlpha(0);
+
+    // Add warning triangle
+    const warningTriangle = this.add.triangle(
+      this.scale.width / 2 - 70,
+      this.scale.height - 100,
+      0, 0, 10, 15, -10, 15,
+      0xFF0000
+    );
+    warningTriangle.setDepth(1001).setAlpha(0);
 
     // Fade in, hold, then fade out
     this.tweens.add({
-      targets: errorText,
+      targets: [errorIndicator, warningTriangle],
       alpha: 1,
       duration: 300,
       ease: 'Power2.easeOut',
       onComplete: () => {
         this.time.delayedCall(3000, () => {
           this.tweens.add({
-            targets: errorText,
+            targets: [errorIndicator, warningTriangle],
             alpha: 0,
             duration: 500,
             ease: 'Power2.easeIn',
             onComplete: () => {
-              errorText.destroy();
+              errorIndicator.destroy();
+              warningTriangle.destroy();
             }
           });
         });
@@ -968,7 +1148,7 @@ export class Game extends Scene {
   private updateGameTime(): void {
     // Calculate elapsed time accounting for slow-motion periods
     let realElapsedTime = this.time.now - this.gameStartTime;
-    
+
     // If slow-mo is active, adjust the elapsed time calculation
     // This ensures scoring fairness - slow-mo doesn't artificially extend game time
     if (this.isSlowMoActive) {
@@ -976,10 +1156,10 @@ export class Game extends Scene {
       const slowMoAdjustment = slowMoElapsed * (1 - 0.3); // Subtract the "extra" time from slow-mo
       realElapsedTime -= slowMoAdjustment;
     }
-    
+
     this.elapsedTime = realElapsedTime;
     this.updateUI();
-    
+
     // Update debug service with current elapsed time for real-time calculations
     if (this.debugService.isEnabled()) {
       this.debugService.updateElapsedTime(this.elapsedTime);
@@ -1000,19 +1180,6 @@ export class Game extends Scene {
     return colors[Math.floor(Math.random() * colors.length)] as GameColor;
   }
 
-  /**
-   * Get the correct dot asset key based on color
-   */
-  private getDotAssetByColor(color: GameColor): string {
-    const colorMap: Record<GameColor, string> = {
-      [GameColor.RED]: 'dot-red',
-      [GameColor.GREEN]: 'dot-green',
-      [GameColor.BLUE]: 'dot-blue',
-      [GameColor.YELLOW]: 'dot-yellow',
-      [GameColor.PURPLE]: 'dot-purple',
-    };
-    return colorMap[color] || 'dot-red';
-  }
 
   // Public methods for testing and debugging
   public triggerGameOver(): void {
@@ -1034,36 +1201,36 @@ export class Game extends Scene {
   public getSlowMoCharges(): number {
     return this.slowMoCharges;
   }
-  
+
   public isSlowMotionActive(): boolean {
     return this.isSlowMoActive;
   }
-  
+
   /**
    * Force deactivate slow-motion immediately (used during game over)
    */
   private forceDeactivateSlowMotion(): void {
     if (!this.isSlowMoActive) return;
-    
+
     console.log('Force deactivating slow-motion');
-    
+
     // Stop any ongoing slow-mo tweens
     if (this.slowMoTween) {
-      this.slowMoTween.destroy();
+      this.slowMoTween.remove();
       this.slowMoTween = null;
     }
-    
+
     // Clean up vignette immediately
     if (this.slowMoVignette) {
       this.tweens.killTweensOf(this.slowMoVignette);
       this.slowMoVignette.destroy();
       this.slowMoVignette = null;
     }
-    
+
     // Reset time scale immediately
     this.physics.world.timeScale = 1;
     this.tweens.timeScale = 1;
-    
+
     // Reset slow-mo state
     this.isSlowMoActive = false;
     this.slowMoStartTime = 0;
@@ -1166,7 +1333,7 @@ export class Game extends Scene {
 
     const elapsedSeconds = this.elapsedTime / 1000;
     const metrics = this.difficultyManager.getDifficultyMetrics(elapsedSeconds);
-    
+
     // Log difficulty metrics for debugging
     if (elapsedSeconds > 0 && Math.floor(elapsedSeconds) % 5 === 0) {
       console.log('Difficulty Metrics:', {
@@ -1185,13 +1352,13 @@ export class Game extends Scene {
     if (this.currentState === GameState.PLAYING) {
       // Update object spawner
       this.objectSpawner.update(delta, this.elapsedTime);
-      
+
       // Update object pool
       this.objectPool.update(delta);
-      
+
       // Update difficulty display for debugging
       this.updateDifficultyDisplay();
-      
+
       // Update hitbox visualization
       this.drawHitboxes();
     }
@@ -1199,8 +1366,89 @@ export class Game extends Scene {
 
   // Clean up debug resources when scene shuts down
   shutdown(): void {
-    if (this.debugService instanceof DebugService) {
-      this.debugService.destroy();
+    try {
+      // Kill all tweens first to prevent cleanup issues
+      if (this.tweens) {
+        this.tweens.killAll();
+        this.tweens.timeScale = 1;
+      }
+
+      // Clean up all temporary objects
+      this.cleanupAllTemporaryObjects();
+
+      // Clean up debug service
+      if (this.debugService instanceof DebugService) {
+        try {
+          this.debugService.destroy();
+        } catch (error) {
+          console.warn('Error destroying debugService:', error);
+        }
+      }
+
+      // Clean up slow-mo effects
+      if (this.slowMoVignette && this.slowMoVignette.active) {
+        try {
+          this.slowMoVignette.destroy();
+        } catch (error) {
+          console.warn('Error destroying slowMoVignette:', error);
+        }
+        this.slowMoVignette = null;
+      }
+
+      if (this.slowMoTween) {
+        try {
+          this.slowMoTween.remove();
+        } catch (error) {
+          console.warn('Error removing slowMoTween:', error);
+        }
+        this.slowMoTween = null;
+      }
+
+      // Clean up graphics objects
+      if (this.hitboxGraphics && this.hitboxGraphics.active) {
+        try {
+          this.hitboxGraphics.destroy();
+        } catch (error) {
+          console.warn('Error destroying hitboxGraphics:', error);
+        }
+        this.hitboxGraphics = null;
+      }
+
+      // Clean up object pools
+      if (this.objectPool) {
+        try {
+          this.objectPool.destroy();
+        } catch (error) {
+          console.warn('Error destroying objectPool:', error);
+        }
+      }
+
+      // Clean up timers
+      if (this.gameTimer && this.gameTimer.hasDispatched === false) {
+        try {
+          this.gameTimer.destroy();
+        } catch (error) {
+          console.warn('Error destroying gameTimer:', error);
+        }
+        this.gameTimer = null;
+      }
+
+      // Clean up background
+      if (this.background && this.background.active) {
+        try {
+          this.background.destroy();
+        } catch (error) {
+          console.warn('Error destroying background:', error);
+        }
+      }
+
+      // Reset time scale to normal
+      if (this.physics && this.physics.world) {
+        this.physics.world.timeScale = 1;
+      }
+
+    } catch (error) {
+      console.warn('Error during scene shutdown:', error);
     }
   }
 }
