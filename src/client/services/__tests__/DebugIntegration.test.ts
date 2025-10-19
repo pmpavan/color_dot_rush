@@ -73,8 +73,8 @@ describe('Debug System Integration', () => {
         shrinkRate: 0.98
       });
 
-      // Should be valid for 90 second target
-      expect(difficultyManager.validateDifficultyCurve(90)).toBe(true);
+      // Should be valid for 210 second target (3.5 minutes)
+      expect(difficultyManager.validateDifficultyCurve(210)).toBe(true);
 
       // Test with extreme parameters that would be unplayable
       debugService.updateDifficultyParams({ 
@@ -82,8 +82,8 @@ describe('Debug System Integration', () => {
         growthRate: 1.20, // Very high growth rate
       });
 
-      // Should be invalid for 90 second target
-      expect(difficultyManager.validateDifficultyCurve(90)).toBe(false);
+      // Should be invalid for 210 second target (3.5 minutes)
+      expect(difficultyManager.validateDifficultyCurve(210)).toBe(false);
     });
   });
 
@@ -107,7 +107,7 @@ describe('Debug System Integration', () => {
         debugService.updateElapsedTime(0);
         debugService.updateElapsedTime(15000); // 15 seconds
         debugService.updateElapsedTime(60000); // 60 seconds
-        debugService.updateElapsedTime(90000); // 90 seconds
+        debugService.updateElapsedTime(210000); // 210 seconds (3.5 minutes)
       }).not.toThrow();
     });
 

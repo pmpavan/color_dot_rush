@@ -13,6 +13,7 @@ export class Dot extends Phaser.GameObjects.Arc {
   private direction: Phaser.Math.Vector2;
   private hitbox: Phaser.Geom.Rectangle;
   public override active: boolean = false;
+  private lastCollisionTime: number = 0;
 
   constructor(scene: Phaser.Scene) {
     // Create as a circle instead of sprite - larger for visibility
@@ -106,6 +107,102 @@ export class Dot extends Phaser.GameObjects.Arc {
   public onCollision(_other: any): void {
     // Handle collision logic if needed
     // For now, dots don't collide with each other
+  }
+
+  /**
+   * Check if this dot is colliding with another dot
+   */
+  public isCollidingWith(other: Dot): boolean {
+    if (!this.active || !other.active) return false;
+    
+    const distance = Phaser.Math.Distance.Between(this.x, this.y, other.x, other.y);
+    const minDistance = (this.size + other.size) / 2;
+    
+    // Use exact collision detection - no buffer to prevent pass-through
+    return distance < minDistance;
+  }
+
+  /**
+   * Handle collision with another dot and bounce
+   */
+  public handleDotCollision(other: Dot): void {
+    if (!this.active || !other.active) return;
+    
+    // Add collision cooldown to prevent rapid multiple collisions
+    const currentTime = this.scene.time.now;
+    const collisionCooldown = 100; // 100ms cooldown
+    
+    if (currentTime - this.lastCollisionTime < collisionCooldown || 
+        currentTime - other.lastCollisionTime < collisionCooldown) {
+      return;
+    }
+    
+    // Calculate collision vector (from this dot to other dot)
+    const dx = other.x - this.x;
+    const dy = other.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance === 0) return; // Avoid division by zero
+    
+    // Calculate minimum distance for collision
+    const minDistance = (this.size + other.size) / 2;
+    
+    // Only handle collision if dots are actually overlapping
+    if (distance >= minDistance) return;
+    
+    // Mark collision time for both dots
+    this.lastCollisionTime = currentTime;
+    other.lastCollisionTime = currentTime;
+    
+    // Normalize collision vector
+    const normalX = dx / distance;
+    const normalY = dy / distance;
+    
+    // Separate dots first to prevent overlap - push them apart more aggressively
+    const overlap = minDistance - distance;
+    const separationX = normalX * overlap * 0.6; // Increased separation
+    const separationY = normalY * overlap * 0.6;
+    
+    this.x -= separationX;
+    this.y -= separationY;
+    other.x += separationX;
+    other.y += separationY;
+    
+    // Perfect opposite direction bouncing: each dot bounces back exactly where it came from
+    // Simply reverse each dot's direction vector to get perfect opposite direction
+    
+    // Store original directions for debug logging
+    const originalThisDir = { x: this.direction.x, y: this.direction.y };
+    const originalOtherDir = { x: other.direction.x, y: other.direction.y };
+    
+    // Reverse this dot's direction (multiply by -1)
+    this.direction.x = -this.direction.x;
+    this.direction.y = -this.direction.y;
+    
+    // Reverse other dot's direction (multiply by -1)
+    other.direction.x = -other.direction.x;
+    other.direction.y = -other.direction.y;
+    
+    // Ensure directions remain normalized unit vectors
+    const thisLength = Math.sqrt(this.direction.x * this.direction.x + this.direction.y * this.direction.y);
+    const otherLength = Math.sqrt(other.direction.x * other.direction.x + other.direction.y * other.direction.y);
+    
+    if (thisLength > 0) {
+      this.direction.x /= thisLength;
+      this.direction.y /= thisLength;
+    }
+    
+    if (otherLength > 0) {
+      other.direction.x /= otherLength;
+      other.direction.y /= otherLength;
+    }
+    
+    // Debug logging (occasional)
+    if (Math.random() < 0.05) { // 5% chance to log
+      console.log(`Dot collision: distance=${distance.toFixed(1)}, minDistance=${minDistance.toFixed(1)}, overlap=${(minDistance - distance).toFixed(1)}`);
+      console.log(`  Dot1: ${originalThisDir.x.toFixed(2)}, ${originalThisDir.y.toFixed(2)} -> ${this.direction.x.toFixed(2)}, ${this.direction.y.toFixed(2)}`);
+      console.log(`  Dot2: ${originalOtherDir.x.toFixed(2)}, ${originalOtherDir.y.toFixed(2)} -> ${other.direction.x.toFixed(2)}, ${other.direction.y.toFixed(2)}`);
+    }
   }
 
   /**

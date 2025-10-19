@@ -17,6 +17,7 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   private clockIcon: Phaser.GameObjects.Arc;
   private clockHand: Phaser.GameObjects.Line;
   private shimmerTween: Phaser.Tweens.Tween | null = null;
+  private lastCollisionTime: number = 0;
   public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
@@ -111,10 +112,194 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   }
 
   /**
-   * Handle collision with another object
+   * Check if this slow-mo dot is colliding with another object
+   */
+  public isCollidingWith(other: any): boolean {
+    if (!this.active || !other.active) return false;
+    
+    // Calculate distance between centers
+    const dx = other.x - this.x;
+    const dy = other.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Calculate minimum distance for collision
+    const minDistance = (this.size + other.size) / 2;
+    
+    // Use exact collision detection - no buffer to prevent pass-through
+    return distance < minDistance;
+  }
+
+  /**
+   * Handle collision with a regular dot
+   */
+  public handleDotCollision(dot: any): void {
+    if (!this.active || !dot.active) return;
+    
+    // Add collision cooldown to prevent rapid multiple collisions
+    const currentTime = this.scene.time.now;
+    const collisionCooldown = 100; // 100ms cooldown
+    
+    if (currentTime - this.lastCollisionTime < collisionCooldown || 
+        currentTime - dot.lastCollisionTime < collisionCooldown) {
+      return;
+    }
+    
+    // Calculate collision vector (from this slow-mo dot to regular dot)
+    const dx = dot.x - this.x;
+    const dy = dot.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance === 0) return; // Avoid division by zero
+    
+    // Calculate minimum distance for collision
+    const minDistance = (this.size + dot.size) / 2;
+    
+    // Only handle collision if objects are actually overlapping
+    if (distance >= minDistance) return;
+    
+    // Mark collision time for both objects
+    this.lastCollisionTime = currentTime;
+    dot.lastCollisionTime = currentTime;
+    
+    // Normalize collision vector
+    const normalX = dx / distance;
+    const normalY = dy / distance;
+    
+    // Separate objects first to prevent overlap - push them apart more aggressively
+    const overlap = minDistance - distance;
+    const separationX = normalX * overlap * 0.6; // Increased separation
+    const separationY = normalY * overlap * 0.6;
+    
+    this.x -= separationX;
+    this.y -= separationY;
+    dot.x += separationX;
+    dot.y += separationY;
+    
+    // Perfect opposite direction bouncing: each object bounces back exactly where it came from
+    // Simply reverse each object's direction vector to get perfect opposite direction
+    
+    // Store original directions for debug logging
+    const originalThisDir = { x: this.direction.x, y: this.direction.y };
+    const originalDotDir = { x: dot.direction.x, y: dot.direction.y };
+    
+    // Reverse this slow-mo dot's direction (multiply by -1)
+    this.direction.x = -this.direction.x;
+    this.direction.y = -this.direction.y;
+    
+    // Reverse regular dot's direction (multiply by -1)
+    dot.direction.x = -dot.direction.x;
+    dot.direction.y = -dot.direction.y;
+    
+    // Ensure directions remain normalized unit vectors
+    const thisLength = Math.sqrt(this.direction.x * this.direction.x + this.direction.y * this.direction.y);
+    const dotLength = Math.sqrt(dot.direction.x * dot.direction.x + dot.direction.y * dot.direction.y);
+    
+    if (thisLength > 0) {
+      this.direction.x /= thisLength;
+      this.direction.y /= thisLength;
+    }
+    
+    if (dotLength > 0) {
+      dot.direction.x /= dotLength;
+      dot.direction.y /= dotLength;
+    }
+    
+    // Debug logging (occasional)
+    if (Math.random() < 0.05) { // 5% chance to log
+      console.log(`SlowMo-Dot collision: distance=${distance.toFixed(1)}, minDistance=${minDistance.toFixed(1)}, overlap=${(minDistance - distance).toFixed(1)}`);
+      console.log(`  SlowMo: ${originalThisDir.x.toFixed(2)}, ${originalThisDir.y.toFixed(2)} -> ${this.direction.x.toFixed(2)}, ${this.direction.y.toFixed(2)}`);
+      console.log(`  Dot: ${originalDotDir.x.toFixed(2)}, ${originalDotDir.y.toFixed(2)} -> ${dot.direction.x.toFixed(2)}, ${dot.direction.y.toFixed(2)}`);
+    }
+  }
+
+  /**
+   * Handle collision with another slow-mo dot
+   */
+  public handleSlowMoCollision(otherSlowMo: SlowMoDot): void {
+    if (!this.active || !otherSlowMo.active) return;
+    
+    // Add collision cooldown to prevent rapid multiple collisions
+    const currentTime = this.scene.time.now;
+    const collisionCooldown = 100; // 100ms cooldown
+    
+    if (currentTime - this.lastCollisionTime < collisionCooldown || 
+        currentTime - otherSlowMo.lastCollisionTime < collisionCooldown) {
+      return;
+    }
+    
+    // Calculate collision vector (from this slow-mo dot to other slow-mo dot)
+    const dx = otherSlowMo.x - this.x;
+    const dy = otherSlowMo.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance === 0) return; // Avoid division by zero
+    
+    // Calculate minimum distance for collision
+    const minDistance = (this.size + otherSlowMo.size) / 2;
+    
+    // Only handle collision if objects are actually overlapping
+    if (distance >= minDistance) return;
+    
+    // Mark collision time for both objects
+    this.lastCollisionTime = currentTime;
+    otherSlowMo.lastCollisionTime = currentTime;
+    
+    // Normalize collision vector
+    const normalX = dx / distance;
+    const normalY = dy / distance;
+    
+    // Separate objects first to prevent overlap - push them apart more aggressively
+    const overlap = minDistance - distance;
+    const separationX = normalX * overlap * 0.6; // Increased separation
+    const separationY = normalY * overlap * 0.6;
+    
+    this.x -= separationX;
+    this.y -= separationY;
+    otherSlowMo.x += separationX;
+    otherSlowMo.y += separationY;
+    
+    // Perfect opposite direction bouncing: each object bounces back exactly where it came from
+    // Simply reverse each object's direction vector to get perfect opposite direction
+    
+    // Store original directions for debug logging
+    const originalThisDir = { x: this.direction.x, y: this.direction.y };
+    const originalOtherDir = { x: otherSlowMo.direction.x, y: otherSlowMo.direction.y };
+    
+    // Reverse this slow-mo dot's direction (multiply by -1)
+    this.direction.x = -this.direction.x;
+    this.direction.y = -this.direction.y;
+    
+    // Reverse other slow-mo dot's direction (multiply by -1)
+    otherSlowMo.direction.x = -otherSlowMo.direction.x;
+    otherSlowMo.direction.y = -otherSlowMo.direction.y;
+    
+    // Ensure directions remain normalized unit vectors
+    const thisLength = Math.sqrt(this.direction.x * this.direction.x + this.direction.y * this.direction.y);
+    const otherLength = Math.sqrt(otherSlowMo.direction.x * otherSlowMo.direction.x + otherSlowMo.direction.y * otherSlowMo.direction.y);
+    
+    if (thisLength > 0) {
+      this.direction.x /= thisLength;
+      this.direction.y /= thisLength;
+    }
+    
+    if (otherLength > 0) {
+      otherSlowMo.direction.x /= otherLength;
+      otherSlowMo.direction.y /= otherLength;
+    }
+    
+    // Debug logging (occasional)
+    if (Math.random() < 0.05) { // 5% chance to log
+      console.log(`SlowMo-SlowMo collision: distance=${distance.toFixed(1)}, minDistance=${minDistance.toFixed(1)}, overlap=${(minDistance - distance).toFixed(1)}`);
+      console.log(`  SlowMo1: ${originalThisDir.x.toFixed(2)}, ${originalThisDir.y.toFixed(2)} -> ${this.direction.x.toFixed(2)}, ${this.direction.y.toFixed(2)}`);
+      console.log(`  SlowMo2: ${originalOtherDir.x.toFixed(2)}, ${originalOtherDir.y.toFixed(2)} -> ${otherSlowMo.direction.x.toFixed(2)}, ${otherSlowMo.direction.y.toFixed(2)}`);
+    }
+  }
+
+  /**
+   * Handle collision with another object (legacy method)
    */
   public onCollision(_other: any): void {
-    // Slow-mo dots don't typically collide with other objects
+    // Slow-mo dots now have specific collision handling methods
   }
 
   /**

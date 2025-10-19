@@ -127,7 +127,7 @@ describe('Debug Panel and Development Tools Validation', () => {
       }).not.toThrow();
     });
 
-    it('should validate 90-second survival target with debug parameters', () => {
+    it('should validate 3.5-minute survival target with debug parameters', () => {
       // Test with reasonable parameters
       debugService.updateDifficultyParams({ 
         baseSpeed: 100, 
@@ -142,12 +142,12 @@ describe('Debug Panel and Development Tools Validation', () => {
 
       debugService.updateDifficultyParams({ baseSpeed: 100 }); // Trigger update
 
-      // Should be valid for 90 second target
-      expect(difficultyManager.validateDifficultyCurve(90)).toBe(true);
+      // Should be valid for 210 second target (3.5 minutes)
+      expect(difficultyManager.validateDifficultyCurve(210)).toBe(true);
 
       // Test with extreme parameters
       debugService.updateDifficultyParams({ growthRate: 1.20 }); // Very high growth rate
-      expect(difficultyManager.validateDifficultyCurve(90)).toBe(false);
+      expect(difficultyManager.validateDifficultyCurve(210)).toBe(false);
     });
   });
 
@@ -306,7 +306,7 @@ describe('Debug Panel and Development Tools Validation', () => {
       const endTime = Date.now();
       
       // Should have some delay (allowing for test environment variations)
-      expect(endTime - startTime).toBeGreaterThanOrEqual(90);
+      expect(endTime - startTime).toBeGreaterThanOrEqual(210);
     });
 
     it('should reset to default state correctly', async () => {

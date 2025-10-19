@@ -421,10 +421,10 @@ export class DebugService implements IDebugService {
       const isGrowthRateValid = this.difficultyParams.growthRate > 1.0 && this.difficultyParams.growthRate < 2.0;
       const isShrinkRateValid = this.difficultyParams.shrinkRate > 0.5 && this.difficultyParams.shrinkRate < 1.0;
       
-      // Check for 90+ second survival target
-      const speedAt90s = this.difficultyParams.baseSpeed * Math.pow(this.difficultyParams.growthRate, 90);
-      const sizeAt90s = this.difficultyParams.baseSize * Math.pow(this.difficultyParams.shrinkRate, 90);
-      const isSurvivalTargetReasonable = speedAt90s <= 5000 && sizeAt90s >= 10;
+      // Check for 3.5+ minute (210 second) survival target
+      const speedAt210s = this.difficultyParams.baseSpeed * Math.pow(this.difficultyParams.growthRate, 210);
+      const sizeAt210s = this.difficultyParams.baseSize * Math.pow(this.difficultyParams.shrinkRate, 210);
+      const isSurvivalTargetReasonable = speedAt210s <= 5000 && sizeAt210s >= 10;
 
       if (isSpeedValid && isSizeValid && isGrowthRateValid && isShrinkRateValid && isSurvivalTargetReasonable) {
         validationElement.textContent = '✓ Formulas Valid';
@@ -435,7 +435,7 @@ export class DebugService implements IDebugService {
         
         // Log specific issues for debugging
         if (!isSurvivalTargetReasonable) {
-          console.warn(`Difficulty curve may not meet 90s survival target. Speed@90s: ${Math.round(speedAt90s)}, Size@90s: ${Math.round(sizeAt90s)}`);
+          console.warn(`Difficulty curve may not meet 3.5 minute survival target. Speed@210s: ${Math.round(speedAt210s)}, Size@210s: ${Math.round(sizeAt210s)}`);
         }
       }
     } catch (error) {
@@ -514,7 +514,7 @@ export class DebugService implements IDebugService {
   private runFormulaAccuracyTest(): void {
     console.log('=== Formula Accuracy Test ===');
     
-    const testTimes = [0, 15, 30, 45, 60, 75, 90, 120];
+    const testTimes = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180, 210, 240];
     const results: Array<{
       time: number;
       speed: number;
@@ -557,12 +557,12 @@ export class DebugService implements IDebugService {
     // Check if all calculations are accurate
     const allAccurate = results.every(r => r.speedAccurate && r.sizeAccurate);
     
-    // Check 90-second survival target
-    const result90s = results.find(r => r.time === 90);
-    const survivalTargetMet = result90s ? (result90s.speed <= 5000 && result90s.size >= 10) : false;
+    // Check 3.5-minute (210-second) survival target
+    const result210s = results.find(r => r.time === 210);
+    const survivalTargetMet = result210s ? (result210s.speed <= 5000 && result210s.size >= 10) : false;
 
     console.log(`Formula Accuracy: ${allAccurate ? 'PASS' : 'FAIL'}`);
-    console.log(`90s Survival Target: ${survivalTargetMet ? 'PASS' : 'FAIL'} (Speed: ${result90s?.speed}, Size: ${result90s?.size})`);
+    console.log(`3.5min Survival Target: ${survivalTargetMet ? 'PASS' : 'FAIL'} (Speed: ${result210s?.speed}, Size: ${result210s?.size})`);
     
     // Show results in a notification
     this.showTestResults(allAccurate, survivalTargetMet, results);
@@ -599,7 +599,7 @@ export class DebugService implements IDebugService {
       border: 2px solid #3498DB;
     `;
 
-    const result90s = results.find(r => r.time === 90);
+    const result210s = results.find(r => r.time === 210);
     
     content.innerHTML = `
       <h3 style="margin: 0 0 15px 0; color: #3498DB;">Formula Accuracy Test Results</h3>
@@ -609,7 +609,7 @@ export class DebugService implements IDebugService {
           ${formulasAccurate ? '✓' : '✗'} Formula Accuracy: ${formulasAccurate ? 'PASS' : 'FAIL'}
         </div>
         <div style="color: ${survivalTargetMet ? '#2ECC71' : '#F39C12'}; font-weight: bold;">
-          ${survivalTargetMet ? '✓' : '⚠'} 90s Survival Target: ${survivalTargetMet ? 'PASS' : 'WARNING'}
+          ${survivalTargetMet ? '✓' : '⚠'} 3.5min Survival Target: ${survivalTargetMet ? 'PASS' : 'WARNING'}
         </div>
       </div>
 
@@ -626,7 +626,7 @@ export class DebugService implements IDebugService {
       <div style="margin-bottom: 15px;">
         <h4 style="margin: 0 0 8px 0; color: #ECF0F1;">Key Milestones:</h4>
         <div style="font-size: 11px;">
-          ${results.filter(r => [30, 60, 90].includes(r.time)).map(r => 
+          ${results.filter(r => [30, 60, 90, 120, 150, 180, 210].includes(r.time)).map(r => 
             `<div>Time ${r.time}s: Speed=${Math.round(r.speed)}, Size=${Math.round(r.size)}, Dots=${r.dotCount}</div>`
           ).join('')}
         </div>
@@ -634,8 +634,8 @@ export class DebugService implements IDebugService {
 
       ${!survivalTargetMet ? `
         <div style="background: rgba(243, 156, 18, 0.2); padding: 8px; border-radius: 4px; margin-bottom: 15px;">
-          <strong>Warning:</strong> Current parameters may not achieve 90+ second survival target.<br>
-          At 90s: Speed=${result90s ? Math.round(result90s.speed) : 'N/A'}, Size=${result90s ? Math.round(result90s.size) : 'N/A'}
+          <strong>Warning:</strong> Current parameters may not achieve 3.5+ minute survival target.<br>
+          At 210s: Speed=${result210s ? Math.round(result210s.speed) : 'N/A'}, Size=${result210s ? Math.round(result210s.size) : 'N/A'}
         </div>
       ` : ''}
 

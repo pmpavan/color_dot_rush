@@ -5,18 +5,18 @@ import Phaser from 'phaser';
 /**
  * Bomb class represents dangerous objects that end the game when tapped
  */
-export class Bomb extends Phaser.GameObjects.Arc {
+export class Bomb extends Phaser.GameObjects.Container {
   public explosionRadius: number;
   public speed: number;
   public size: number;
   private direction: Phaser.Math.Vector2;
   private hitbox: Phaser.Geom.Rectangle;
-  private fuseIcon: Phaser.GameObjects.Rectangle;
+  private bombGraphics: Phaser.GameObjects.Graphics;
+  private fuseGraphics: Phaser.GameObjects.Graphics;
   public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
-    // Create as a dark circle instead of sprite
-    super(scene, 0, 0, 40, 0, 360, false, 0x34495E);
+    super(scene, 0, 0);
     
     this.explosionRadius = 100; // Default explosion radius
     this.speed = 100; // Default speed
@@ -24,11 +24,16 @@ export class Bomb extends Phaser.GameObjects.Arc {
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
-    // Create fuse as a red rectangle
-    this.fuseIcon = scene.add.rectangle(0, 0, 6, 15, 0xFF0000);
+    // Create bomb graphics container
+    this.bombGraphics = scene.add.graphics();
+    this.fuseGraphics = scene.add.graphics();
+    
+    // Add graphics to container
+    this.add([this.bombGraphics, this.fuseGraphics]);
     
     // Add to scene
     scene.add.existing(this);
+    this.setDepth(999); // Ensure bomb is visible
     
     // Interactive setup handled by centralized input system in GameScene
   }
@@ -42,17 +47,16 @@ export class Bomb extends Phaser.GameObjects.Arc {
     this.direction = direction.clone();
     this.explosionRadius = size * 1.5; // Explosion radius based on size
     
-    // Set visual properties
-    this.setRadius(size / 2);
-    
     // Update hitbox - slightly larger than visual sprite for accessibility
     const hitboxSize = Math.max(size, 44); // Minimum 44px tap target
     this.hitbox.setSize(hitboxSize, hitboxSize);
     
-    // Position the bomb and fuse icon
+    // Position the bomb
     this.setPosition(x, y);
-    this.fuseIcon.setPosition(x, y - size * 0.3); // Position fuse above bomb
-    this.fuseIcon.setDisplaySize(6, 15); // Set fuse size
+    this.setDepth(999); // Ensure bomb is visible
+    
+    // Draw the bomb shape
+    this.drawBombShape();
   }
 
   /**
@@ -65,9 +69,6 @@ export class Bomb extends Phaser.GameObjects.Arc {
     const deltaSeconds = delta / 1000;
     this.x += this.direction.x * this.speed * deltaSeconds;
     this.y += this.direction.y * this.speed * deltaSeconds;
-
-    // Update fuse icon position
-    this.fuseIcon.setPosition(this.x, this.y - this.size * 0.3);
 
     // Update hitbox position
     this.hitbox.setPosition(
@@ -120,16 +121,17 @@ export class Bomb extends Phaser.GameObjects.Arc {
   public explode(): void {
     if (!this.active) return;
 
-    // Create explosion effect with simple graphics
-    const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700]; // Red, OrangeRed, DarkOrange, Gold
+    // Create explosion effect with enhanced graphics
+    const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700, 0xFFFFFF]; // Red, OrangeRed, DarkOrange, Gold, White
     
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 25; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const distance = 50 + Math.random() * 100;
+      const distance = 60 + Math.random() * 120;
       const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
-      const size = 6 + Math.random() * 8;
+      const size = 8 + Math.random() * 12;
       
       const explosionDot = this.scene.add.circle(this.x, this.y, size, color);
+      explosionDot.setDepth(1500); // High depth to be visible
       
       this.scene.tweens.add({
         targets: explosionDot,
@@ -137,21 +139,20 @@ export class Bomb extends Phaser.GameObjects.Arc {
         y: this.y + Math.sin(angle) * distance,
         alpha: 0,
         scale: 0,
-        duration: 400 + Math.random() * 200,
+        duration: 500 + Math.random() * 300,
         ease: 'Power2.easeOut',
         onComplete: () => explosionDot.destroy()
       });
     }
 
-    // Screen shake effect (2-3px, 150ms)
-    this.scene.cameras.main.shake(150, 0.02); // 150ms duration, 0.02 intensity (about 2-3px)
+    // Enhanced screen shake effect
+    this.scene.cameras.main.shake(200, 0.03); // 200ms duration, 0.03 intensity
 
-    // Hide bomb and fuse immediately
+    // Hide bomb immediately
     this.setVisible(false);
-    this.fuseIcon.setVisible(false);
 
     // Clean up explosion after animation
-    this.scene.time.delayedCall(600, () => {
+    this.scene.time.delayedCall(800, () => {
       this.deactivate();
     });
   }
@@ -181,9 +182,14 @@ export class Bomb extends Phaser.GameObjects.Arc {
   public activate(): void {
     this.active = true;
     this.setVisible(true);
-    this.fuseIcon.setVisible(true);
     this.setScale(1);
     this.setAlpha(1);
+    
+    // Ensure graphics are properly activated
+    this.bombGraphics.setVisible(true);
+    this.bombGraphics.setActive(true);
+    this.fuseGraphics.setVisible(true);
+    this.fuseGraphics.setActive(true);
   }
 
   /**
@@ -192,17 +198,21 @@ export class Bomb extends Phaser.GameObjects.Arc {
   public deactivate(): void {
     this.active = false;
     this.setVisible(false);
-    this.fuseIcon.setVisible(false);
+    this.bombGraphics.setVisible(false);
+    this.fuseGraphics.setVisible(false);
     // Clean up any ongoing tweens
     this.scene.tweens.killTweensOf(this);
   }
 
   /**
-   * Destroy the bomb and its fuse icon
+   * Destroy the bomb and its graphics
    */
   public override destroy(fromScene?: boolean): void {
-    if (this.fuseIcon) {
-      this.fuseIcon.destroy();
+    if (this.bombGraphics) {
+      this.bombGraphics.destroy();
+    }
+    if (this.fuseGraphics) {
+      this.fuseGraphics.destroy();
     }
     super.destroy(fromScene);
   }
@@ -212,5 +222,45 @@ export class Bomb extends Phaser.GameObjects.Arc {
    */
   public getExplosionRadius(): number {
     return this.explosionRadius;
+  }
+
+  /**
+   * Draw the bomb shape using graphics
+   */
+  private drawBombShape(): void {
+    if (!this.bombGraphics || !this.fuseGraphics) return;
+    
+    const radius = this.size / 2;
+    const fuseLength = radius * 0.8;
+    
+    // Clear previous drawings
+    this.bombGraphics.clear();
+    this.fuseGraphics.clear();
+    
+    // Draw bomb body (dark metallic sphere)
+    this.bombGraphics.fillStyle(0x2C3E50, 1.0); // Dark slate blue
+    this.bombGraphics.lineStyle(2, 0x34495E, 1.0); // Slightly lighter outline
+    this.bombGraphics.fillCircle(0, 0, radius);
+    this.bombGraphics.strokeCircle(0, 0, radius);
+    
+    // Add metallic highlight
+    this.bombGraphics.fillStyle(0x5D6D7E, 0.6); // Lighter metallic highlight
+    this.bombGraphics.fillCircle(-radius * 0.3, -radius * 0.3, radius * 0.4);
+    
+    // Draw fuse (red wick)
+    this.fuseGraphics.fillStyle(0xFF0000, 1.0); // Bright red
+    this.fuseGraphics.lineStyle(1, 0xCC0000, 1.0); // Darker red outline
+    this.fuseGraphics.fillRect(-2, -radius - fuseLength, 4, fuseLength);
+    this.fuseGraphics.strokeRect(-2, -radius - fuseLength, 4, fuseLength);
+    
+    // Add fuse tip (smaller red circle)
+    this.fuseGraphics.fillStyle(0xFF4500, 1.0); // Orange-red tip
+    this.fuseGraphics.fillCircle(0, -radius - fuseLength, 3);
+    
+    // Add some bomb details (small circles for rivets)
+    this.bombGraphics.fillStyle(0x1B2631, 1.0); // Dark rivets
+    this.bombGraphics.fillCircle(-radius * 0.4, radius * 0.2, 2);
+    this.bombGraphics.fillCircle(radius * 0.3, -radius * 0.1, 2);
+    this.bombGraphics.fillCircle(radius * 0.1, radius * 0.4, 2);
   }
 }

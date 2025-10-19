@@ -9,13 +9,13 @@ describe('DifficultyManager PRD Verification', () => {
     manager = new DifficultyManager();
   });
 
-  it('should use optimized parameter values for 90+ second gameplay', () => {
+  it('should use optimized parameter values for 3.5+ minute gameplay', () => {
     const params = manager.getParams();
     
     expect(params.baseSpeed).toBe(100); // px/sec
-    expect(params.growthRate).toBe(1.023); // Optimized for 90+ second target
+    expect(params.growthRate).toBe(1.023); // Optimized for 3.5+ minute target
     expect(params.baseSize).toBe(100); // px (increased by 150%)
-    expect(params.shrinkRate).toBe(0.9895); // Optimized for 90+ second target
+    expect(params.shrinkRate).toBe(0.9895); // Optimized for 3.5+ minute target
   });
 
   it('should implement speed formula: speed = baseSpeed * growthRate^t', () => {
@@ -54,19 +54,20 @@ describe('DifficultyManager PRD Verification', () => {
     expect(manager.calculateDotCount(60)).toBe(5);  // 60-74s: 5 dots
     expect(manager.calculateDotCount(75)).toBe(6);  // 75-89s: 6 dots
     expect(manager.calculateDotCount(90)).toBe(7);  // 90s+: 7 dots
+    expect(manager.calculateDotCount(210)).toBe(15); // 210s+: 15 dots
   });
 
-  it('should ensure 90+ second average session length target', () => {
-    // The validateDifficultyCurve method should return true for 90 seconds
-    expect(manager.validateDifficultyCurve(90)).toBe(true);
+  it('should ensure 3.5+ minute average session length target', () => {
+    // The validateDifficultyCurve method should return true for 210 seconds (3.5 minutes)
+    expect(manager.validateDifficultyCurve(210)).toBe(true);
     
-    // Check that difficulty at 90 seconds is still playable
-    const speed90 = manager.calculateSpeed(90);
-    const size90 = manager.calculateSize(90);
+    // Check that difficulty at 210 seconds is still playable
+    const speed210 = manager.calculateSpeed(210);
+    const size210 = manager.calculateSize(210);
     
     // These values should be challenging but not impossible
-    expect(speed90).toBeLessThan(5000); // Max playable speed
-    expect(size90).toBeGreaterThan(10); // Min playable size
+    expect(speed210).toBeLessThan(5000); // Max playable speed
+    expect(size210).toBeGreaterThan(10); // Min playable size
   });
 
   it('should provide comprehensive difficulty metrics', () => {
@@ -112,6 +113,10 @@ describe('DifficultyManager PRD Verification', () => {
       { time: 60, expectedDots: 5 },
       { time: 75, expectedDots: 6 },
       { time: 90, expectedDots: 7 },
+      { time: 120, expectedDots: 9 },
+      { time: 150, expectedDots: 11 },
+      { time: 180, expectedDots: 13 },
+      { time: 210, expectedDots: 15 },
     ];
 
     progressionTests.forEach(({ time, expectedDots }) => {

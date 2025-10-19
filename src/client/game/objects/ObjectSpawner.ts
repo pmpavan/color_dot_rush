@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { ObjectPoolManager } from './ObjectPool';
 import { DifficultyManager } from '../../services/DifficultyManager';
 import { GameColor } from '../../../shared/types/game';
+import { gameLimitsManager } from '../../../shared/config/GameLimits';
 
 /**
  * Spawn configuration for different object types
@@ -71,7 +72,7 @@ export class ObjectSpawner {
     this.config = {
       minSpawnRate: 300, // 0.3 seconds minimum (faster)
       maxSpawnRate: 800, // 0.8 seconds maximum (faster)
-      bombChance: 0.15, // 15% chance for bombs
+      bombChance: 0.12, // 12% chance for bombs (reduced from 30% for better balance)
       slowMoChance: 0.05, // 5% chance for slow-mo dots
       correctColorRatio: 0.4, // 40% of dots should be correct color
       baseSpawnRate: 500, // Base spawn rate for performance scaling (faster)
@@ -140,8 +141,17 @@ export class ObjectSpawner {
     // Determine what type of object to spawn
     const spawnRoll = Math.random();
     
-    if (spawnRoll < this.config.bombChance) {
-      // Spawn a bomb
+    // Check bomb count limits before spawning bombs
+    const currentBombCount = this.objectPool.getActiveBombCount();
+    const maxBombCount = gameLimitsManager.calculateBombCount(elapsedTime / 1000); // Convert ms to seconds
+    
+    // Debug logging
+    if (Math.random() < 0.05) { // 5% chance to log for debugging (increased for troubleshooting)
+      console.log(`Spawner: roll=${spawnRoll.toFixed(3)}, bombChance=${this.config.bombChance}, slowMoChance=${this.config.slowMoChance}, currentBombs=${currentBombCount}, maxBombs=${maxBombCount}, elapsedTime=${elapsedTime}ms`);
+    }
+    
+    if (spawnRoll < this.config.bombChance && currentBombCount < maxBombCount) {
+      // Spawn a bomb (only if under the limit)
       this.spawnBomb(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     } else if (spawnRoll < this.config.bombChance + this.config.slowMoChance) {
       // Spawn a slow-mo dot
@@ -219,6 +229,9 @@ export class ObjectSpawner {
    * Spawn a regular dot with balanced color distribution
    */
   private spawnDot(speed: number, size: number, x: number, y: number, direction: Phaser.Math.Vector2): void {
+    // Get limits for dots
+    const limits = gameLimitsManager.getLimits('dots');
+    
     // Determine dot color based on correct color ratio
     let color: GameColor;
     
@@ -235,11 +248,17 @@ export class ObjectSpawner {
     const variationAngle = Phaser.Math.Between(-15, 15) * Math.PI / 180; // ±15 degrees
     const variedDirection = direction.clone().rotate(variationAngle);
     
-    // Add speed variation (±20%) and make faster
-    const variedSpeed = speed * Phaser.Math.FloatBetween(1.5, 2.0);
+    // Add speed variation (±20%) and make faster, but respect limits
+    const variedSpeed = Math.min(
+      speed * Phaser.Math.FloatBetween(1.5, 2.0),
+      limits.maxSpeed
+    );
+    
+    // Ensure size is within limits
+    const clampedSize = Math.max(limits.minSize, Math.min(limits.maxSize, size));
     
     // Spawn the dot
-    const dot = this.objectPool.spawnDot(color, variedSpeed, size, x, y, variedDirection);
+    const dot = this.objectPool.spawnDot(color, variedSpeed, clampedSize, x, y, variedDirection);
     
     if (!dot) {
       console.warn('Failed to spawn dot - pool may be full');
@@ -250,15 +269,21 @@ export class ObjectSpawner {
    * Spawn a bomb
    */
   private spawnBomb(speed: number, size: number, x: number, y: number, direction: Phaser.Math.Vector2): void {
+    // Get limits for bombs
+    const limits = gameLimitsManager.getLimits('bombs');
+    
     // Add some movement variation
     const variationAngle = Phaser.Math.Between(-10, 10) * Math.PI / 180; // ±10 degrees
     const variedDirection = direction.clone().rotate(variationAngle);
     
-    // Bombs move slightly slower than dots for balance
-    const bombSpeed = speed * 0.9;
+    // Bombs move slightly slower than dots for balance, but respect limits
+    const bombSpeed = Math.min(speed * 0.9, limits.maxSpeed);
+    
+    // Ensure size is within limits
+    const clampedSize = Math.max(limits.minSize, Math.min(limits.maxSize, size));
     
     // Spawn the bomb
-    const bomb = this.objectPool.spawnBomb(bombSpeed, size, x, y, variedDirection);
+    const bomb = this.objectPool.spawnBomb(bombSpeed, clampedSize, x, y, variedDirection);
     
     if (!bomb) {
       console.warn('Failed to spawn bomb - pool may be full');
@@ -269,15 +294,21 @@ export class ObjectSpawner {
    * Spawn a slow-mo power-up dot
    */
   private spawnSlowMoDot(speed: number, size: number, x: number, y: number, direction: Phaser.Math.Vector2): void {
+    // Get limits for slow-mo dots
+    const limits = gameLimitsManager.getLimits('slowMo');
+    
     // Add some movement variation
     const variationAngle = Phaser.Math.Between(-10, 10) * Math.PI / 180; // ±10 degrees
     const variedDirection = direction.clone().rotate(variationAngle);
     
-    // Slow-mo dots move at normal speed
-    const slowMoSpeed = speed;
+    // Slow-mo dots move at normal speed, but respect limits
+    const slowMoSpeed = Math.min(speed, limits.maxSpeed);
+    
+    // Ensure size is within limits
+    const clampedSize = Math.max(limits.minSize, Math.min(limits.maxSize, size));
     
     // Spawn the slow-mo dot
-    const slowMoDot = this.objectPool.spawnSlowMoDot(slowMoSpeed, size, x, y, variedDirection);
+    const slowMoDot = this.objectPool.spawnSlowMoDot(slowMoSpeed, clampedSize, x, y, variedDirection);
     
     if (!slowMoDot) {
       console.warn('Failed to spawn slow-mo dot - pool may be full');
@@ -314,10 +345,28 @@ export class ObjectSpawner {
 
   /**
    * Force spawn a specific number of objects (useful for testing)
+   * Respects bomb count limits to prevent spawning too many bombs initially
    */
   public forceSpawn(count: number, elapsedTime: number): void {
+    const maxBombCount = gameLimitsManager.calculateBombCount(elapsedTime / 1000);
+    const currentBombCount = this.objectPool.getActiveBombCount();
+    
     for (let i = 0; i < count; i++) {
-      this.spawnObject(elapsedTime);
+      // Check if we're at bomb limit before spawning
+      if (currentBombCount >= maxBombCount) {
+        // Force spawn only dots if at bomb limit
+        const difficulty = this.difficultyManager.getDifficultyMetrics(elapsedTime / 1000);
+        const responsiveSize = this.difficultyManager.calculateResponsiveSize(
+          elapsedTime / 1000,
+          this.screenBounds.width,
+          this.screenBounds.height
+        );
+        const edge = this.getRandomSpawnEdge();
+        this.spawnDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
+      } else {
+        // Normal spawn logic (which respects bomb limits)
+        this.spawnObject(elapsedTime);
+      }
     }
   }
 

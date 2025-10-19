@@ -226,6 +226,60 @@ export class ObjectPoolManager {
         slowMoObj.update(delta);
       }
     });
+
+    // Handle all collision types for bouncing behavior
+    this.handleAllCollisions();
+  }
+
+  /**
+   * Handle all collision types for bouncing behavior
+   * Includes: dot-dot, slowmo-dot, slowmo-slowmo collisions
+   */
+  private handleAllCollisions(): void {
+    const activeDots = this.getActiveDots();
+    const activeSlowMoDots = this.getActiveSlowMoDots();
+    
+    // 1. Handle dot-to-dot collisions
+    for (let i = 0; i < activeDots.length; i++) {
+      for (let j = i + 1; j < activeDots.length; j++) {
+        const dot1 = activeDots[i];
+        const dot2 = activeDots[j];
+        
+        // Ensure both dots exist and are active
+        if (dot1 && dot2 && dot1.isCollidingWith(dot2)) {
+          // Handle collision and bouncing
+          dot1.handleDotCollision(dot2);
+        }
+      }
+    }
+    
+    // 2. Handle slow-mo dot to regular dot collisions
+    for (let i = 0; i < activeSlowMoDots.length; i++) {
+      for (let j = 0; j < activeDots.length; j++) {
+        const slowMoDot = activeSlowMoDots[i];
+        const dot = activeDots[j];
+        
+        // Ensure both objects exist and are active
+        if (slowMoDot && dot && slowMoDot.isCollidingWith(dot)) {
+          // Handle collision and bouncing
+          slowMoDot.handleDotCollision(dot);
+        }
+      }
+    }
+    
+    // 3. Handle slow-mo dot to slow-mo dot collisions
+    for (let i = 0; i < activeSlowMoDots.length; i++) {
+      for (let j = i + 1; j < activeSlowMoDots.length; j++) {
+        const slowMoDot1 = activeSlowMoDots[i];
+        const slowMoDot2 = activeSlowMoDots[j];
+        
+        // Ensure both slow-mo dots exist and are active
+        if (slowMoDot1 && slowMoDot2 && slowMoDot1.isCollidingWith(slowMoDot2)) {
+          // Handle collision and bouncing
+          slowMoDot1.handleSlowMoCollision(slowMoDot2);
+        }
+      }
+    }
   }
 
   /**
@@ -297,6 +351,20 @@ export class ObjectPoolManager {
   }
 
   /**
+   * Get total count of active objects across all pools
+   */
+  public getActiveObjectCount(): number {
+    return this.getActiveDots().length + this.getActiveBombs().length + this.getActiveSlowMoDots().length;
+  }
+
+  /**
+   * Get count of active bombs
+   */
+  public getActiveBombCount(): number {
+    return this.getActiveBombs().length;
+  }
+
+  /**
    * Update maximum pool sizes for performance optimization
    */
   public updateMaxSizes(limits: { dots: number; bombs: number; slowMo: number }): void {
@@ -345,7 +413,7 @@ export class ObjectPoolManager {
    */
   public destroy(): void {
     try {
-      if (this.dotPool && this.dotPool.active) {
+      if (this.dotPool && typeof this.dotPool.destroy === 'function') {
         this.dotPool.destroy(true);
       }
     } catch (error) {
@@ -353,7 +421,7 @@ export class ObjectPoolManager {
     }
 
     try {
-      if (this.bombPool && this.bombPool.active) {
+      if (this.bombPool && typeof this.bombPool.destroy === 'function') {
         this.bombPool.destroy(true);
       }
     } catch (error) {
@@ -361,11 +429,16 @@ export class ObjectPoolManager {
     }
 
     try {
-      if (this.slowMoPool && this.slowMoPool.active) {
+      if (this.slowMoPool && typeof this.slowMoPool.destroy === 'function') {
         this.slowMoPool.destroy(true);
       }
     } catch (error) {
       console.warn('Error destroying slowMoPool:', error);
     }
+
+    // Clear references
+    this.dotPool = null as any;
+    this.bombPool = null as any;
+    this.slowMoPool = null as any;
   }
 }

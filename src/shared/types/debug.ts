@@ -28,12 +28,12 @@ export interface IDebugService {
   updateElapsedTime(elapsedTime: number): void;
 }
 
-// Default difficulty parameters optimized for 90+ second gameplay
+// Default difficulty parameters optimized for 3.5+ minute gameplay
 export const DEFAULT_DIFFICULTY_PARAMS: DifficultyParams = {
   baseSpeed: 100, // px/sec
-  growthRate: 1.023, // Reduced for 90+ second target (was 1.04)
+  growthRate: 1.023, // Reduced for 3.5+ minute target (was 1.04)
   baseSize: 100, // px diameter (increased by 150% from 40)
-  shrinkRate: 0.9895, // Fine-tuned for 90+ second target (was 0.98)
+  shrinkRate: 0.9895, // Fine-tuned for 3.5+ minute target (was 0.98)
 };
 
 // Default debug configuration

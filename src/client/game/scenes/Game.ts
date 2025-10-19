@@ -7,6 +7,7 @@ import { ILeaderboardService, DevvitLeaderboardService, MockLeaderboardService }
 import { IDebugService } from '../../../shared/types/debug';
 import { ObjectPoolManager, ObjectSpawner, Dot, Bomb, SlowMoDot } from '../objects';
 import { GameColor } from '../../../shared/types/game';
+import { gameLimitsManager } from '../../../shared/config/GameLimits';
 
 // Game state finite state machine
 enum GameState {
@@ -454,91 +455,59 @@ export class Game extends Scene {
   }
 
   /**
-   * Create explosion effect for bomb taps
-   * Includes screen shake, particle explosion, and visual feedback
-   * Specifications: red/orange/yellow particles, 2-3px screen shake for 150ms
+   * Create enhanced bomb explosion effect
    */
   private createBombExplosionEffect(bomb: Bomb): void {
-    const x = bomb.x;
-    const y = bomb.y;
+    // Trigger the bomb's own explosion animation
+    bomb.explode();
 
-    // Screen shake effect (2-3px, 150ms) - exact specification
-    this.cameras.main.shake(150, 0.025); // 150ms duration, 0.025 intensity (~2-3px)
+    // Add screen shake effect
+    this.cameras.main.shake(300, 0.05); // 300ms duration, 0.05 intensity
 
-    // Create explosion particle effect with red/orange/yellow colors
-    const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700]; // Red, OrangeRed, DarkOrange, Gold
-
-    // Main explosion burst using simple graphics
-    for (let i = 0; i < 25; i++) {
+    // Create additional explosion particles
+    const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700, 0xFFFFFF];
+    
+    for (let i = 0; i < 30; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const distance = 100 + Math.random() * 200;
+      const distance = 80 + Math.random() * 120;
       const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
       const size = 8 + Math.random() * 12;
-
-      const explosionDot = this.add.circle(x, y, size, color);
-
+      
+      const explosionDot = this.add.circle(bomb.x, bomb.y, size, color);
+      explosionDot.setDepth(2000); // High depth to be visible
+      
       this.tweens.add({
         targets: explosionDot,
-        x: x + Math.cos(angle) * distance,
-        y: y + Math.sin(angle) * distance,
+        x: bomb.x + Math.cos(angle) * distance,
+        y: bomb.y + Math.sin(angle) * distance,
         alpha: 0,
         scale: 0,
-        duration: 500 + Math.random() * 500,
+        duration: 600 + Math.random() * 400,
         ease: 'Power2.easeOut',
         onComplete: () => explosionDot.destroy()
       });
     }
 
-    // Secondary explosion ring
-    this.time.delayedCall(50, () => {
-      for (let i = 0; i < 15; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 50 + Math.random() * 100;
-        const explosionDot = this.add.circle(x, y, 6, 0xFF4500);
-
-        this.tweens.add({
-          targets: explosionDot,
-          x: x + Math.cos(angle) * distance,
-          y: y + Math.sin(angle) * distance,
-          alpha: 0,
-          duration: 400,
-          ease: 'Power2.easeOut',
-          onComplete: () => explosionDot.destroy()
-        });
-      }
-    });
-
-    // Flash effect for dramatic impact
-    const flash = this.add.rectangle(x, y, bomb.size * 3, bomb.size * 3, 0xFFFFFF, 0.9);
+    // Create flash effect
+    const flashOverlay = this.add.rectangle(
+      this.cameras.main.centerX, 
+      this.cameras.main.centerY, 
+      this.cameras.main.width, 
+      this.cameras.main.height, 
+      0xFF0000, 
+      0.3
+    );
+    flashOverlay.setDepth(3000);
+    
     this.tweens.add({
-      targets: flash,
+      targets: flashOverlay,
       alpha: 0,
-      duration: 100,
-      ease: 'Power2',
-      onComplete: () => flash.destroy()
-    });
-
-    // Secondary flash with orange tint
-    const orangeFlash = this.add.rectangle(x, y, bomb.size * 2, bomb.size * 2, 0xFF4500, 0.7);
-    this.tweens.add({
-      targets: orangeFlash,
-      alpha: 0,
-      scaleX: 2,
-      scaleY: 2,
-      duration: 150,
-      ease: 'Power2',
-      delay: 50,
-      onComplete: () => orangeFlash.destroy()
-    });
-
-    // Hide bomb immediately
-    bomb.setVisible(false);
-
-    // Clean up bomb after explosion animation
-    this.time.delayedCall(1000, () => {
-      bomb.deactivate();
+      duration: 300,
+      ease: 'Power2.easeOut',
+      onComplete: () => flashOverlay.destroy()
     });
   }
+
 
   private handleSlowMoActivation(slowMoDot: SlowMoDot): void {
     if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0 || this.isSlowMoActive) return;
@@ -681,7 +650,7 @@ export class Game extends Scene {
       this.temporaryObjects.splice(index, 1);
     }
 
-    if (obj && obj.active) {
+    if (obj && typeof obj.destroy === 'function') {
       try {
         obj.destroy();
       } catch (error) {
@@ -696,7 +665,7 @@ export class Game extends Scene {
    */
   private cleanupAllTemporaryObjects(): void {
     for (const obj of this.temporaryObjects) {
-      if (obj && obj.active) {
+      if (obj && typeof obj.destroy === 'function') {
         try {
           obj.destroy();
         } catch (error) {
@@ -1038,7 +1007,7 @@ export class Game extends Scene {
     if (this.objectSpawner) {
       this.objectSpawner.resume();
       // Force spawn a few objects immediately for immediate gameplay
-      this.objectSpawner.forceSpawn(2, 1000);
+      this.objectSpawner.forceSpawn(1, 1000);
     }
 
     console.log('Game started!');
@@ -1698,7 +1667,7 @@ export class Game extends Scene {
     if (this.objectSpawner) {
       this.objectSpawner.resume();
       // Force spawn a few objects immediately for immediate gameplay
-      this.objectSpawner.forceSpawn(2, 1000);
+      this.objectSpawner.forceSpawn(1, 1000);
     }
 
     console.log('Game started with UIScene properly initialized!');
@@ -1828,11 +1797,59 @@ export class Game extends Scene {
         this.objectPool.update(delta);
       }
 
+      // Update performance metrics for limits manager
+      this.updatePerformanceMetrics();
+
       // Update difficulty display for debugging
       this.updateDifficultyDisplay();
 
       // Update hitbox visualization
       this.drawHitboxes();
+    }
+  }
+
+  /**
+   * Update performance metrics for the limits manager
+   */
+  private updatePerformanceMetrics(): void {
+    if (!this.objectPool || !this.objectPool.getActiveObjectCount) {
+      return;
+    }
+
+    try {
+      // Calculate current FPS
+      const currentFPS = Math.round(1000 / this.game.loop.delta);
+      
+      // Count active objects
+      const objectCount = this.objectPool.getActiveObjectCount();
+      const bombCount = this.objectPool.getActiveBombCount();
+      const maxBombCount = this.difficultyManager.calculateBombCount(this.elapsedTime);
+      
+      // Update limits manager with performance data
+      gameLimitsManager.updatePerformanceMetrics(currentFPS, objectCount);
+      
+      // Also update difficulty manager if it has performance monitoring
+      if (this.difficultyManager && typeof this.difficultyManager.updatePerformanceMetrics === 'function') {
+        this.difficultyManager.updatePerformanceMetrics(currentFPS, objectCount);
+      }
+
+      // Update debug display with bomb count info
+      if (this.debugService && this.debugService.isEnabled()) {
+        // Note: updateDebugInfo method doesn't exist in IDebugService interface
+        // This debug info is logged to console instead
+        console.log('Debug Info:', {
+          bombCount: bombCount,
+          maxBombCount: maxBombCount,
+          bombCountProgress: `${bombCount}/${maxBombCount}`,
+        });
+      }
+
+      // Update UI with bomb count info
+      if (this.uiScene && typeof this.uiScene.setBombCount === 'function') {
+        this.uiScene.setBombCount(bombCount, maxBombCount);
+      }
+    } catch (error) {
+      console.warn('Game: Error updating performance metrics:', error);
     }
   }
 
