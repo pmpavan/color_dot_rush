@@ -7,7 +7,7 @@ import Phaser from 'phaser';
  * Appears as shimmering white with blue clock icon
  */
 export class SlowMoDot extends Phaser.GameObjects.Arc {
-  public static readonly DURATION = 3000; // 3 seconds
+  public static readonly DURATION = 10000; // 10 seconds
   public static readonly INITIAL_CHARGES = 3; // Player starts with 3 charges
 
   public speed: number;

@@ -34,10 +34,23 @@ export class ObjectPoolManager {
   private readonly MAX_DOTS = 50;
   private readonly MAX_BOMBS = 20;
   private readonly MAX_SLOWMO = 10;
+  
+  // Shutdown flag to prevent updates during destruction
+  private isShuttingDown: boolean = false;
+  
+  // Slow motion callback for newly spawned objects
+  private slowMotionCallback: ((object: any) => void) | null = null;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.initializePools();
+  }
+
+  /**
+   * Set the slow motion callback for newly spawned objects
+   */
+  public setSlowMotionCallback(callback: ((object: any) => void) | null): void {
+    this.slowMotionCallback = callback;
   }
 
   /**
@@ -90,8 +103,19 @@ export class ObjectPoolManager {
     
     if (!dot) {
       if (this.dotPool.children.size < this.MAX_DOTS) {
-        dot = new Dot(this.scene);
-        this.dotPool.add(dot);
+        try {
+          dot = new Dot(this.scene);
+          // Validate the dot was created successfully
+          if (dot && typeof dot.destroy === 'function') {
+            this.dotPool.add(dot);
+          } else {
+            console.warn('Failed to create valid dot object');
+            return null;
+          }
+        } catch (error) {
+          console.warn('Error creating dot:', error);
+          return null;
+        }
       } else {
         // Pool is full, return null
         return null;
@@ -110,8 +134,19 @@ export class ObjectPoolManager {
     
     if (!bomb) {
       if (this.bombPool.children.size < this.MAX_BOMBS) {
-        bomb = new Bomb(this.scene);
-        this.bombPool.add(bomb);
+        try {
+          bomb = new Bomb(this.scene);
+          // Validate the bomb was created successfully
+          if (bomb && typeof bomb.destroy === 'function') {
+            this.bombPool.add(bomb);
+          } else {
+            console.warn('Failed to create valid bomb object');
+            return null;
+          }
+        } catch (error) {
+          console.warn('Error creating bomb:', error);
+          return null;
+        }
       } else {
         // Pool is full, return null
         return null;
@@ -130,8 +165,19 @@ export class ObjectPoolManager {
     
     if (!slowMo) {
       if (this.slowMoPool.children.size < this.MAX_SLOWMO) {
-        slowMo = new SlowMoDot(this.scene);
-        this.slowMoPool.add(slowMo);
+        try {
+          slowMo = new SlowMoDot(this.scene);
+          // Validate the slow-mo dot was created successfully
+          if (slowMo && typeof slowMo.destroy === 'function') {
+            this.slowMoPool.add(slowMo);
+          } else {
+            console.warn('Failed to create valid slow-mo dot object');
+            return null;
+          }
+        } catch (error) {
+          console.warn('Error creating slow-mo dot:', error);
+          return null;
+        }
       } else {
         // Pool is full, return null
         return null;
@@ -151,6 +197,11 @@ export class ObjectPoolManager {
     dot.init(color, speed, size, x, y, direction);
     dot.activate();
     
+    // Apply slow motion if active
+    if (this.slowMotionCallback) {
+      this.slowMotionCallback(dot);
+    }
+    
     return dot;
   }
 
@@ -163,6 +214,11 @@ export class ObjectPoolManager {
     
     bomb.init(speed, size, x, y, direction);
     bomb.activate();
+    
+    // Apply slow motion if active
+    if (this.slowMotionCallback) {
+      this.slowMotionCallback(bomb);
+    }
     
     return bomb;
   }
@@ -205,6 +261,11 @@ export class ObjectPoolManager {
    * Update all active objects in pools
    */
   public update(delta: number): void {
+    // Don't update if shutting down
+    if (this.isShuttingDown) {
+      return;
+    }
+
     // Manual update to ensure objects move properly
     this.dotPool.children.entries.forEach((dot: Phaser.GameObjects.GameObject) => {
       const dotObj = dot as Dot;
@@ -286,19 +347,49 @@ export class ObjectPoolManager {
    * Clear all objects from pools
    */
   public clearAll(): void {
+    // Set shutdown flag to prevent updates during cleanup
+    this.isShuttingDown = true;
+    
+    // Clear dots
     this.dotPool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
-      const dot = item as Dot;
-      dot.deactivate();
+      if (item && typeof item.destroy === 'function') {
+        try {
+          const dot = item as Dot;
+          if (dot && typeof dot.deactivate === 'function') {
+            dot.deactivate();
+          }
+        } catch (error) {
+          console.warn('Error deactivating dot:', error);
+        }
+      }
     });
     
+    // Clear bombs
     this.bombPool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
-      const bomb = item as Bomb;
-      bomb.deactivate();
+      if (item && typeof item.destroy === 'function') {
+        try {
+          const bomb = item as Bomb;
+          if (bomb && typeof bomb.deactivate === 'function') {
+            bomb.deactivate();
+          }
+        } catch (error) {
+          console.warn('Error deactivating bomb:', error);
+        }
+      }
     });
     
+    // Clear slow-mo dots
     this.slowMoPool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
-      const slowMo = item as SlowMoDot;
-      slowMo.deactivate();
+      if (item && typeof item.destroy === 'function') {
+        try {
+          const slowMo = item as SlowMoDot;
+          if (slowMo && typeof slowMo.deactivate === 'function') {
+            slowMo.deactivate();
+          }
+        } catch (error) {
+          console.warn('Error deactivating slow-mo dot:', error);
+        }
+      }
     });
   }
 
@@ -412,6 +503,12 @@ export class ObjectPoolManager {
    * Destroy all pools and clean up
    */
   public destroy(): void {
+    // Set shutdown flag to prevent updates during destruction
+    this.isShuttingDown = true;
+    
+    // Clear all objects first to prevent issues during destruction
+    this.clearAll();
+    
     try {
       if (this.dotPool && typeof this.dotPool.destroy === 'function') {
         this.dotPool.destroy(true);

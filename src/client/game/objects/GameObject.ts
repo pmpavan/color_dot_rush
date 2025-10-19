@@ -39,9 +39,14 @@ export abstract class GameObject extends Phaser.GameObjects.Sprite implements IG
   constructor(scene: Phaser.Scene, x: number = 0, y: number = 0, texture: string = '', frame?: string | number) {
     super(scene, x, y, texture, frame);
     
-    // Add to scene display list and update list
-    scene.add.existing(this);
-    scene.physics.add.existing(this);
+    try {
+      // Add to scene display list and update list
+      scene.add.existing(this);
+      scene.physics.add.existing(this);
+    } catch (error) {
+      console.warn('Error adding object to scene:', error);
+      // Don't throw the error, just log it
+    }
   }
 
   /**

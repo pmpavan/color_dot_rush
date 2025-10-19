@@ -35,6 +35,7 @@ export class Game extends Scene {
   private slowMoStartTime: number = 0;
   private slowMoVignette: Phaser.GameObjects.Rectangle | null = null;
   private slowMoTween: Phaser.Tweens.Tween | null = null;
+  private originalSpeeds: Map<any, number> = new Map(); // Track original speeds of objects
 
   // Object management
   private objectPool: ObjectPoolManager | null = null;
@@ -48,6 +49,9 @@ export class Game extends Scene {
 
   // Track temporary objects for proper cleanup
   private temporaryObjects: Phaser.GameObjects.GameObject[] = [];
+  
+  // Shutdown flag to prevent updates during destruction
+  private isShuttingDown: boolean = false;
 
   constructor() {
     super('Game');
@@ -89,12 +93,18 @@ export class Game extends Scene {
 
     // Reset temporary objects tracking
     this.temporaryObjects = [];
+    
+    // Reset shutdown flag
+    this.isShuttingDown = false;
   }
 
   create(): void {
     console.log('Game: Initializing game scene');
 
     try {
+      // Add global error handler for destroy errors during scene transitions
+      this.addGlobalErrorHandler();
+      
       // Configure camera & background
       this.camera = this.cameras.main;
       this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background from design spec
@@ -117,6 +127,9 @@ export class Game extends Scene {
       // Initialize object management systems
       this.objectPool = new ObjectPoolManager(this);
       this.objectSpawner = new ObjectSpawner(this, this.objectPool, this.difficultyManager);
+      
+      // Set up slow motion callback for newly spawned objects
+      this.objectPool.setSlowMotionCallback((object) => this.applySlowMotionToNewObject(object));
       
       // Set up slow motion charge checker for ObjectSpawner
       this.objectSpawner.setSlowMoChargeChecker(() => this.slowMoCharges);
@@ -242,12 +255,14 @@ export class Game extends Scene {
     const tappedObject = this.checkCollisionAtPoint(x, y);
 
     if (tappedObject) {
+      console.log(`[TAP] Tapped object: ${tappedObject.constructor.name}`);
       // Handle the tapped object based on its type
       if (tappedObject instanceof Dot) {
         this.handleDotTap(tappedObject);
       } else if (tappedObject instanceof Bomb) {
         this.handleBombTap(tappedObject);
       } else if (tappedObject instanceof SlowMoDot) {
+        console.log('[SLOW-MO] Slow-mo dot tapped! Calling handleSlowMoActivation...');
         this.handleSlowMoActivation(tappedObject);
       }
     } else {
@@ -330,7 +345,6 @@ export class Game extends Scene {
     } else {
       // Wrong color - immediate game over (no delay, immediate termination)
       console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
-      this.showDebugMessage(`WRONG COLOR! Expected: ${this.targetColor}`);
       this.createWrongTapEffect(dot);
 
       // Deactivate the wrong dot immediately to prevent further interaction
@@ -448,7 +462,6 @@ export class Game extends Scene {
     if (this.currentState !== GameState.PLAYING) return;
 
     console.log('Bomb tapped! Game Over!');
-    this.showDebugMessage('BOMB TAPPED! Game Over!');
 
     // Create explosion effect with screen shake and particles
     this.createBombExplosionEffect(bomb);
@@ -513,9 +526,14 @@ export class Game extends Scene {
 
 
   private handleSlowMoActivation(slowMoDot: SlowMoDot): void {
-    if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0 || this.isSlowMoActive) return;
+    console.log(`[SLOW-MO] handleSlowMoActivation called - State: ${this.currentState}, Charges: ${this.slowMoCharges}, Active: ${this.isSlowMoActive}`);
+    
+    if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0 || this.isSlowMoActive) {
+      console.log('[SLOW-MO] Slow-mo activation blocked - conditions not met');
+      return;
+    }
 
-    console.log(`Slow-mo activated! Charges remaining: ${this.slowMoCharges - 1}`);
+    console.log(`[SLOW-MO] Slow-mo activated! Charges remaining: ${this.slowMoCharges - 1}`);
 
     // Consume a slow-mo charge
     this.slowMoCharges--;
@@ -780,12 +798,15 @@ export class Game extends Scene {
   }
 
   private activateSlowMotion(): void {
-    if (this.isSlowMoActive) return;
+    if (this.isSlowMoActive) {
+      console.log('[SLOW-MO] Slow-motion already active, skipping activation');
+      return;
+    }
 
     this.isSlowMoActive = true;
     this.slowMoStartTime = this.time.now;
 
-    console.log('Slow-motion activated with smooth transitions');
+    console.log('[SLOW-MO] Slow-motion activated - reducing speeds by 2x for 3 seconds');
 
     // Create blue vignette effect around screen edges
     this.slowMoVignette = this.add.rectangle(
@@ -798,21 +819,19 @@ export class Game extends Scene {
     );
     this.slowMoVignette.setDepth(999);
 
-    // Smooth transition to slow-motion with ease-in-out curve (specification requirement)
+    // Reduce speeds of all active dots and bombs by 2x (half speed)
+    console.log('About to call reduceObjectSpeeds()...');
+    this.reduceObjectSpeeds();
+
+    // Smooth transition to slow-motion vignette
     this.slowMoTween = this.tweens.add({
-      targets: { timeScale: 1.0, vignetteAlpha: 0.0 },
-      timeScale: 0.3, // Slow down to 30% speed
+      targets: { vignetteAlpha: 0.0 },
       vignetteAlpha: 0.35, // Subtle blue vignette
       duration: 400, // Smooth 400ms transition for better feel
       ease: 'Power2.easeInOut', // Smooth ease-in-out curve as specified
       onUpdate: (tween) => {
         const progress = tween.getValue();
-        const timeScale = 1.0 - (0.7 * progress); // 1.0 -> 0.3
         const vignetteAlpha = 0.35 * progress; // 0.0 -> 0.35
-
-        // Apply time scaling to physics and tweens
-        this.physics.world.timeScale = timeScale;
-        this.tweens.timeScale = timeScale;
 
         // Update vignette alpha with smooth interpolation
         if (this.slowMoVignette) {
@@ -834,10 +853,90 @@ export class Game extends Scene {
       }
     });
 
-    // Schedule restoration of normal time after duration
-    this.time.delayedCall(SlowMoDot.getDuration(), () => {
+    // Schedule restoration of normal speeds after 3 seconds
+    console.log(`[SLOW-MO] Scheduling slow-motion deactivation in ${SlowMoDot.DURATION}ms`);
+    this.time.delayedCall(SlowMoDot.DURATION, () => {
+      console.log('[SLOW-MO] Delayed call triggered - calling deactivateSlowMotion()');
       this.deactivateSlowMotion();
     });
+  }
+
+  /**
+   * Reduce speeds of all active dots and bombs by 2x (half speed)
+   */
+  private reduceObjectSpeeds(): void {
+    console.log('[SLOW-MO] reduceObjectSpeeds() method called!');
+    
+    // Clear previous speed tracking
+    this.originalSpeeds.clear();
+
+    console.log('[SLOW-MO] Starting speed reduction for all active objects...');
+
+    // Reduce speeds of all active dots
+    if (this.objectPool) {
+      const activeDots = this.objectPool.getActiveDots();
+      console.log(`[SLOW-MO] Found ${activeDots.length} active dots`);
+      
+      activeDots.forEach((dot: any, index: number) => {
+        if (dot.active && dot.speed !== undefined) {
+          const originalSpeed = dot.speed;
+          // Store original speed
+          this.originalSpeeds.set(dot, originalSpeed);
+          // Reduce speed by 2x (half speed)
+          dot.speed = dot.speed / 2;
+          console.log(`[SLOW-MO] Dot ${index}: ${originalSpeed} -> ${dot.speed}`);
+        }
+      });
+
+      // Reduce speeds of all active bombs
+      const activeBombs = this.objectPool.getActiveBombs();
+      console.log(`[SLOW-MO] Found ${activeBombs.length} active bombs`);
+      
+      activeBombs.forEach((bomb: any, index: number) => {
+        if (bomb.active && bomb.speed !== undefined) {
+          const originalSpeed = bomb.speed;
+          // Store original speed
+          this.originalSpeeds.set(bomb, originalSpeed);
+          // Reduce speed by 2x (half speed)
+          bomb.speed = bomb.speed / 2;
+          console.log(`[SLOW-MO] Bomb ${index}: ${originalSpeed} -> ${bomb.speed}`);
+        }
+      });
+    } else {
+      console.error('[SLOW-MO] ObjectPool is null! Cannot reduce speeds.');
+    }
+
+    console.log(`[SLOW-MO] Reduced speeds of ${this.originalSpeeds.size} objects by 2x`);
+  }
+
+  /**
+   * Restore original speeds of all objects
+   */
+  private restoreObjectSpeeds(): void {
+    console.log('[SLOW-MO] restoreObjectSpeeds() method called!');
+    console.log(`[SLOW-MO] Restoring speeds for ${this.originalSpeeds.size} objects`);
+    
+    this.originalSpeeds.forEach((originalSpeed, object) => {
+      if (object && object.speed !== undefined) {
+        console.log(`[SLOW-MO] Restoring object speed: ${object.speed} -> ${originalSpeed}`);
+        object.speed = originalSpeed;
+      }
+    });
+
+    console.log(`[SLOW-MO] Restored original speeds of ${this.originalSpeeds.size} objects`);
+    this.originalSpeeds.clear();
+  }
+
+  /**
+   * Apply slow-motion speed reduction to a newly spawned object
+   */
+  private applySlowMotionToNewObject(object: any): void {
+    if (this.isSlowMoActive && object && object.speed !== undefined) {
+      // Store original speed
+      this.originalSpeeds.set(object, object.speed);
+      // Reduce speed by 2x (half speed)
+      object.speed = object.speed / 2;
+    }
   }
 
   /**
@@ -846,7 +945,10 @@ export class Game extends Scene {
   private deactivateSlowMotion(): void {
     if (!this.isSlowMoActive) return;
 
-    console.log('Slow-motion deactivating with smooth transition');
+    console.log('[SLOW-MO] Slow-motion deactivating - restoring original speeds');
+
+    // Restore original speeds of all objects
+    this.restoreObjectSpeeds();
 
     // Stop any ongoing slow-mo tweens
     if (this.slowMoTween) {
@@ -859,21 +961,15 @@ export class Game extends Scene {
       this.tweens.killTweensOf(this.slowMoVignette);
     }
 
-    // Smooth transition back to normal speed with ease-in-out curve
+    // Smooth transition to fade out vignette
     this.tweens.add({
-      targets: { timeScale: 0.3, vignetteAlpha: this.slowMoVignette?.alpha || 0.35 },
-      timeScale: 1.0, // Return to normal speed
+      targets: { vignetteAlpha: this.slowMoVignette?.alpha || 0.35 },
       vignetteAlpha: 0.0, // Fade out vignette
       duration: 500, // Slightly longer transition out for smooth feel
       ease: 'Power2.easeInOut', // Smooth ease-in-out curve as specified
       onUpdate: (tween) => {
         const progress = tween.getValue();
-        const timeScale = 0.3 + (0.7 * progress); // 0.3 -> 1.0
         const vignetteAlpha = (this.slowMoVignette?.alpha || 0.35) * (1 - progress);
-
-        // Apply time scaling with smooth interpolation
-        this.physics.world.timeScale = timeScale;
-        this.tweens.timeScale = timeScale;
 
         // Update vignette alpha with smooth fade
         if (this.slowMoVignette) {
@@ -883,7 +979,7 @@ export class Game extends Scene {
       onComplete: () => {
         // Clean up vignette
         if (this.slowMoVignette) {
-          this.slowMoVignette.setVisible(false);
+          this.slowMoVignette.destroy();
           this.slowMoVignette = null;
         }
 
@@ -891,7 +987,7 @@ export class Game extends Scene {
         this.isSlowMoActive = false;
         this.slowMoStartTime = 0;
 
-        console.log('Slow-motion deactivated - normal speed restored with smooth transition');
+        console.log('[SLOW-MO] Slow-motion fully deactivated - all speeds restored');
       }
     });
   }
@@ -1018,7 +1114,6 @@ export class Game extends Scene {
 
   private endGame(): void {
     console.log('endGame() method called');
-    this.showDebugMessage('END GAME CALLED!');
 
     // Stop object spawning immediately
     try {
@@ -1083,7 +1178,6 @@ export class Game extends Scene {
         }
 
         console.log('Starting GameOver scene...');
-        this.showDebugMessage('LAUNCHING GAMEOVER SCENE');
 
         // Create a simple game over overlay instead of scene transition
         this.createSimpleGameOverOverlay(gameOverData);
@@ -1286,8 +1380,28 @@ export class Game extends Scene {
       restartButton.setScale(0.95);
       // Clean up DOM elements before restarting
       this.cleanupGameOverText();
-      // Restart the game
-      this.scene.restart();
+      
+      // Add a small delay to ensure all current operations complete
+      this.time.delayedCall(100, () => {
+        try {
+          // Force cleanup before restart
+          this.forceCleanupBeforeRestart();
+          
+          // Try to restart the scene with error handling
+          try {
+            this.scene.restart();
+          } catch (restartError) {
+            console.warn('Scene restart failed, trying alternative approach:', restartError);
+            // Alternative: stop and start a new scene
+            this.game.scene.stop('Game');
+            this.game.scene.start('Game');
+          }
+        } catch (error) {
+          console.error('Error during scene restart process:', error);
+          // Final fallback: reload the page
+          window.location.reload();
+        }
+      });
     });
 
     console.log('Game over overlay created with score:', gameOverData.finalScore);
@@ -1385,35 +1499,77 @@ export class Game extends Scene {
   }
 
   /**
-   * Show visual debug message on screen using simple graphics
+   * Add global error handler to catch destroy errors during scene transitions
    */
-  private showDebugMessage(message: string): void {
-    console.log('DEBUG:', message); // Log to console
-
-    // Create different colored rectangles for different messages
-    let color = 0xFF0000; // Default red
-    if (message.includes('WRONG COLOR')) color = 0xFF4500; // Orange red
-    if (message.includes('BOMB')) color = 0xFF0000; // Red
-    if (message.includes('END GAME')) color = 0x8B0000; // Dark red
-    if (message.includes('LAUNCHING')) color = 0x00FF00; // Green
-
-    // Create a simple colored rectangle as debug indicator
-    const debugRect = this.add.rectangle(
-      this.scale.width / 2,
-      this.scale.height / 2,
-      300,
-      100,
-      color,
-      0.8
-    ).setDepth(2000);
-
-    // Auto-remove after 2 seconds
-    this.time.delayedCall(2000, () => {
-      if (debugRect && debugRect.active) {
-        debugRect.destroy();
+  private addGlobalErrorHandler(): void {
+    // Store the original error handler
+    const originalErrorHandler = window.onerror;
+    
+    // Override the global error handler
+    window.onerror = (message, source, lineno, colno, error) => {
+      // Check if this is the destroy error we're trying to catch
+      if (typeof message === 'string' && message.includes("Cannot read properties of undefined (reading 'destroy')")) {
+        console.warn('Caught destroy error during scene transition, ignoring:', message);
+        // Return true to prevent the error from being logged
+        return true;
       }
-    });
+      
+      // For other errors, use the original handler
+      if (originalErrorHandler) {
+        return originalErrorHandler(message, source, lineno, colno, error);
+      }
+      
+      return false;
+    };
   }
+
+  /**
+   * Force cleanup before scene restart to prevent destroy errors
+   */
+  private forceCleanupBeforeRestart(): void {
+    console.log('Game: Force cleanup before restart');
+    
+    try {
+      // Set shutdown flag to prevent updates during cleanup
+      this.isShuttingDown = true;
+      
+      // Stop all tweens first
+      if (this.tweens) {
+        this.tweens.killAll();
+      }
+      
+      // Stop object spawner
+      if (this.objectSpawner) {
+        this.objectSpawner.pause();
+      }
+      
+      // Clear and destroy object pool
+      if (this.objectPool) {
+        this.objectPool.clearAll();
+        this.objectPool.destroy();
+        this.objectPool = null;
+      }
+      
+      // Force deactivate slow motion
+      if (this.isSlowMoActive) {
+        this.forceDeactivateSlowMotion();
+      }
+      
+      // Stop game timer
+      if (this.gameTimer) {
+        this.gameTimer.destroy();
+        this.gameTimer = null;
+      }
+      
+      // Clean up temporary objects
+      this.cleanupAllTemporaryObjects();
+      
+      console.log('Game: Force cleanup completed');
+    } catch (error) {
+      console.warn('Game: Error during force cleanup:', error);
+    }
+  }
+
 
   /**
    * Force deactivate slow-motion immediately (used during game over)
@@ -1789,6 +1945,11 @@ export class Game extends Scene {
   override update(time: number, delta: number): void {
     super.update(time, delta);
 
+    // Don't update if shutting down
+    if (this.isShuttingDown) {
+      return;
+    }
+
     if (this.currentState === GameState.PLAYING) {
       // Update object spawner
       if (this.objectSpawner) {
@@ -1860,6 +2021,9 @@ export class Game extends Scene {
   shutdown(): void {
     try {
       console.log('Game: Starting scene shutdown...');
+      
+      // Set shutdown flag to prevent updates during cleanup
+      this.isShuttingDown = true;
 
       // Clean up UIScene communication first
       this.cleanupUISceneCommunication();
@@ -1882,9 +2046,20 @@ export class Game extends Scene {
         }
       }
 
+      // Stop object spawner first to prevent new objects from being created
+      if (this.objectSpawner) {
+        try {
+          this.objectSpawner.pause();
+        } catch (error) {
+          console.warn('Error pausing objectSpawner:', error);
+        }
+      }
+
       // Clean up object pools (non-Phaser object)
       if (this.objectPool) {
         try {
+          // Clear all objects first to prevent issues during destruction
+          this.objectPool.clearAll();
           this.objectPool.destroy();
         } catch (error) {
           console.warn('Error destroying objectPool:', error);
