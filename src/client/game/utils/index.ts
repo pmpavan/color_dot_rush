@@ -50,6 +50,17 @@ export type { IButtonManager, ButtonConfig, InteractiveButton } from './Interact
 export { HowToPlayModal, ModalState } from './HowToPlayModal';
 export type { IHowToPlayModal } from './HowToPlayModal';
 
+/**
+ * UI Element Factory and Fallback System exports
+ */
+export { UIElementFactory, UIElementType } from './UIElementFactory';
+export type { UIElement, LayoutConfig as UILayoutConfig } from './UIElementFactory';
+
+export { ResponsiveLayoutManager } from './ResponsiveLayoutManager';
+export type { UIElementMap, Position } from './ResponsiveLayoutManager';
+
+export { FallbackRenderer, FallbackMode } from './FallbackRenderer';
+
 // Re-export existing utilities
 export { CSPComplianceChecker } from './CSPComplianceChecker';
 export { PerformanceMonitor } from './PerformanceMonitor';

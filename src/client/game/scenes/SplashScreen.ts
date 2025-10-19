@@ -912,11 +912,15 @@ Good luck!
    */
   private launchGameScenes(): void {
     try {
-      // Start Game scene and launch UI scene concurrently
+      // Start Game scene first
       this.scene.start('Game');
       console.log('SplashScreen: Game scene started');
-      this.scene.launch('UI');
-      console.log('SplashScreen: UI scene launched');
+      
+      // Launch UI scene with a small delay to ensure Game scene is ready
+      this.time.delayedCall(50, () => {
+        this.scene.launch('UI');
+        console.log('SplashScreen: UI scene launched (delayed)');
+      });
     } catch (sceneError) {
       console.error('SplashScreen: Error launching scenes:', sceneError);
       this.handleTransitionError(sceneError);
