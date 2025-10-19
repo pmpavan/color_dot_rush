@@ -1,6 +1,24 @@
 /* Poppins font family - fonts will be injected dynamically via FontAssets */
 /* This ensures proper bundling for Devvit app deployment */
 
+/* CSS Animations for UI effects */
+@keyframes scoreFlash {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes colorFlash {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes pulse {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  100% { transform: translate(-50%, -50%) scale(1.05); }
+}
+
 body {
   margin: 0;
   padding: 0;

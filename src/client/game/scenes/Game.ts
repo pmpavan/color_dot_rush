@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
-import { UIScene } from './UIScene';
+import { SimpleUIScene } from './SimpleUIScene';
 import { DebugService, ProductionDebugService } from '../../services/DebugService';
 import { DifficultyManager } from '../../services/DifficultyManager';
 import { ILeaderboardService, DevvitLeaderboardService, MockLeaderboardService } from '../../services/LeaderboardService';
@@ -19,7 +19,7 @@ export class Game extends Scene {
   private camera: Phaser.Cameras.Scene2D.Camera;
   private background: Phaser.GameObjects.Rectangle | null = null;
   private currentState: GameState = GameState.READY;
-  private uiScene: UIScene | null = null;
+  private uiScene: SimpleUIScene | null = null;
 
   // Game state variables
   private score: number = 0;
@@ -1486,19 +1486,19 @@ export class Game extends Scene {
     console.log('Game: Initializing UIScene communication...');
     
     // Check if UIScene exists and is active
-    this.uiScene = this.scene.get('UI') as UIScene;
+    this.uiScene = this.scene.get('SimpleUI') as SimpleUIScene;
     
     if (!this.uiScene) {
       console.log('Game: UIScene not found, launching it...');
       // Launch UIScene if it doesn't exist
-      this.scene.launch('UI');
+      this.scene.launch('SimpleUI');
       
       // Wait for UIScene to be ready with retry logic
       this.waitForUISceneReady();
     } else if (this.uiScene.scene && !this.uiScene.scene.isActive()) {
       console.log('Game: UIScene exists but not active, starting it...');
       // Start UIScene if it exists but isn't active
-      this.scene.launch('UI');
+      this.scene.launch('SimpleUI');
       
       // Wait for UIScene to be ready with retry logic
       this.waitForUISceneReady();
@@ -1518,7 +1518,7 @@ export class Game extends Scene {
     const delay = baseDelay * (retryCount + 1); // Increasing delay: 100ms, 200ms, 300ms
     
     this.time.delayedCall(delay, () => {
-      this.uiScene = this.scene.get('UI') as UIScene;
+      this.uiScene = this.scene.get('SimpleUI') as SimpleUIScene;
       
       if (this.uiScene && this.uiScene.events) {
         console.log(`Game: UIScene ready after ${retryCount + 1} attempt(s)`);

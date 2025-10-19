@@ -4,7 +4,7 @@ import { GameOver } from './scenes/GameOver';
 import { Game as MainGame } from './scenes/Game';
 import { Leaderboard } from './scenes/Leaderboard';
 import { SplashScreen } from './scenes/SplashScreen';
-import { UIScene } from './scenes/UIScene';
+import { SimpleUIScene } from './scenes/SimpleUIScene';
 import * as Phaser from 'phaser';
 import { Game } from 'phaser';
 import { Preloader } from './scenes/Preloader';
@@ -28,7 +28,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [Boot, Preloader, SplashScreen, MainGame, UIScene, GameOver, Leaderboard],
+  scene: [Boot, Preloader, SplashScreen, MainGame, SimpleUIScene, GameOver, Leaderboard],
 };
 
 const StartGame = (parent: string) => {
