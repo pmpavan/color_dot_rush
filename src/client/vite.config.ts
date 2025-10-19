@@ -40,9 +40,9 @@ export default defineConfig(({ mode }) => {
         terserOptions: {
           compress: {
             passes: 3, // Multiple compression passes
-            drop_console: true, // Remove console.log in production
-            drop_debugger: true, // Remove debugger statements
-            pure_funcs: ['console.log', 'console.warn', 'console.info'], // Remove specific console methods
+            drop_console: false, // Remove console.log in production
+            drop_debugger: false, // Remove debugger statements
+            // pure_funcs: ['console.log', 'console.warn', 'console.info'], // Remove specific console methods
             unsafe_arrows: true, // Convert arrow functions for better compression
             unsafe_methods: true, // Optimize method calls
             unsafe_proto: true, // Optimize prototype access

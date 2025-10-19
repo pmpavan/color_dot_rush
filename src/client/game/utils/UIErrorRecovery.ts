@@ -184,7 +184,7 @@ export class UIErrorRecovery {
       component,
       totalAttempts: this.recoveryAttempts.filter(a => a.component === component).length,
       lastError: lastError?.message
-    }, lastError);
+    }, lastError || undefined);
 
     return null;
   }
@@ -295,7 +295,7 @@ export class UIErrorRecovery {
    */
   private async createEmergencyUIElement(component: string): Promise<UIElement | null> {
     try {
-      const { width, height } = this.scene.scale;
+      const { width } = this.scene.scale;
       
       // Create basic emergency element based on component type
       switch (component) {
@@ -440,7 +440,10 @@ export class UIErrorRecovery {
   private checkExistingUI(): boolean {
     try {
       const children = this.scene.children.list;
-      const hasVisibleElements = children.some(child => child.visible && child.active);
+      const hasVisibleElements = children.some(child => 
+        'visible' in child && 'active' in child && 
+        (child as any).visible && (child as any).active
+      );
       
       uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'checkExistingUI', 'Checking existing UI elements', {
         totalChildren: children.length,
@@ -542,26 +545,66 @@ export class UIErrorRecovery {
   }
 
   /**
-   * Clean up partial UI elements
+   * Clean up partial UI elements with comprehensive error handling patterns
+   * Uses SafeCleanupHelpers for consistent error handling across all utility classes
    */
   private async cleanupPartialUI(): Promise<void> {
+    // Import the helper functions (dynamic import to avoid circular dependencies)
+    const { 
+      performSafeCleanup, 
+      validateSceneState,
+      logDestructionError 
+    } = require('./SafeCleanupHelpers');
+
     try {
-      uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'cleanupPartialUI', 'Cleaning up partial UI elements');
+      uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'cleanupPartialUI', 'Starting partial UI cleanup with comprehensive error handling');
       
-      // Kill all tweens to prevent issues
-      if (this.scene.tweens) {
-        this.scene.tweens.killAll();
+      // Validate scene state before attempting cleanup
+      const sceneValidation = validateSceneState(this.scene, 'UIErrorRecovery');
+      
+      if (!sceneValidation.isValid) {
+        uiLogger.log(LogLevel.WARN, 'UIErrorRecovery', 'cleanupPartialUI', 'Scene validation failed, proceeding with limited cleanup', {
+          validationErrors: sceneValidation.validationErrors
+        });
       }
-      
-      // Remove all children
-      this.scene.children.removeAll(true);
+
+      // Use the comprehensive safe cleanup function
+      const cleanupResult = performSafeCleanup(this.scene, {
+        killTweens: true,
+        removeChildren: true,
+        removeEventListeners: [], // No specific event listeners to remove in this context
+        componentName: 'UIErrorRecovery'
+      });
+
+      // Log cleanup results
+      uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'cleanupPartialUI', 'Partial UI cleanup completed', {
+        tweensCleared: cleanupResult.tweensCleared,
+        childrenRemoved: cleanupResult.childrenRemoved,
+        totalOperations: cleanupResult.totalOperations,
+        successfulOperations: cleanupResult.successfulOperations,
+        cleanupCompleted: cleanupResult.cleanupStatus.completed,
+        errorCount: cleanupResult.cleanupStatus.errors.length
+      });
+
+      if (!cleanupResult.cleanupStatus.completed) {
+        uiLogger.log(LogLevel.WARN, 'UIErrorRecovery', 'cleanupPartialUI', 'Partial UI cleanup completed with errors', {
+          errors: cleanupResult.cleanupStatus.errors
+        });
+      }
       
       // Small delay to ensure cleanup is complete
       await this.delay(50);
       
-      uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'cleanupPartialUI', 'Partial UI cleanup completed');
     } catch (error) {
-      uiLogger.log(LogLevel.WARN, 'UIErrorRecovery', 'cleanupPartialUI', 'Error during partial UI cleanup', undefined, error instanceof Error ? error : undefined);
+      logDestructionError('UIErrorRecovery', 'cleanupPartialUI', error, {
+        sceneExists: !!this.scene
+      });
+      
+      uiLogger.log(LogLevel.WARN, 'UIErrorRecovery', 'cleanupPartialUI', 'Error during partial UI cleanup', {
+        error: error instanceof Error ? error.message : String(error),
+        sceneExists: !!this.scene,
+        timestamp: new Date().toISOString()
+      }, error instanceof Error ? error : undefined);
     }
   }
 
@@ -575,8 +618,8 @@ export class UIErrorRecovery {
       originalMethod,
       recoveryMethod,
       success,
-      error,
-      retryCount
+      retryCount,
+      ...(error && { error })
     };
 
     this.recoveryAttempts.push(attempt);
@@ -647,5 +690,113 @@ export class UIErrorRecovery {
    */
   public getRecentRecoveryAttempts(count: number = 10): RecoveryAttempt[] {
     return this.recoveryAttempts.slice(-count);
+  }
+
+  /**
+   * Cleanup method with comprehensive error handling patterns
+   * Uses SafeCleanupHelpers for consistent error handling across all utility classes
+   */
+  public destroy(): void {
+    // Import the helper functions (dynamic import to avoid circular dependencies)
+    const { 
+      handlePartialDestructionState, 
+      validateSceneState,
+      logDestructionError 
+    } = require('./SafeCleanupHelpers');
+
+    try {
+      uiLogger.log(LogLevel.INFO, 'UIErrorRecovery', 'destroy', 'Starting UIErrorRecovery cleanup with comprehensive error handling');
+
+      // Validate scene state before attempting cleanup
+      const sceneValidation = validateSceneState(this.scene, 'UIErrorRecovery');
+      
+      if (!sceneValidation.isValid) {
+        uiLogger.log(LogLevel.WARN, 'UIErrorRecovery', 'destroy', 'Scene validation failed, proceeding with limited cleanup', {
+          validationErrors: sceneValidation.validationErrors
+        });
+      }
+
+      // Define cleanup operations for partial destruction state handling
+      const cleanupOperations = [
+        {
+          name: 'clearRecoveryPromises',
+          operation: () => {
+            // Clear recovery promises to prevent memory leaks
+            this.recoveryPromises.clear();
+            uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'destroy', 'Recovery promises cleared successfully');
+          },
+          required: true
+        },
+        {
+          name: 'clearRecoveryAttempts',
+          operation: () => {
+            // Clear recovery attempts history
+            this.recoveryAttempts = [];
+            uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'destroy', 'Recovery attempts history cleared successfully');
+          },
+          required: true
+        },
+        {
+          name: 'resetRecoveryState',
+          operation: () => {
+            // Reset recovery state
+            this.isRecovering = false;
+            uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'destroy', 'Recovery state reset successfully');
+          },
+          required: true
+        },
+        {
+          name: 'destroyFallbackRenderer',
+          operation: () => {
+            // Safe cleanup of fallback renderer
+            if (this.fallbackRenderer && typeof this.fallbackRenderer.destroy === 'function') {
+              this.fallbackRenderer.destroy();
+              uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'destroy', 'FallbackRenderer destroyed successfully');
+            }
+          },
+          required: false
+        },
+        {
+          name: 'finalUICleanup',
+          operation: () => {
+            // Final cleanup of any remaining UI elements
+            this.cleanupPartialUI();
+            uiLogger.log(LogLevel.DEBUG, 'UIErrorRecovery', 'destroy', 'Final UI cleanup completed successfully');
+          },
+          required: false
+        }
+      ];
+
+      // Execute cleanup with partial destruction state handling
+      const cleanupStatus = handlePartialDestructionState(
+        this.scene,
+        cleanupOperations,
+        'UIErrorRecovery'
+      );
+
+      // Log final cleanup status
+      if (cleanupStatus.completed) {
+        uiLogger.log(LogLevel.INFO, 'UIErrorRecovery', 'destroy', 'UIErrorRecovery cleanup completed successfully', {
+          errorCount: cleanupStatus.errors.length
+        });
+      } else {
+        uiLogger.log(LogLevel.WARN, 'UIErrorRecovery', 'destroy', 'UIErrorRecovery cleanup completed with errors', {
+          errors: cleanupStatus.errors
+        });
+      }
+
+    } catch (error) {
+      logDestructionError('UIErrorRecovery', 'destroy', error, {
+        sceneExists: !!this.scene
+      });
+      
+      uiLogger.log(LogLevel.ERROR, 'UIErrorRecovery', 'destroy', 'Error during UIErrorRecovery cleanup', {
+        error: error instanceof Error ? error.message : String(error),
+        sceneExists: !!this.scene,
+        timestamp: new Date().toISOString()
+      }, error instanceof Error ? error : undefined);
+    }
+
+    console.log('UIErrorRecovery: Destroyed and cleaned up');
   }
 }

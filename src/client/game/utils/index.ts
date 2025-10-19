@@ -3,13 +3,10 @@
  */
 
 export { FontPreloader } from './FontPreloader';
-export type { FontLoadingStatus, FontConfig } from './FontPreloader';
+export type { FontLoadResult, FontLoadingStatus } from './FontPreloader';
 
-export { FontLoadingIndicator } from './FontLoadingIndicator';
-export type { LoadingIndicatorConfig } from './FontLoadingIndicator';
-
-export { FontErrorHandler } from './FontErrorHandler';
-export type { FontError, ErrorHandlingConfig } from './FontErrorHandler';
+export { FONT_ASSETS, generateFontCSS, injectFontCSS, preloadFonts } from '../assets/FontAssets';
+export type { FontAsset, FontAssets } from '../assets/FontAssets';
 
 /**
  * Responsive layout system exports
@@ -66,3 +63,16 @@ export { CSPComplianceChecker } from './CSPComplianceChecker';
 export { PerformanceMonitor } from './PerformanceMonitor';
 export { PerformanceOptimizer } from './PerformanceOptimizer';
 export { ResponsiveCanvas } from './ResponsiveCanvas';
+
+/**
+ * Safe cleanup utilities exports
+ */
+export {
+  safelyRemoveEventListener,
+  safelyAccessSceneProperty,
+  safelyKillTweens,
+  safelyRemoveSceneChildren,
+  createCleanupContext,
+  performSafeCleanup
+} from './SafeCleanupHelpers';
+export type { CleanupContext } from './SafeCleanupHelpers';

@@ -431,7 +431,7 @@ export class SplashScreen extends Scene {
 
       // Create simple title
       const titleStyle: DOMTextStyle = {
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: 'Poppins, Arial, sans-serif',
         fontSize: '48px',
         fontWeight: 'bold',
         color: '#FFFFFF',
@@ -449,7 +449,7 @@ export class SplashScreen extends Scene {
 
       // Create simple subtitle
       const subtitleStyle: DOMTextStyle = {
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: 'Poppins, Arial, sans-serif',
         fontSize: '24px',
         fontWeight: 'normal',
         color: '#ECF0F1',
@@ -467,7 +467,7 @@ export class SplashScreen extends Scene {
 
       // Create simple start button
       const buttonStyle: DOMTextStyle = {
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: 'Poppins, Arial, sans-serif',
         fontSize: '18px',
         fontWeight: '500',
         color: '#FFFFFF',

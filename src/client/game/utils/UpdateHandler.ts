@@ -444,25 +444,116 @@ export class UpdateHandler {
   }
 
   /**
-   * Cleanup method to stop all animations
+   * Cleanup method to stop all animations with comprehensive error handling patterns
+   * Uses SafeCleanupHelpers for consistent error handling across all utility classes
    */
   destroy(): void {
-    // Stop all animations on UI elements
-    Object.values(this.uiElements).forEach(element => {
-      if (element?.container) {
-        this.scene.tweens.killTweensOf(element.container);
-      }
-    });
+    // Import the helper functions (dynamic import to avoid circular dependencies)
+    const { 
+      handlePartialDestructionState, 
+      validateSceneState,
+      safelyKillTweens,
+      logDestructionError 
+    } = require('./SafeCleanupHelpers');
 
-    // Stop animations on slow-mo charges array
-    if (this.uiElements.slowMoCharges) {
-      this.uiElements.slowMoCharges.forEach(charge => {
-        if (charge?.container) {
-          this.scene.tweens.killTweensOf(charge.container);
-        }
+    console.log('UpdateHandler: Starting destruction with comprehensive error handling');
+
+    // Validate scene state before attempting cleanup
+    const sceneValidation = validateSceneState(this.scene, 'UpdateHandler');
+    
+    if (!sceneValidation.isValid) {
+      console.warn('UpdateHandler: Scene validation failed, proceeding with limited cleanup', {
+        validationErrors: sceneValidation.validationErrors
       });
     }
 
-    console.log('UpdateHandler: Destroyed and cleaned up animations');
+    // Define cleanup operations for partial destruction state handling
+    const cleanupOperations = [
+      {
+        name: 'killUIElementTweens',
+        operation: () => {
+          // Stop all animations on UI elements
+          Object.values(this.uiElements).forEach(element => {
+            if (element?.container) {
+              try {
+                if (this.scene && this.scene.tweens && typeof this.scene.tweens.killTweensOf === 'function') {
+                  this.scene.tweens.killTweensOf(element.container);
+                }
+              } catch (error) {
+                logDestructionError('UpdateHandler', 'killUIElementTween', error, {
+                  elementType: element.type
+                });
+              }
+            }
+          });
+          console.log('UpdateHandler: UI element animations stopped successfully');
+        },
+        required: false
+      },
+      {
+        name: 'killSlowMoChargeTweens',
+        operation: () => {
+          // Stop animations on slow-mo charges array
+          if (this.uiElements.slowMoCharges) {
+            this.uiElements.slowMoCharges.forEach((charge, index) => {
+              if (charge?.container) {
+                try {
+                  if (this.scene && this.scene.tweens && typeof this.scene.tweens.killTweensOf === 'function') {
+                    this.scene.tweens.killTweensOf(charge.container);
+                  }
+                } catch (error) {
+                  logDestructionError('UpdateHandler', `killSlowMoChargeTween_${index}`, error, {
+                    chargeIndex: index
+                  });
+                }
+              }
+            });
+          }
+          console.log('UpdateHandler: Slow-mo charge animations stopped successfully');
+        },
+        required: false
+      },
+      {
+        name: 'killAllSceneTweens',
+        operation: () => {
+          // Use the safe tween killing helper for any remaining tweens
+          if (safelyKillTweens(this.scene, undefined, 'UpdateHandler')) {
+            console.log('UpdateHandler: All scene tweens killed successfully');
+          }
+        },
+        required: false
+      },
+      {
+        name: 'clearUIElementsReferences',
+        operation: () => {
+          // Clear UI elements references
+          this.uiElements = {} as UIElementMap;
+          console.log('UpdateHandler: UI elements references cleared successfully');
+        },
+        required: true
+      }
+    ];
+
+    // Execute cleanup with partial destruction state handling
+    const cleanupStatus = handlePartialDestructionState(
+      this.scene,
+      cleanupOperations,
+      'UpdateHandler'
+    );
+
+    // Log final cleanup status
+    if (cleanupStatus.completed) {
+      console.log('UpdateHandler: Destruction completed successfully', {
+        tweensKilled: cleanupStatus.tweensKilled,
+        errorCount: cleanupStatus.errors.length
+      });
+    } else {
+      console.warn('UpdateHandler: Destruction completed with errors', {
+        errors: cleanupStatus.errors,
+        tweensKilled: cleanupStatus.tweensKilled
+      });
+    }
+
+    console.log('UpdateHandler: Destroyed and cleaned up');
   }
 }

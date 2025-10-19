@@ -9,3 +9,5 @@ yarn-error.log*
 webroot
 dist
 .env
+docs/logs-from-splash-game-load.txt
+docs/logs-till-splash-page-load.txt

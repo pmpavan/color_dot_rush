@@ -107,13 +107,20 @@ export class Preloader extends Scene {
       0x2ECC71
     );
     
-    // Animate checkmark
+    // Animate checkmark and then transition to SplashScreen
     this.tweens.add({
       targets: checkmark,
       scaleX: 1.2,
       scaleY: 1.2,
       duration: 200,
-      yoyo: true
+      yoyo: true,
+      onComplete: () => {
+        // Wait a moment to show the checkmark, then transition
+        this.time.delayedCall(500, () => {
+          console.log('Color Rush: Preloader complete - transitioning to SplashScreen');
+          this.scene.start('SplashScreen');
+        });
+      }
     });
   }
 }

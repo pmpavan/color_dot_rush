@@ -79,52 +79,10 @@ export class UIElementFactory {
       if (typeof document !== 'undefined' && document.fonts) {
         uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'detectFontAvailability', 'Font API available, checking Poppins availability');
         
-        // Check if Poppins is available in multiple sizes
-        const poppins16Available = document.fonts.check('16px Poppins');
-        const poppins24Available = document.fonts.check('24px Poppins');
-        const poppins32Available = document.fonts.check('32px Poppins');
-        
-        const poppinsFullyAvailable = poppins16Available && poppins24Available && poppins32Available;
-        
-        const fontCheckResults = {
-          '16px': poppins16Available,
-          '24px': poppins24Available,
-          '32px': poppins32Available,
-          'fully_available': poppinsFullyAvailable
-        };
-        
-        uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'detectFontAvailability', 'Poppins font availability check completed', fontCheckResults);
-        
-        if (poppinsFullyAvailable) {
-          this.fontFamily = 'Poppins, Arial, sans-serif';
-          uiLogger.logFontStatus({
-            poppinsAvailable: true,
-            fontApiSupported: true,
-            currentFontFamily: this.fontFamily
-          });
-          uiLogger.log(LogLevel.INFO, 'UIElementFactory', 'detectFontAvailability', 'Poppins font fully available');
-        } else if (poppins16Available || poppins24Available) {
-          this.fontFamily = 'Poppins, Arial, sans-serif';
-          uiLogger.logFontStatus({
-            poppinsAvailable: true,
-            fontApiSupported: true,
-            currentFontFamily: this.fontFamily,
-            fallbackActivated: true,
-            lastError: 'Poppins partially available'
-          });
-          uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'detectFontAvailability', 'Poppins partially available, using with Arial fallback');
-        } else {
-          this.fontFamily = 'Arial, sans-serif';
-          uiLogger.logFontStatus({
-            poppinsAvailable: false,
-            systemFontsAvailable: true,
-            fontApiSupported: true,
-            currentFontFamily: this.fontFamily,
-            fallbackActivated: true,
-            lastError: 'Poppins not available'
-          });
-          uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'detectFontAvailability', 'Poppins font not available, using Arial fallback');
-        }
+        // Wait a bit for fonts to potentially load, then check
+        setTimeout(() => {
+          this.performFontCheck();
+        }, 100);
       } else {
         this.fontFamily = 'Arial, sans-serif';
         uiLogger.logFontStatus({
@@ -136,10 +94,8 @@ export class UIElementFactory {
           lastError: 'Font API not available'
         });
         uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'detectFontAvailability', 'Font API not available, using Arial fallback');
+        this.testFontFamily();
       }
-      
-      // Test the selected font family
-      this.testFontFamily();
       
     } catch (error) {
       this.fontFamily = 'Arial, sans-serif';
@@ -152,6 +108,74 @@ export class UIElementFactory {
         lastError: error instanceof Error ? error.message : 'Unknown error'
       });
       uiLogger.log(LogLevel.ERROR, 'UIElementFactory', 'detectFontAvailability', 'Error detecting font availability, falling back to system fonts', { error: error instanceof Error ? error.message : 'Unknown error' }, error instanceof Error ? error : undefined);
+      this.testFontFamily();
+    }
+  }
+
+  private performFontCheck(): void {
+    try {
+      // Check if Poppins is available in multiple sizes
+      const poppins16Available = document.fonts.check('16px Poppins');
+      const poppins24Available = document.fonts.check('24px Poppins');
+      const poppins32Available = document.fonts.check('32px Poppins');
+      
+      const poppinsFullyAvailable = poppins16Available && poppins24Available && poppins32Available;
+      
+      const fontCheckResults = {
+        '16px': poppins16Available,
+        '24px': poppins24Available,
+        '32px': poppins32Available,
+        'fully_available': poppinsFullyAvailable
+      };
+      
+      uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'performFontCheck', 'Poppins font availability check completed', fontCheckResults);
+      
+      if (poppinsFullyAvailable) {
+        this.fontFamily = 'Poppins, Arial, sans-serif';
+        uiLogger.logFontStatus({
+          poppinsAvailable: true,
+          fontApiSupported: true,
+          currentFontFamily: this.fontFamily
+        });
+        uiLogger.log(LogLevel.INFO, 'UIElementFactory', 'performFontCheck', 'Poppins font fully available');
+      } else if (poppins16Available || poppins24Available) {
+        this.fontFamily = 'Poppins, Arial, sans-serif';
+        uiLogger.logFontStatus({
+          poppinsAvailable: true,
+          fontApiSupported: true,
+          currentFontFamily: this.fontFamily,
+          fallbackActivated: true,
+          lastError: 'Poppins partially available'
+        });
+        uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'performFontCheck', 'Poppins partially available, using with Arial fallback');
+      } else {
+        this.fontFamily = 'Arial, sans-serif';
+        uiLogger.logFontStatus({
+          poppinsAvailable: false,
+          systemFontsAvailable: true,
+          fontApiSupported: true,
+          currentFontFamily: this.fontFamily,
+          fallbackActivated: true,
+          lastError: 'Poppins not available'
+        });
+        uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'performFontCheck', 'Poppins font not available, using Arial fallback');
+      }
+      
+      // Test the selected font family
+      this.testFontFamily();
+      
+    } catch (error) {
+      this.fontFamily = 'Arial, sans-serif';
+      uiLogger.logFontStatus({
+        poppinsAvailable: false,
+        systemFontsAvailable: true,
+        fontApiSupported: true,
+        currentFontFamily: this.fontFamily,
+        fallbackActivated: true,
+        lastError: error instanceof Error ? error.message : 'Font check error'
+      });
+      uiLogger.log(LogLevel.ERROR, 'UIElementFactory', 'performFontCheck', 'Error during font check, falling back to system fonts', { error: error instanceof Error ? error.message : 'Unknown error' }, error instanceof Error ? error : undefined);
+      this.testFontFamily();
     }
   }
 
@@ -463,21 +487,38 @@ export class UIElementFactory {
     const container = this.scene.add.container(x, y);
     container.setDepth(101);
 
-    const scoreText = this.scene.add.text(0, 0, 'Score: 0 | Best: 0', {
-      fontFamily: this.fontFamily,
-      fontSize: '24px',
-      color: '#FFFFFF'
-    }).setOrigin(0, 0.5);
+    // Create text with robust error handling
+    let scoreText: Phaser.GameObjects.Text;
+    try {
+      scoreText = this.scene.add.text(0, 0, 'Score: 0 | Best: 0', {
+        fontFamily: this.fontFamily,
+        fontSize: '24px',
+        color: '#FFFFFF',
+        // Add fallback font stack
+        font: `${this.fontFamily}, Arial, sans-serif`
+      }).setOrigin(0, 0.5);
+    } catch (error) {
+      console.error('UIElementFactory: Failed to create score text, using fallback:', error);
+      // Create with minimal styling as fallback
+      scoreText = this.scene.add.text(0, 0, 'Score: 0 | Best: 0', {
+        fontSize: '24px',
+        color: '#FFFFFF'
+      }).setOrigin(0, 0.5);
+    }
     
     scoreText.setDepth(102);
     container.add(scoreText);
 
     const updateMethod = (data: { score: number; bestScore: number }) => {
-      scoreText.setText(`Score: ${data.score} | Best: ${data.bestScore}`);
-      
-      // Change color based on score level
-      const color = data.score > 10 ? '#FFD700' : data.score > 5 ? '#2ECC71' : '#FFFFFF';
-      scoreText.setColor(color);
+      try {
+        scoreText.setText(`Score: ${data.score} | Best: ${data.bestScore}`);
+        
+        // Change color based on score level
+        const color = data.score > 10 ? '#FFD700' : data.score > 5 ? '#2ECC71' : '#FFFFFF';
+        scoreText.setColor(color);
+      } catch (error) {
+        console.warn('UIElementFactory: Failed to update score text:', error);
+      }
     };
 
     return {
@@ -493,22 +534,38 @@ export class UIElementFactory {
     container.setDepth(101);
 
     // Time display positioned at screen center (requirement 2.4)
-    const timeText = this.scene.add.text(0, 0, 'Time: 0:00', {
-      fontFamily: this.fontFamily,
-      fontSize: '24px',
-      color: '#FFFFFF'
-    }).setOrigin(0.5, 0.5); // Centered origin for proper center positioning
+    let timeText: Phaser.GameObjects.Text;
+    try {
+      timeText = this.scene.add.text(0, 0, 'Time: 0:00', {
+        fontFamily: this.fontFamily,
+        fontSize: '24px',
+        color: '#FFFFFF',
+        // Add fallback font stack
+        font: `${this.fontFamily}, Arial, sans-serif`
+      }).setOrigin(0.5, 0.5); // Centered origin for proper center positioning
+    } catch (error) {
+      console.error('UIElementFactory: Failed to create time text, using fallback:', error);
+      // Create with minimal styling as fallback
+      timeText = this.scene.add.text(0, 0, 'Time: 0:00', {
+        fontSize: '24px',
+        color: '#FFFFFF'
+      }).setOrigin(0.5, 0.5);
+    }
     
     timeText.setDepth(102);
     container.add(timeText);
 
     const updateMethod = (elapsedTime: number) => {
-      const totalSeconds = Math.floor(elapsedTime / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      // MM:SS format (requirement 2.1)
-      const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-      timeText.setText(`Time: ${timeString}`);
+      try {
+        const totalSeconds = Math.floor(elapsedTime / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        // MM:SS format (requirement 2.1)
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timeText.setText(`Time: ${timeString}`);
+      } catch (error) {
+        console.warn('UIElementFactory: Failed to update time text:', error);
+      }
     };
 
     return {
@@ -529,12 +586,24 @@ export class UIElementFactory {
     background.setDepth(103);
 
     // TAP text (requirement 4.1 - "TAP" text with colored dot icon instead of color name)
-    const tapText = this.scene.add.text(-30, 0, 'TAP', {
-      fontFamily: this.fontFamily,
-      fontSize: '32px',
-      fontStyle: 'bold',
-      color: '#FFFFFF'
-    }).setOrigin(0.5, 0.5);
+    let tapText: Phaser.GameObjects.Text;
+    try {
+      tapText = this.scene.add.text(-30, 0, 'TAP', {
+        fontFamily: this.fontFamily,
+        fontSize: '32px',
+        fontStyle: 'bold',
+        color: '#FFFFFF',
+        // Add fallback font stack
+        font: `${this.fontFamily}, Arial, sans-serif`
+      }).setOrigin(0.5, 0.5);
+    } catch (error) {
+      console.error('UIElementFactory: Failed to create TAP text, using fallback:', error);
+      // Create with minimal styling as fallback
+      tapText = this.scene.add.text(-30, 0, 'TAP', {
+        fontSize: '32px',
+        color: '#FFFFFF'
+      }).setOrigin(0.5, 0.5);
+    }
     tapText.setDepth(104);
 
     // Colored dot icon (requirement 4.2 - dot icon instead of color name)
@@ -556,10 +625,14 @@ export class UIElementFactory {
     });
 
     const updateMethod = (color: GameColor) => {
-      const colorValue = parseInt(color.replace('#', '0x'));
-      colorDot.setFillStyle(colorValue);
-      // Update background border color to match target color (requirement 7.5)
-      background.setStrokeStyle(3, colorValue, 0.9);
+      try {
+        const colorValue = parseInt(color.replace('#', '0x'));
+        colorDot.setFillStyle(colorValue);
+        // Update background border color to match target color (requirement 7.5)
+        background.setStrokeStyle(3, colorValue, 0.9);
+      } catch (error) {
+        console.warn('UIElementFactory: Failed to update target color:', error);
+      }
     };
 
     return {
@@ -836,5 +909,83 @@ export class UIElementFactory {
    */
   public setFallbackMode(mode: UIElementType): void {
     this.fallbackMode = mode;
+  }
+
+  /**
+   * Cleanup method with comprehensive error handling patterns
+   * Uses SafeCleanupHelpers for consistent error handling across all utility classes
+   */
+  public destroy(): void {
+    // Import the helper functions (dynamic import to avoid circular dependencies)
+    const { 
+      handlePartialDestructionState, 
+      validateSceneState,
+      safelyKillTweens
+    } = require('./SafeCleanupHelpers');
+
+    console.log('UIElementFactory: Starting destruction with comprehensive error handling');
+
+    // Validate scene state before attempting cleanup
+    const sceneValidation = validateSceneState(this.scene, 'UIElementFactory');
+    
+    if (!sceneValidation.isValid) {
+      console.warn('UIElementFactory: Scene validation failed, proceeding with limited cleanup', {
+        validationErrors: sceneValidation.validationErrors
+      });
+    }
+
+    // Define cleanup operations for partial destruction state handling
+    const cleanupOperations = [
+      {
+        name: 'killAllSceneTweens',
+        operation: () => {
+          // Use the safe tween killing helper
+          if (safelyKillTweens(this.scene, undefined, 'UIElementFactory')) {
+            console.log('UIElementFactory: All scene animations stopped successfully');
+          }
+        },
+        required: false
+      },
+      {
+        name: 'resetFontFamily',
+        operation: () => {
+          // Reset font family to safe default
+          this.fontFamily = 'Arial, sans-serif';
+          console.log('UIElementFactory: Font family reset to safe default');
+        },
+        required: true
+      },
+      {
+        name: 'resetFallbackMode',
+        operation: () => {
+          // Reset fallback mode to safe default
+          this.fallbackMode = UIElementType.TEXT;
+          console.log('UIElementFactory: Fallback mode reset to safe default');
+        },
+        required: true
+      }
+    ];
+
+    // Execute cleanup with partial destruction state handling
+    const cleanupStatus = handlePartialDestructionState(
+      this.scene,
+      cleanupOperations,
+      'UIElementFactory'
+    );
+
+    // Log final cleanup status
+    if (cleanupStatus.completed) {
+      console.log('UIElementFactory: Destruction completed successfully', {
+        tweensKilled: cleanupStatus.tweensKilled,
+        errorCount: cleanupStatus.errors.length
+      });
+    } else {
+      console.warn('UIElementFactory: Destruction completed with errors', {
+        errors: cleanupStatus.errors,
+        tweensKilled: cleanupStatus.tweensKilled
+      });
+    }
+
+    console.log('UIElementFactory: Destroyed and cleaned up');
   }
 }

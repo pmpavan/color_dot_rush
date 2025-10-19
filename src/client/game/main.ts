@@ -7,7 +7,7 @@ import { SplashScreen } from './scenes/SplashScreen';
 import { UIScene } from './scenes/UIScene';
 import * as Phaser from 'phaser';
 import { Game } from 'phaser';
-// import { Preloader } from './scenes/Preloader'; // Removed to avoid texture generation issues
+import { Preloader } from './scenes/Preloader';
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
@@ -28,7 +28,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [Boot, SplashScreen, MainGame, UIScene, GameOver, Leaderboard],
+  scene: [Boot, Preloader, SplashScreen, MainGame, UIScene, GameOver, Leaderboard],
 };
 
 const StartGame = (parent: string) => {

@@ -1,36 +1,12 @@
-/* Poppins font family - using WOFF2 format for better performance */
-@font-face {
-  font-family: 'Poppins';
-  font-style: normal;
-  font-weight: 400;
-  src: url('./fonts/poppins-regular.woff2') format('woff2'),
-       url('./fonts/poppins-regular.ttf') format('truetype');
-  font-display: swap; /* Improve loading performance */
-}
-
-@font-face {
-  font-family: 'Poppins';
-  font-style: normal;
-  font-weight: 500;
-  src: url('./fonts/poppins-medium.woff2') format('woff2'),
-       url('./fonts/poppins-medium.ttf') format('truetype');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Poppins';
-  font-style: normal;
-  font-weight: 700;
-  src: url('./fonts/poppins-bold.woff2') format('woff2'),
-       url('./fonts/poppins-bold.ttf') format('truetype');
-  font-display: swap;
-}
+/* Poppins font family - fonts will be injected dynamically via FontAssets */
+/* This ensures proper bundling for Devvit app deployment */
 
 body {
   margin: 0;
   padding: 0;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #2c3e50; /* Dark Slate from design spec */
+  background-color: #2c3e50;
+  /* Dark Slate from design spec */
   font-family:
     'Poppins',
     -apple-system,
@@ -60,7 +36,8 @@ body {
   width: 100%;
   height: 100%;
   /* Ensure canvas fills available space */
-  display: block; /* Change from flex to block for full fill */
+  display: block;
+  /* Change from flex to block for full fill */
 }
 
 /* Ensure canvas fills container completely */

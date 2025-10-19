@@ -1493,25 +1493,55 @@ export class Game extends Scene {
       // Launch UIScene if it doesn't exist
       this.scene.launch('UI');
       
-      // Wait for UIScene to be ready
-      this.time.delayedCall(100, () => {
-        this.uiScene = this.scene.get('UI') as UIScene;
-        this.setupUISceneCommunication();
-      });
-    } else if (!this.uiScene.scene.isActive()) {
+      // Wait for UIScene to be ready with retry logic
+      this.waitForUISceneReady();
+    } else if (this.uiScene.scene && !this.uiScene.scene.isActive()) {
       console.log('Game: UIScene exists but not active, starting it...');
       // Start UIScene if it exists but isn't active
       this.scene.launch('UI');
       
-      // Wait for UIScene to be ready
-      this.time.delayedCall(100, () => {
-        this.uiScene = this.scene.get('UI') as UIScene;
-        this.setupUISceneCommunication();
-      });
+      // Wait for UIScene to be ready with retry logic
+      this.waitForUISceneReady();
     } else {
       console.log('Game: UIScene already active, setting up communication...');
       this.setupUISceneCommunication();
     }
+  }
+
+  /**
+   * Wait for UIScene to be ready with retry logic
+   * Handles cases where UIScene takes time to initialize
+   */
+  private waitForUISceneReady(retryCount: number = 0): void {
+    const maxRetries = 3;
+    const baseDelay = 100;
+    const delay = baseDelay * (retryCount + 1); // Increasing delay: 100ms, 200ms, 300ms
+    
+    this.time.delayedCall(delay, () => {
+      this.uiScene = this.scene.get('UI') as UIScene;
+      
+      if (this.uiScene && this.uiScene.events) {
+        console.log(`Game: UIScene ready after ${retryCount + 1} attempt(s)`);
+        this.setupUISceneCommunication();
+      } else if (retryCount < maxRetries) {
+        console.warn(`Game: UIScene not ready, retry ${retryCount + 1}/${maxRetries}`);
+        this.waitForUISceneReady(retryCount + 1);
+      } else {
+        console.error('Game: Failed to initialize UIScene after maximum retries');
+        // Create a fallback UI or handle gracefully
+        this.handleUISceneInitializationFailure();
+      }
+    });
+  }
+
+  /**
+   * Handle UIScene initialization failure gracefully
+   * Provides fallback behavior when UIScene cannot be initialized
+   */
+  private handleUISceneInitializationFailure(): void {
+    console.warn('Game: UIScene initialization failed, game will continue without UI updates');
+    // The game can still function, but UI updates won't work
+    // This prevents the game from completely breaking
   }
 
   /**
@@ -1525,9 +1555,13 @@ export class Game extends Scene {
     }
 
     console.log('Game: Setting up UIScene communication...');
-    console.log('Game: UIScene key:', this.uiScene.scene.key);
-    console.log('Game: UIScene active:', this.uiScene.scene.isActive());
-    console.log('Game: UIScene visible:', this.uiScene.scene.isVisible());
+    if (this.uiScene.scene) {
+      console.log('Game: UIScene key:', this.uiScene.scene.key);
+      console.log('Game: UIScene active:', this.uiScene.scene.isActive());
+      console.log('Game: UIScene visible:', this.uiScene.scene.isVisible());
+    } else {
+      console.warn('Game: UIScene.scene is not available');
+    }
 
     // Ensure UIScene is visible and properly initialized
     if (this.uiScene.forceShowUI) {
@@ -1535,10 +1569,18 @@ export class Game extends Scene {
     }
 
     // Setup event listeners for scene communication
-    this.setupSceneEventListeners();
+    if (this.uiScene && this.uiScene.events) {
+      this.setupSceneEventListeners();
+    } else {
+      console.warn('Game: UIScene became invalid before setting up event listeners');
+    }
 
     // Force an initial UI update to sync state
-    this.updateUI();
+    if (this.uiScene) {
+      this.updateUI();
+    } else {
+      console.warn('Game: UIScene became invalid before updating UI');
+    }
 
     console.log('Game: UIScene communication setup completed');
   }
@@ -1551,7 +1593,7 @@ export class Game extends Scene {
     console.log('Game: Setting up scene event listeners...');
 
     // Listen for UIScene shutdown to handle cleanup
-    if (this.uiScene) {
+    if (this.uiScene && this.uiScene.events) {
       this.uiScene.events.once('shutdown', () => {
         console.log('Game: UIScene shutdown detected, clearing reference');
         this.uiScene = null;
@@ -1562,6 +1604,8 @@ export class Game extends Scene {
         console.log('Game: UIScene destroy detected, clearing reference');
         this.uiScene = null;
       });
+    } else {
+      console.warn('Game: UIScene or UIScene.events not available for event listener setup');
     }
 
     // Listen for our own scene events
@@ -1576,7 +1620,7 @@ export class Game extends Scene {
     });
 
     // Listen for scene manager events
-    this.scene.events.on('wake', () => {
+    this.events.on('wake', () => {
       console.log('Game: Scene wake event, re-establishing UI communication');
       this.initializeUIScene();
     });
@@ -1592,7 +1636,7 @@ export class Game extends Scene {
     console.log('Game: Cleaning up UIScene communication...');
 
     // Remove event listeners to prevent memory leaks
-    if (this.uiScene) {
+    if (this.uiScene && this.uiScene.events) {
       this.uiScene.events.off('shutdown');
       this.uiScene.events.off('destroy');
     }
@@ -1601,7 +1645,7 @@ export class Game extends Scene {
     this.uiScene = null;
 
     // Remove scene manager event listeners
-    this.scene.events.off('wake');
+    this.events.off('wake');
 
     console.log('Game: UIScene communication cleanup completed');
   }
@@ -1619,7 +1663,7 @@ export class Game extends Scene {
       this.time.delayedCall(150, () => {
         this.finalizeGameStart();
       });
-    } else if (!this.uiScene.scene.isActive()) {
+    } else if (this.uiScene.scene && !this.uiScene.scene.isActive()) {
       console.log('Game: UIScene not active at game start, restarting communication...');
       this.setupUISceneCommunication();
       this.finalizeGameStart();

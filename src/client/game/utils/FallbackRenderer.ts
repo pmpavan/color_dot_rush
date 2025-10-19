@@ -757,23 +757,59 @@ export class FallbackRenderer {
   }
 
   /**
-   * Clean up any partially created UI elements
+   * Clean up any partially created UI elements with safe property access
    */
   private cleanupPartialUI(): void {
     try {
       console.log('FallbackRenderer: Cleaning up partial UI elements');
       
-      // Remove all children from the scene to start fresh
-      this.scene.children.removeAll(true);
+      // Safe access to scene.children with existence check
+      if (this.scene && this.scene.children && typeof this.scene.children.removeAll === 'function') {
+        try {
+          this.scene.children.removeAll(true);
+          console.log('FallbackRenderer: Scene children removed successfully');
+        } catch (error) {
+          console.warn('FallbackRenderer: Error removing scene children:', {
+            error: error instanceof Error ? error.message : String(error),
+            timestamp: new Date().toISOString()
+          });
+        }
+      } else {
+        console.warn('FallbackRenderer: Scene children cleanup skipped - children not available', {
+          sceneExists: !!this.scene,
+          childrenExists: !!(this.scene && this.scene.children),
+          removeAllExists: !!(this.scene && this.scene.children && typeof this.scene.children.removeAll === 'function'),
+          timestamp: new Date().toISOString()
+        });
+      }
       
-      // Kill any running tweens
-      if (this.scene.tweens) {
-        this.scene.tweens.killAll();
+      // Safe access to scene.tweens with existence check
+      if (this.scene && this.scene.tweens && typeof this.scene.tweens.killAll === 'function') {
+        try {
+          this.scene.tweens.killAll();
+          console.log('FallbackRenderer: Scene tweens killed successfully');
+        } catch (error) {
+          console.warn('FallbackRenderer: Error killing scene tweens:', {
+            error: error instanceof Error ? error.message : String(error),
+            timestamp: new Date().toISOString()
+          });
+        }
+      } else {
+        console.warn('FallbackRenderer: Scene tweens cleanup skipped - tweens not available', {
+          sceneExists: !!this.scene,
+          tweensExists: !!(this.scene && this.scene.tweens),
+          killAllExists: !!(this.scene && this.scene.tweens && typeof this.scene.tweens.killAll === 'function'),
+          timestamp: new Date().toISOString()
+        });
       }
       
       console.log('FallbackRenderer: Cleanup completed');
     } catch (error) {
-      console.warn('FallbackRenderer: Error during cleanup:', error);
+      console.warn('FallbackRenderer: Error during cleanup:', {
+        error: error instanceof Error ? error.message : String(error),
+        sceneExists: !!this.scene,
+        timestamp: new Date().toISOString()
+      });
     }
   }
 
@@ -1373,5 +1409,32 @@ export class FallbackRenderer {
       console.error('FallbackRenderer: Even absolute emergency UI creation failed:', error);
       throw new Error('Complete UI system failure - unable to create any UI elements');
     }
+  }
+
+  /**
+   * Cleanup method with safe property access patterns
+   */
+  public destroy(): void {
+    try {
+      console.log('FallbackRenderer: Starting cleanup');
+
+      // Reset retry count and mode
+      this.retryCount = 0;
+      this.currentMode = FallbackMode.TEXT;
+      this.fontAvailable = false;
+
+      // Final cleanup of any remaining UI elements
+      this.cleanupPartialUI();
+
+      console.log('FallbackRenderer: Cleanup completed successfully');
+    } catch (error) {
+      console.warn('FallbackRenderer: Error during cleanup:', {
+        error: error instanceof Error ? error.message : String(error),
+        sceneExists: !!this.scene,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    console.log('FallbackRenderer: Destroyed and cleaned up');
   }
 }

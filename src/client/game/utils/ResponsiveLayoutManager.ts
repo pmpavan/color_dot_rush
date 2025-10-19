@@ -1,5 +1,10 @@
 import { Scene } from 'phaser';
 import { UIElement, LayoutConfig } from './UIElementFactory';
+import { 
+  safeEventListenerRemoval, 
+  handlePartialDestructionState, 
+  validateSceneState
+} from './SafeCleanupHelpers';
 
 /**
  * Button types for layout positioning
@@ -503,15 +508,84 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
   }
 
   /**
-   * Cleanup method to remove event listeners
+   * Cleanup method to remove event listeners with comprehensive error handling patterns
+   * Uses SafeCleanupHelpers for consistent error handling across all utility classes
    */
   destroy(): void {
-    if (this.scene.scale) {
-      this.scene.scale.off('resize', this.handleResize, this);
+    console.log('ResponsiveLayoutManager: Starting destruction with comprehensive error handling');
+
+    // Validate scene state before attempting cleanup
+    const sceneValidation = validateSceneState(this.scene, 'ResponsiveLayoutManager');
+    
+    if (!sceneValidation.isValid) {
+      console.warn('ResponsiveLayoutManager: Scene validation failed, proceeding with limited cleanup', {
+        validationErrors: sceneValidation.validationErrors
+      });
     }
-    this.resizeCallbacks = [];
-    this.legacyResizeCallbacks = [];
-    this.currentLayout = null;
+
+    // Define cleanup operations for partial destruction state handling
+    const cleanupOperations = [
+      {
+        name: 'removeScaleListener',
+        operation: () => {
+          // Use the comprehensive safe event listener removal helper
+          const destructionContext = safeEventListenerRemoval(
+            this.scene,
+            'resize',
+            this.handleResize,
+            this,
+            'ResponsiveLayoutManager'
+          );
+          
+          if (destructionContext.errorOccurred) {
+            throw new Error(destructionContext.errorMessage || 'Scale listener removal failed');
+          }
+        },
+        required: true
+      },
+      {
+        name: 'clearCallbacks',
+        operation: () => {
+          this.resizeCallbacks = [];
+          this.legacyResizeCallbacks = [];
+          console.log('ResponsiveLayoutManager: Callbacks cleared successfully');
+        },
+        required: true
+      },
+      {
+        name: 'clearLayout',
+        operation: () => {
+          this.currentLayout = null;
+          console.log('ResponsiveLayoutManager: Layout references cleared successfully');
+        },
+        required: true
+      }
+    ];
+
+    // Execute cleanup with partial destruction state handling
+    const cleanupStatus = handlePartialDestructionState(
+      this.scene,
+      cleanupOperations,
+      'ResponsiveLayoutManager'
+    );
+
+    // Log final cleanup status
+    if (cleanupStatus.completed) {
+      console.log('ResponsiveLayoutManager: Destruction completed successfully', {
+        scaleListenerRemoved: cleanupStatus.scaleListenerRemoved,
+        callbacksCleared: cleanupStatus.callbacksCleared,
+        layoutCleared: cleanupStatus.layoutCleared,
+        errorCount: cleanupStatus.errors.length
+      });
+    } else {
+      console.warn('ResponsiveLayoutManager: Destruction completed with errors', {
+        errors: cleanupStatus.errors,
+        scaleListenerRemoved: cleanupStatus.scaleListenerRemoved,
+        callbacksCleared: cleanupStatus.callbacksCleared,
+        layoutCleared: cleanupStatus.layoutCleared
+      });
+    }
+
     console.log('ResponsiveLayoutManager: Destroyed and cleaned up');
   }
 }

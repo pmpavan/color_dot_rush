@@ -221,21 +221,47 @@ export class UIScene extends Scene {
   }
 
   init(): void {
+    console.log('UIScene: init() called - starting initialization');
     uiLogger.logSceneEvent('UIScene', 'init', true, { phase: 'start' });
 
     try {
       // Clean up any existing resources first
+      console.log('UIScene: Cleaning up existing resources...');
       this.cleanupExistingResources();
 
       // Initialize new factory-based system with error recovery
-      this.uiElementFactory = new UIElementFactory(this);
-      this.layoutManager = new ResponsiveLayoutManager(this);
-      this.errorRecovery = new UIErrorRecovery(this, {
-        maxRetries: 3,
-        retryDelay: 100,
-        enableAutoFallback: true,
-        enableRetryLogic: true
-      });
+      console.log('UIScene: Initializing UIElementFactory...');
+      try {
+        this.uiElementFactory = new UIElementFactory(this);
+        console.log('UIScene: UIElementFactory initialized successfully:', !!this.uiElementFactory);
+      } catch (error) {
+        console.error('UIScene: Failed to initialize UIElementFactory:', error);
+        this.uiElementFactory = null;
+      }
+      
+      console.log('UIScene: Initializing ResponsiveLayoutManager...');
+      try {
+        this.layoutManager = new ResponsiveLayoutManager(this);
+        console.log('UIScene: ResponsiveLayoutManager initialized successfully:', !!this.layoutManager);
+      } catch (error) {
+        console.error('UIScene: Failed to initialize ResponsiveLayoutManager:', error);
+        this.layoutManager = null;
+      }
+      
+      console.log('UIScene: Initializing UIErrorRecovery...');
+      try {
+        this.errorRecovery = new UIErrorRecovery(this, {
+          maxRetries: 3,
+          retryDelay: 100,
+          enableAutoFallback: true,
+          enableRetryLogic: true
+        });
+        console.log('UIScene: UIErrorRecovery initialized successfully:', !!this.errorRecovery);
+      } catch (error) {
+        console.error('UIScene: Failed to initialize UIErrorRecovery:', error);
+        this.errorRecovery = null;
+      }
+      
       this.uiElements = {};
       this.updateHandler = null; // Will be initialized after UI elements are created
 
@@ -292,6 +318,7 @@ export class UIScene extends Scene {
       // Clear existing UI elements
       this.uiElements = {};
       this.uiElementFactory = null;
+      this.errorRecovery = null;
 
       console.log('UIScene: Existing resources cleaned up');
     } catch (error) {
@@ -352,7 +379,7 @@ export class UIScene extends Scene {
   }
 
   create(): void {
-    console.log('UIScene: Initializing UI');
+    console.log('UIScene: create() called - starting UI creation');
     console.log('UIScene: Scene key:', this.scene.key);
     console.log('UIScene: Scene active:', this.scene.isActive());
     console.log('UIScene: Scene visible:', this.scene.isVisible());
@@ -394,100 +421,14 @@ export class UIScene extends Scene {
       this.logUIElementsState();
     } catch (error) {
       uiLogger.log(LogLevel.ERROR, 'UIScene', 'createUIAsync', 'Error in async UI creation, attempting recovery', undefined, error instanceof Error ? error : undefined);
+      console.error('UIScene: Full error details:', error);
       
       // Attempt recovery with error recovery system
       await this.attemptUIRecovery();
     }
   }
 
-  private async createResponsiveUILegacy(): Promise<void> {
-    console.log('UIScene: Creating responsive UI with factory system and font fallback handling');
-    
-    if (!this.uiElementFactory || !this.layoutManager) {
-      throw new Error('UIElementFactory or LayoutManager not initialized');
-    }
 
-    // Calculate initial layout
-    const layout = this.layoutManager.calculateLayout(this.scale.width, this.scale.height);
-    console.log('UIScene: Initial layout calculated:', layout);
-
-    try {
-      // Import and use FallbackRenderer for enhanced font handling
-      const { FallbackRenderer } = await import('../utils/FallbackRenderer');
-      const fallbackRenderer = new FallbackRenderer(this);
-      
-      // Ensure font availability before UI creation
-      console.log('UIScene: Checking font availability before UI creation...');
-      await fallbackRenderer.ensureFontAvailabilityBeforeUICreation();
-      
-      // Update UIElementFactory with appropriate font family
-      const fontFamily = fallbackRenderer.getFontFamily();
-      this.uiElementFactory.updateFontFamily(fontFamily);
-      console.log('UIScene: Font family updated to:', fontFamily);
-
-      // Create UI elements with font-aware fallback
-      console.log('UIScene: Creating UI elements with font-aware fallback...');
-      
-      // Create header background with full-width coverage
-      console.log('UIScene: Creating header background...');
-      this.uiElements.header = this.uiElementFactory.createHeaderBackground(
-        layout.header.width, 
-        layout.header.height
-      );
-
-      // Create score display
-      console.log('UIScene: Creating score display...');
-      this.uiElements.score = this.uiElementFactory.createScoreDisplay(
-        layout.score.x, 
-        layout.score.y
-      );
-
-      // Create timer display
-      console.log('UIScene: Creating timer display...');
-      this.uiElements.timer = this.uiElementFactory.createTimeDisplay(
-        layout.timer.x, 
-        layout.timer.y
-      );
-
-      // Create slow-mo charges
-      console.log('UIScene: Creating slow-mo charges...');
-      this.uiElements.slowMoCharges = this.uiElementFactory.createSlowMoCharges(
-        layout.slowMoCharges.startX,
-        layout.slowMoCharges.y,
-        3
-      );
-
-      // Create target color display
-      console.log('UIScene: Creating target color display...');
-      this.uiElements.targetColor = this.uiElementFactory.createTargetColorDisplay(
-        layout.targetColor.x,
-        layout.targetColor.y,
-        layout.targetColor.width
-      );
-
-      // Apply initial layout
-      this.layoutManager.updateElementPositions(this.uiElements, layout);
-
-      // Initialize UpdateHandler with the created UI elements
-      this.updateHandler = new UpdateHandler(this, this.uiElements);
-      console.log('UIScene: UpdateHandler initialized');
-
-      // Validate that all elements are within bounds
-      const boundsValid = this.layoutManager.validateElementBounds(this.uiElements);
-      if (!boundsValid) {
-        console.warn('UIScene: Some UI elements are out of bounds, forcing layout update');
-        this.layoutManager.forceLayoutUpdate(this.uiElements);
-      }
-
-      console.log('UIScene: Responsive UI created successfully with font fallback handling');
-    } catch (error) {
-      console.error('UIScene: Error creating responsive UI with font fallback:', error);
-      
-      // If font-aware creation fails, fall back to FallbackRenderer
-      console.log('UIScene: Attempting UI creation with FallbackRenderer as last resort');
-      await this.createUIWithFallbackRenderer(layout);
-    }
-  }
 
   /**
    * Create responsive UI with error recovery mechanisms
@@ -496,6 +437,11 @@ export class UIScene extends Scene {
     uiLogger.log(LogLevel.INFO, 'UIScene', 'createResponsiveUIWithRecovery', 'Creating responsive UI with error recovery');
     
     if (!this.uiElementFactory || !this.layoutManager || !this.errorRecovery) {
+      console.error('UIScene: Required systems not initialized:', {
+        uiElementFactory: !!this.uiElementFactory,
+        layoutManager: !!this.layoutManager,
+        errorRecovery: !!this.errorRecovery
+      });
       throw new Error('Required systems not initialized');
     }
 
@@ -527,6 +473,7 @@ export class UIScene extends Scene {
       uiLogger.log(LogLevel.INFO, 'UIScene', 'createResponsiveUIWithRecovery', 'Responsive UI with error recovery created successfully');
     } catch (error) {
       uiLogger.log(LogLevel.ERROR, 'UIScene', 'createResponsiveUIWithRecovery', 'Error creating responsive UI with recovery', undefined, error instanceof Error ? error : undefined);
+      console.error('UIScene: createResponsiveUIWithRecovery full error:', error);
       throw error;
     }
   }
@@ -681,29 +628,7 @@ export class UIScene extends Scene {
     }
   }
 
-  /**
-   * Create UI using FallbackRenderer as last resort
-   */
-  private async createUIWithFallbackRenderer(layout: LayoutConfig): Promise<void> {
-    try {
-      uiLogger.log(LogLevel.WARN, 'UIScene', 'createUIWithFallbackRenderer', 'Creating UI with FallbackRenderer as last resort');
-      
-      const { FallbackRenderer } = await import('../utils/FallbackRenderer');
-      const fallbackRenderer = new FallbackRenderer(this);
-      
-      // Create UI with comprehensive fallback handling
-      this.uiElements = await fallbackRenderer.createUIWithFontFallback(layout);
-      
-      // Initialize UpdateHandler with fallback UI elements
-      this.updateHandler = new UpdateHandler(this, this.uiElements);
-      uiLogger.log(LogLevel.INFO, 'UIScene', 'createUIWithFallbackRenderer', 'UpdateHandler initialized with fallback UI');
-      
-      uiLogger.log(LogLevel.INFO, 'UIScene', 'createUIWithFallbackRenderer', 'UI successfully created with FallbackRenderer');
-    } catch (fallbackError) {
-      uiLogger.log(LogLevel.CRITICAL, 'UIScene', 'createUIWithFallbackRenderer', 'Even FallbackRenderer failed - complete UI creation failure', undefined, fallbackError instanceof Error ? fallbackError : undefined);
-      throw new Error('Complete UI creation failure - all fallback methods exhausted');
-    }
-  }
+
 
   private createUIWithFallback(): void {
     try {
@@ -796,7 +721,7 @@ export class UIScene extends Scene {
       console.log('UIScene: Score container created at:', this.scoreContainer.x, this.scoreContainer.y);
 
       const scoreText = this.add.text(0, 0, `Score: ${this.score} | Best: ${this.bestScore}`, {
-        fontFamily: 'Arial, sans-serif', // Use Arial for reliability
+        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins first, fallback to Arial
         fontSize: '24px',
         fontStyle: 'normal',
         color: '#FFFFFF'
@@ -814,7 +739,7 @@ export class UIScene extends Scene {
       console.log('UIScene: Time container created at:', this.timeContainer.x, this.timeContainer.y);
 
       const timeText = this.add.text(0, 0, 'Time: 0:00', {
-        fontFamily: 'Arial, sans-serif', // Use Arial for reliability
+        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins first, fallback to Arial
         fontSize: '24px',
         fontStyle: 'normal',
         color: '#FFFFFF'
@@ -871,7 +796,7 @@ export class UIScene extends Scene {
       const colorName = this.getColorName(this.targetColor);
       console.log('UIScene: Creating target color text with color:', this.targetColor, 'name:', colorName);
       const targetText = this.add.text(width / 2, targetY, `TAP: ${colorName}`, {
-        fontFamily: 'Arial, sans-serif', // Use Arial for reliability
+        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins first, fallback to Arial
         fontSize: '32px',
         fontStyle: 'bold',
         color: this.targetColor
