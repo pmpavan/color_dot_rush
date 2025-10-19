@@ -41,6 +41,9 @@ export class ObjectSpawner {
   // Spawn configuration
   private config: SpawnConfig;
   
+  // Slow motion charge checker
+  private slowMoChargeChecker: (() => number) | null = null;
+  
   // Spawn timing
   private lastSpawnTime: number = 0;
   private nextSpawnDelay: number = 0;
@@ -154,8 +157,15 @@ export class ObjectSpawner {
       // Spawn a bomb (only if under the limit)
       this.spawnBomb(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     } else if (spawnRoll < this.config.bombChance + this.config.slowMoChance) {
-      // Spawn a slow-mo dot
-      this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
+      // Check if slow motion charges are available before spawning slow-mo dot
+      const slowMoCharges = this.slowMoChargeChecker ? this.slowMoChargeChecker() : 0;
+      if (slowMoCharges > 0) {
+        // Spawn a slow-mo dot only if charges are available
+        this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
+      } else {
+        // No slow-mo charges available, spawn a regular dot instead
+        this.spawnDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
+      }
     } else {
       // Spawn a regular dot
       this.spawnDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
@@ -320,6 +330,13 @@ export class ObjectSpawner {
    */
   public setTargetColor(color: GameColor): void {
     this.targetColor = color;
+  }
+
+  /**
+   * Set the slow motion charge checker function
+   */
+  public setSlowMoChargeChecker(checker: () => number): void {
+    this.slowMoChargeChecker = checker;
   }
 
   /**

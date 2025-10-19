@@ -29,7 +29,7 @@ export interface GameLimitsConfig {
  */
 export const DEFAULT_GAME_LIMITS: GameLimitsConfig = {
   dots: {
-    minSize: 40,    // 40px minimum dot size
+    minSize: 20,    // 20px minimum dot size (reduced to allow size reduction)
     maxSize: 120,   // 120px maximum dot size
     minSpeed: 50,   // 50px/s minimum speed
     maxSpeed: 300,  // 300px/s maximum speed

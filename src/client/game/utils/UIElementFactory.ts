@@ -752,27 +752,24 @@ export class UIElementFactory {
     const container = this.scene.add.container(x, y);
     container.setDepth(101);
 
-    // Clock icon background circle (requirement 3.1)
-    const charge = this.scene.add.circle(0, 0, 15, 0xECF0F1);
-    charge.setStrokeStyle(2, 0x3498DB);
+    // Transparent circle without border
+    const charge = this.scene.add.circle(0, 0, 15, 0xFFFFFF, 0); // Transparent fill
     charge.setDepth(101);
 
-    // Clock hands - simple clock icon (requirement 3.1)
-    const hourHand = this.scene.add.line(0, 0, 0, 0, 0, -8, 0x3498DB, 1).setLineWidth(2);
-    const minuteHand = this.scene.add.line(0, 0, 0, 0, 6, 0, 0x3498DB, 1).setLineWidth(2);
-    hourHand.setDepth(102);
-    minuteHand.setDepth(102);
+    // Create a more visible electric blue indicator in the center
+    const slowIndicator = this.scene.add.circle(0, 0, 6, 0x00BFFF);
+    slowIndicator.setDepth(102);
 
-    container.add([charge, hourHand, minuteHand]);
+    container.add([charge, slowIndicator]);
 
     const updateMethod = (isActive: boolean) => {
       if (isActive) {
-        // Active charge - bright and visible (requirement 3.2)
-        charge.setFillStyle(0xECF0F1); // Shimmering White
+        // Active charge - bright and visible
+        charge.setFillStyle(0xFFFFFF, 0); // Transparent
         charge.setAlpha(1.0);
-        charge.setStrokeStyle(2, 0x3498DB, 1.0); // Bright blue outline
+        slowIndicator.setAlpha(1.0);
         
-        // Pulsing animation for active charges (requirement 3.5)
+        // Pulsing animation for active charges
         this.scene.tweens.add({
           targets: container,
           scaleX: 1.1,
@@ -783,10 +780,10 @@ export class UIElementFactory {
           repeat: -1
         });
       } else {
-        // Inactive charge - dimmed effect for used charges (requirement 3.3)
-        charge.setFillStyle(0x95A5A6); // Mid Grey
+        // Inactive charge - dimmed effect for used charges
+        charge.setFillStyle(0xFFFFFF, 0); // Transparent
         charge.setAlpha(0.4); // Dimming effect
-        charge.setStrokeStyle(2, 0x7F8C8D, 0.6); // Dim grey outline
+        slowIndicator.setAlpha(0.4);
         
         // Stop pulsing animation
         this.scene.tweens.killTweensOf(container);
@@ -796,7 +793,7 @@ export class UIElementFactory {
 
     return {
       container,
-      graphicsElements: [charge, hourHand, minuteHand],
+      graphicsElements: [charge, slowIndicator],
       type: UIElementType.GRAPHICS,
       updateMethod
     };

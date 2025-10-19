@@ -117,6 +117,9 @@ export class Game extends Scene {
       // Initialize object management systems
       this.objectPool = new ObjectPoolManager(this);
       this.objectSpawner = new ObjectSpawner(this, this.objectPool, this.difficultyManager);
+      
+      // Set up slow motion charge checker for ObjectSpawner
+      this.objectSpawner.setSlowMoChargeChecker(() => this.slowMoCharges);
 
       console.log('Game: Core systems initialized');
     } catch (error) {
