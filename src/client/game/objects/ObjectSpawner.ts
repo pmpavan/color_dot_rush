@@ -13,7 +13,7 @@ interface SpawnConfig {
   minSpawnRate: number; // Minimum time between spawns (ms)
   maxSpawnRate: number; // Maximum time between spawns (ms)
   bombChance: number; // Probability of spawning a bomb (0-1)
-  slowMoChance: number; // Probability of spawning a slow-mo dot (0-1)
+  // slowMoChance removed - now using interval-based spawning
   correctColorRatio: number; // Ratio of correct color dots to distractors (0-1)
   baseSpawnRate: number; // Base spawn rate for performance scaling
   effectsEnabled: boolean; // Enable/disable visual effects for performance
@@ -47,6 +47,11 @@ export class ObjectSpawner {
   private lastSpawnTime: number = 0;
   private nextSpawnDelay: number = 0;
   
+  // Slow mo timing - exponential rate spawning
+  private lastSlowMoTime: number = 0;
+  private baseSlowMoInterval: number = 20000; // 20 seconds base interval
+  private minSlowMoInterval: number = 5000; // 5 seconds minimum interval
+  
   // Screen boundaries
   private screenBounds: Phaser.Geom.Rectangle;
   
@@ -75,7 +80,7 @@ export class ObjectSpawner {
       minSpawnRate: 300, // 0.3 seconds minimum (faster)
       maxSpawnRate: 800, // 0.8 seconds maximum (faster)
       bombChance: 0.12, // 12% chance for bombs (reduced from 30% for better balance)
-      slowMoChance: 0.05, // 5% chance for slow-mo dots
+      // slowMoChance removed - now using interval-based spawning
       correctColorRatio: 0.4, // 40% of dots should be correct color
       baseSpawnRate: 500, // Base spawn rate for performance scaling (faster)
       effectsEnabled: true, // Enable visual effects by default
@@ -147,17 +152,22 @@ export class ObjectSpawner {
     const currentBombCount = this.objectPool.getActiveBombCount();
     const maxBombCount = gameLimitsManager.calculateBombCount(elapsedTime / 1000); // Convert ms to seconds
     
+    // Check if it's time to spawn a slow mo dot (exponential rate)
+    const currentSlowMoInterval = this.calculateSlowMoInterval(elapsedTime);
+    const shouldSpawnSlowMo = (elapsedTime - this.lastSlowMoTime) >= currentSlowMoInterval;
+    
     // Debug logging
     if (Math.random() < 0.05) { // 5% chance to log for debugging (increased for troubleshooting)
-      console.log(`Spawner: roll=${spawnRoll.toFixed(3)}, bombChance=${this.config.bombChance}, slowMoChance=${this.config.slowMoChance}, currentBombs=${currentBombCount}, maxBombs=${maxBombCount}, elapsedTime=${elapsedTime}ms`);
+      console.log(`Spawner: roll=${spawnRoll.toFixed(3)}, bombChance=${this.config.bombChance}, shouldSpawnSlowMo=${shouldSpawnSlowMo}, slowMoInterval=${currentSlowMoInterval.toFixed(0)}ms, currentBombs=${currentBombCount}, maxBombs=${maxBombCount}, elapsedTime=${elapsedTime}ms`);
     }
     
-    if (spawnRoll < this.config.bombChance && currentBombCount < maxBombCount) {
+    if (shouldSpawnSlowMo) {
+      // Spawn a slow-mo dot (interval-based, not probability-based)
+      this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
+      this.lastSlowMoTime = elapsedTime; // Update last slow mo spawn time
+    } else if (spawnRoll < this.config.bombChance && currentBombCount < maxBombCount) {
       // Spawn a bomb (only if under the limit)
       this.spawnBomb(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
-    } else if (spawnRoll < this.config.bombChance + this.config.slowMoChance) {
-      // Spawn a slow-mo dot (simplified - no charge limits)
-      this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     } else {
       // Spawn a regular dot
       this.spawnDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
@@ -447,6 +457,24 @@ export class ObjectSpawner {
     const ratio = maxObjects / 50; // 50 is the default max
     this.config.baseSpawnRate = Math.max(500, this.config.baseSpawnRate * ratio);
     console.log(`Adjusted spawn rate for ${maxObjects} max objects: ${this.config.baseSpawnRate}ms`);
+  }
+
+  /**
+   * Calculate exponential slow mo interval based on elapsed time
+   * Starts at baseSlowMoInterval and decreases exponentially to minSlowMoInterval
+   */
+  private calculateSlowMoInterval(elapsedTime: number): number {
+    const elapsedSeconds = elapsedTime / 1000; // Convert to seconds
+    
+    // Exponential decay: interval = base * e^(-rate * time) + min
+    // Using a rate of 0.1 for gradual decrease over time
+    const decayRate = 0.1;
+    const exponentialFactor = Math.exp(-decayRate * elapsedSeconds);
+    
+    const calculatedInterval = (this.baseSlowMoInterval - this.minSlowMoInterval) * exponentialFactor + this.minSlowMoInterval;
+    
+    // Ensure we don't go below minimum
+    return Math.max(calculatedInterval, this.minSlowMoInterval);
   }
 
   /**
