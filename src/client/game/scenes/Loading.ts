@@ -15,6 +15,8 @@ export class Loading extends Scene {
   private fontsLoaded: boolean = false;
   private assetsLoaded: boolean = false;
   private loadingComplete: boolean = false;
+  private minimumDisplayTime: number = 1500; // Minimum 1.5 seconds to show loader
+  private sceneStartTime: number = 0;
 
   constructor() {
     super('Loading');
@@ -22,6 +24,9 @@ export class Loading extends Scene {
 
   preload() {
     console.log('Color Dot Rush: Loading scene preload started');
+    
+    // Record scene start time for minimum display duration
+    this.sceneStartTime = Date.now();
     
     // Set background color
     this.cameras.main.setBackgroundColor('#2C3E50');
@@ -134,14 +139,22 @@ export class Loading extends Scene {
       this.loadingComplete = true;
       console.log('Color Dot Rush: All loading processes complete');
       
-      // Show completion animation and transition
-      if (this.loader) {
-        this.loader.showCompletion(() => {
+      // Ensure minimum display time for loader
+      const elapsedTime = Date.now() - this.sceneStartTime;
+      const remainingTime = Math.max(0, this.minimumDisplayTime - elapsedTime);
+      
+      console.log(`Color Dot Rush: Loader displayed for ${elapsedTime}ms, waiting ${remainingTime}ms more`);
+      
+      // Wait for minimum display time, then show completion
+      this.time.delayedCall(remainingTime, () => {
+        if (this.loader) {
+          this.loader.showCompletion(() => {
+            this.scene.start('SplashScreen');
+          });
+        } else {
           this.scene.start('SplashScreen');
-        });
-      } else {
-        this.scene.start('SplashScreen');
-      }
+        }
+      });
     }
   }
 
