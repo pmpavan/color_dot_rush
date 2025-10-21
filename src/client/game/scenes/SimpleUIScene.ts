@@ -69,7 +69,7 @@ export class SimpleUIScene extends Scene {
     }
 
     const { width, height } = this.scale;
-    const margin = Math.max(15, width * 0.04); // 4% of screen width, minimum 15px
+    const margin = Math.max(20, width * 0.06); // 6% of screen width, minimum 20px for better spacing
     const headerY = 25; // Adjust for better vertical centering in header bar
 
     // Header background (still using Phaser for the background)
@@ -97,7 +97,7 @@ export class SimpleUIScene extends Scene {
     this.domTextRenderer.createText(
       'bestScore',
       `Best: ${this.bestScore}`,
-      margin,
+      margin + 10, // Add extra padding to prevent cutoff
       headerY,
       bestScoreStyle
     );
@@ -123,7 +123,7 @@ export class SimpleUIScene extends Scene {
     this.domTextRenderer.createText(
       'time',
       '0:00',
-      width - margin - 30, // Adjust for text centering
+      width - margin - 10, // Adjust for text centering with new margin
       headerY,
       timeStyle
     );

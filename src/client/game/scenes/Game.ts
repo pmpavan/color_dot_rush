@@ -323,8 +323,6 @@ export class Game extends Scene {
   private handleDotTap(dot: Dot): void {
     if (this.currentState !== GameState.PLAYING) return;
 
-    console.log(`[DOT_TAP] Handling dot tap - Dot color: ${dot.getColor()}, Target color: ${this.targetColor}, isCorrect: ${dot.isCorrectColor(this.targetColor)}`);
-
     // Check if dot matches target color
     if (dot.isCorrectColor(this.targetColor)) {
       // Correct tap - award point (+1 for correct taps)
@@ -344,10 +342,10 @@ export class Game extends Scene {
         }
       }
 
-      console.log(`[DOT_TAP] Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
+      console.log(`Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
     } else {
       // Wrong color - immediate game over (no delay, immediate termination)
-      console.log(`[DOT_TAP] Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()} - GAME OVER!`);
+      console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
       this.createWrongTapEffect(dot);
 
       // Deactivate the wrong dot immediately to prevent further interaction

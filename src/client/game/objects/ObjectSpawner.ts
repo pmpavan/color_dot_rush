@@ -81,7 +81,7 @@ export class ObjectSpawner {
       maxSpawnRate: 800, // 0.8 seconds maximum (faster)
       bombChance: 0.12, // 12% chance for bombs (reduced from 30% for better balance)
       // slowMoChance removed - now using interval-based spawning
-      correctColorRatio: 0.7, // 70% of dots should be correct color (increased for better gameplay)
+      correctColorRatio: 0.4, // 40% of dots should be correct color (increased for better gameplay)
       baseSpawnRate: 500, // Base spawn rate for performance scaling (faster)
       effectsEnabled: true, // Enable visual effects by default
       particleQuality: 'high' // High particle quality by default
