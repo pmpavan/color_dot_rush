@@ -17,6 +17,10 @@ export class SimpleUIScene extends Scene {
   private score: number = 0;
   private bestScore: number = 0;
   private targetColor: GameColor = GameColor.RED;
+  
+  // Track previous values for change detection
+  private previousScore: number = 0;
+  private previousTargetColor: GameColor = GameColor.RED;
 
   constructor() {
     super('SimpleUI');
@@ -29,6 +33,10 @@ export class SimpleUIScene extends Scene {
     this.score = 0;
     this.bestScore = this.getBestScore();
     this.targetColor = GameColor.RED;
+    
+    // Initialize previous values for change detection
+    this.previousScore = 0;
+    this.previousTargetColor = GameColor.RED;
   }
 
   create(): void {
@@ -80,6 +88,19 @@ export class SimpleUIScene extends Scene {
     };
 
     // slowMoCharges variables removed - simplified logic
+
+    // Best score display (left side) - using DOMTextRenderer
+    const bestScoreStyle: DOMTextStyle = {
+      ...textStyle,
+      textAlign: 'left'
+    };
+    this.domTextRenderer.createText(
+      'bestScore',
+      `Best: ${this.bestScore}`,
+      margin,
+      headerY,
+      bestScoreStyle
+    );
 
     // Score display (center) - using DOMTextRenderer
     const scoreStyle: DOMTextStyle = {
@@ -136,16 +157,7 @@ export class SimpleUIScene extends Scene {
       targetColorStyle
     );
 
-    // Add subtle pulsing animation to target color background
-    this.tweens.add({
-      targets: [this.targetColorBg],
-      scaleX: 1.02,
-      scaleY: 1.02,
-      duration: 1000,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1
-    });
+    // No continuous animation - only animate when values change
 
     console.log('SimpleUIScene: DOMTextRenderer-based HUD created successfully');
   }
@@ -214,6 +226,8 @@ export class SimpleUIScene extends Scene {
    */
   private updateScore(score: number): void {
     this.score = score;
+    const scoreChanged = this.score !== this.previousScore;
+    
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
       this.saveBestScore(this.bestScore);
@@ -221,20 +235,27 @@ export class SimpleUIScene extends Scene {
 
     if (this.domTextRenderer) {
       this.domTextRenderer.updateText('score', `Score: ${this.score}`);
+      this.domTextRenderer.updateText('bestScore', `Best: ${this.bestScore}`);
       
-      // Color feedback based on score
-      const color = this.score > 10 ? '#FFD700' : this.score > 5 ? '#2ECC71' : '#FFFFFF';
-      const scoreElement = this.domTextRenderer.getElement('score');
-      if (scoreElement) {
-        scoreElement.element.style.color = color;
-        
-        // Flash effect using CSS animation
-        scoreElement.element.style.animation = 'none';
-        setTimeout(() => {
-          scoreElement.element.style.animation = 'scoreFlash 0.2s ease-in-out';
-        }, 10);
+      // Only animate if score actually changed
+      if (scoreChanged) {
+        // Color feedback based on score
+        const color = this.score > 10 ? '#FFD700' : this.score > 5 ? '#2ECC71' : '#FFFFFF';
+        const scoreElement = this.domTextRenderer.getElement('score');
+        if (scoreElement) {
+          scoreElement.element.style.color = color;
+          
+          // Flash effect using CSS animation only when score changes
+          scoreElement.element.style.animation = 'none';
+          setTimeout(() => {
+            scoreElement.element.style.animation = 'scoreFlash 0.2s ease-in-out';
+          }, 10);
+        }
       }
     }
+    
+    // Update previous score
+    this.previousScore = this.score;
   }
 
   /**
@@ -256,20 +277,24 @@ export class SimpleUIScene extends Scene {
    */
   private updateTargetColor(color: GameColor): void {
     this.targetColor = color;
+    const colorChanged = this.targetColor !== this.previousTargetColor;
 
     if (this.domTextRenderer) {
       this.domTextRenderer.updateText('targetColor', `TAP: ${this.getColorName(color)}`);
       
-      // Update color and add flash effect
-      const targetColorElement = this.domTextRenderer.getElement('targetColor');
-      if (targetColorElement) {
-        targetColorElement.element.style.color = this.getColorHex(color);
-        
-        // Flash effect when color changes using CSS animation
-        targetColorElement.element.style.animation = 'none';
-        setTimeout(() => {
-          targetColorElement.element.style.animation = 'colorFlash 0.4s ease-in-out, pulse 1s ease-in-out infinite alternate 0.4s';
-        }, 10);
+      // Only animate if color actually changed
+      if (colorChanged) {
+        // Update color and add flash effect
+        const targetColorElement = this.domTextRenderer.getElement('targetColor');
+        if (targetColorElement) {
+          targetColorElement.element.style.color = this.getColorHex(color);
+          
+          // Flash effect when color changes using CSS animation
+          targetColorElement.element.style.animation = 'none';
+          setTimeout(() => {
+            targetColorElement.element.style.animation = 'colorFlash 0.4s ease-in-out';
+          }, 10);
+        }
       }
     }
 
@@ -277,6 +302,9 @@ export class SimpleUIScene extends Scene {
     if (this.targetColorBg) {
       this.targetColorBg.setStrokeStyle(2, parseInt(this.getColorHex(color).replace('#', '0x')), 0.8);
     }
+    
+    // Update previous color
+    this.previousTargetColor = this.targetColor;
   }
 
   // updateSlowMoCharges method removed - simplified slow mo logic
