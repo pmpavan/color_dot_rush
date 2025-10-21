@@ -95,7 +95,9 @@ export class Loading extends Scene {
     
     try {
       // Load the logo image that's needed for the splash screen
-      this.load.image('logo', 'assets/logo.png');
+      // Add cache-busting parameter to ensure updated logo is loaded
+      const logoPath = `assets/logo.png?v=${Date.now()}`;
+      this.load.image('logo', logoPath);
       
       // Set up loading progress tracking
       this.load.on('progress', (progress: number) => {
@@ -169,11 +171,10 @@ export class Loading extends Scene {
   /**
    * Clean up resources when scene is destroyed
    */
-  destroy(): void {
+  shutdown(): void {
     if (this.loader) {
       this.loader.destroy();
       this.loader = null;
     }
-    super.destroy();
   }
 }
