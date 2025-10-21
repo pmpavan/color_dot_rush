@@ -54,8 +54,8 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     // Set visual properties
     this.setRadius(size / 2);
     
-    // Update hitbox - slightly larger than visual sprite for accessibility
-    const hitboxSize = Math.max(size, 44); // Minimum 44px tap target
+    // Update hitbox - significantly larger than visual sprite for better accessibility
+    const hitboxSize = Math.max(size * 1.5, 60); // 50% larger than visual size, minimum 60px tap target
     this.hitbox.setSize(hitboxSize, hitboxSize);
     
     // Position the dot and clock icon

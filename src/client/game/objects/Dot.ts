@@ -46,8 +46,8 @@ export class Dot extends Phaser.GameObjects.Arc {
     this.setFillStyle(parseInt(color.replace('#', '0x')));
     this.setRadius(size / 2);
     
-    // Update hitbox - slightly larger than visual sprite for accessibility
-    const hitboxSize = Math.max(size, 30); // Minimum 30px tap target (reduced to allow smaller dots)
+    // Update hitbox - significantly larger than visual sprite for better accessibility
+    const hitboxSize = Math.max(size * 1.5, 50); // 50% larger than visual size, minimum 50px tap target
     this.hitbox.setSize(hitboxSize, hitboxSize);
     
     // Position the dot
