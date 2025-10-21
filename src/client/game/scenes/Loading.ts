@@ -26,20 +26,20 @@ export class Loading extends Scene {
     // Set background color
     this.cameras.main.setBackgroundColor('#2C3E50');
     
+    // Create loader immediately so it shows right away
+    const { width, height } = this.scale;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    this.loader = new ReusableLoader(this);
+    this.loader.createLoader(centerX, centerY, width, height);
+    
     // Start both font loading and asset loading in parallel
     this.startParallelLoading();
   }
 
   create() {
-    console.log('Color Dot Rush: Loading scene created - setting up perpetual motion animation');
-    
-    const { width, height } = this.scale;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    
-    // Create reusable loader
-    this.loader = new ReusableLoader(this);
-    this.loader.createLoader(centerX, centerY, width, height);
+    console.log('Color Dot Rush: Loading scene created - loader already shown');
     
     // Start loading processes
     this.startLoadingProcesses();
