@@ -5,6 +5,7 @@ import { FontErrorHandler } from '../utils/FontErrorHandler';
 import { DOMTextRenderer, DOMTextStyle } from '../utils/DOMTextRenderer';
 import { ResponsiveLayoutManager, IResponsiveLayoutManager, ButtonType } from '../utils/ResponsiveLayoutManager';
 import { HowToPlayModal, IHowToPlayModal } from '../utils/HowToPlayModal';
+import { ReusableLoader } from '../utils/ReusableLoader';
 
 export class SplashScreen extends Scene {
   background: GameObjects.Rectangle | null = null;
@@ -16,6 +17,7 @@ export class SplashScreen extends Scene {
   private domTextRenderer: DOMTextRenderer | null = null;
   private layoutManager: IResponsiveLayoutManager;
   private howToPlayModal: IHowToPlayModal | null = null;
+  private loader: ReusableLoader | null = null;
 
   // Component lifecycle state
   private componentsInitialized: boolean = false;
@@ -1183,7 +1185,7 @@ Good luck!
   }
 
   /**
-   * Show loading state with spinner and text
+   * Show loading state with reusable loader
    */
   private showLoadingState(): void {
     try {
@@ -1198,39 +1200,9 @@ Good luck!
       const loadingOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x2C3E50, 0.9);
       loadingOverlay.setDepth(1000);
       
-      // Create loading spinner
-      const spinner = this.add.circle(width / 2, height / 2 - 20, 30, 0x3498DB, 0.3);
-      spinner.setDepth(1001);
-      
-      // Create spinning dots
-      const dots: Phaser.GameObjects.Arc[] = [];
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2;
-        const x = width / 2 + Math.cos(angle) * 25;
-        const y = height / 2 - 20 + Math.sin(angle) * 25;
-        const dot = this.add.circle(x, y, 4, 0x3498DB);
-        dot.setDepth(1002);
-        dots.push(dot);
-      }
-      
-      // Animate spinner rotation
-      this.tweens.add({
-        targets: spinner,
-        rotation: Math.PI * 2,
-        duration: 1200,
-        repeat: -1,
-        ease: 'Linear'
-      });
-      
-      // Animate dots
-      this.tweens.add({
-        targets: dots,
-        alpha: 0.3,
-        duration: 600,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
+      // Create reusable loader
+      this.loader = new ReusableLoader(this);
+      this.loader.createLoader(width / 2, height / 2, width, height);
       
       // Create loading text using DOM
       if (this.domTextRenderer) {
@@ -1246,15 +1218,26 @@ Good luck!
           'loading-text',
           'Loading Game...',
           width / 2,
-          height / 2 + 30,
+          height / 2 + 80,
           loadingStyle
         );
       }
       
-      console.log('SplashScreen: Loading state displayed');
+      console.log('SplashScreen: Loading state displayed with reusable loader');
     } catch (error) {
       console.error('SplashScreen: Error showing loading state:', error);
     }
+  }
+
+  /**
+   * Clean up resources when scene is destroyed
+   */
+  shutdown(): void {
+    if (this.loader) {
+      this.loader.destroy();
+      this.loader = null;
+    }
+    super.shutdown();
   }
 
   /**
