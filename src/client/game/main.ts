@@ -1,5 +1,5 @@
 import '../style.css';
-import { Boot } from './scenes/Boot';
+import { Loading } from './scenes/Loading';
 import { GameOver } from './scenes/GameOver';
 import { Game as MainGame } from './scenes/Game';
 import { Leaderboard } from './scenes/Leaderboard';
@@ -7,7 +7,6 @@ import { SplashScreen } from './scenes/SplashScreen';
 import { SimpleUIScene } from './scenes/SimpleUIScene';
 import * as Phaser from 'phaser';
 import { Game } from 'phaser';
-import { Preloader } from './scenes/Preloader';
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
@@ -28,7 +27,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [Boot, Preloader, SplashScreen, MainGame, SimpleUIScene, GameOver, Leaderboard],
+  scene: [Loading, SplashScreen, MainGame, SimpleUIScene, GameOver, Leaderboard],
 };
 
 const StartGame = (parent: string) => {
