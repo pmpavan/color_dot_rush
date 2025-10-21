@@ -1,6 +1,5 @@
 import { Scene } from 'phaser';
 import { FontPreloader } from '../utils/FontPreloader';
-import { GameColor } from '../../../shared/types/game';
 import { ReusableLoader } from '../utils/ReusableLoader';
 
 /**

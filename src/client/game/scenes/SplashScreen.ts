@@ -1237,7 +1237,6 @@ Good luck!
       this.loader.destroy();
       this.loader = null;
     }
-    super.shutdown();
   }
 
   /**
