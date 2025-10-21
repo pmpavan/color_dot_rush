@@ -63,8 +63,8 @@ export class ReusableLoader {
       // Scale the ring based on progress (0 to 1)
       this.progressRing.setScale(progress, progress);
       
-      // Change color based on progress
-      const color = progress < 0.5 ? 0xE74C3C : progress < 0.8 ? 0xF1C40F : 0x2ECC71;
+      // Change color based on progress - using app theme colors
+      const color = progress < 0.5 ? 0xE74C3C : progress < 0.8 ? 0xF1C40F : 0x3498DB; // Red -> Yellow -> Blue
       this.progressRing.setFillStyle(color, 0.8);
       this.progressRing.setStrokeStyle(3, color, 1);
     }
@@ -77,9 +77,9 @@ export class ReusableLoader {
     const centerX = this.scene.scale.width / 2;
     const centerY = this.scene.scale.height / 2;
     
-    // Create completion checkmark
-    const checkmark = this.scene.add.circle(centerX, centerY, 25, 0x2ECC71, 0.9);
-    checkmark.setStrokeStyle(4, 0x2ECC71, 1);
+    // Create completion checkmark - using blue theme color
+    const checkmark = this.scene.add.circle(centerX, centerY, 25, 0x3498DB, 0.9);
+    checkmark.setStrokeStyle(4, 0x3498DB, 1);
     checkmark.setDepth(15);
     checkmark.setScale(0, 0);
     
@@ -199,9 +199,9 @@ export class ReusableLoader {
     // Outer ring (background)
     this.scene.add.circle(centerX, centerY, this.ringRadius, 0xFFFFFF, 0.1).setStrokeStyle(3, 0xFFFFFF, 0.3);
     
-    // Progress ring (foreground)
-    this.progressRing = this.scene.add.circle(centerX, centerY, this.ringRadius, 0x2ECC71, 0.8);
-    this.progressRing.setStrokeStyle(3, 0x2ECC71, 1);
+    // Progress ring (foreground) - using blue theme color
+    this.progressRing = this.scene.add.circle(centerX, centerY, this.ringRadius, 0x3498DB, 0.8);
+    this.progressRing.setStrokeStyle(3, 0x3498DB, 1);
     this.progressRing.setDepth(8);
     
     // Start with 0 progress
