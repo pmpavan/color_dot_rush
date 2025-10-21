@@ -2254,10 +2254,6 @@ export class Game extends Scene {
         });
       }
 
-      // Update UI with bomb count info
-      if (this.uiScene && typeof this.uiScene.setBombCount === 'function') {
-        this.uiScene.setBombCount(bombCount, maxBombCount);
-      }
     } catch (error) {
       console.warn('Game: Error updating performance metrics:', error);
     }

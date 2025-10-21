@@ -17,7 +17,6 @@ export class SimpleUIScene extends Scene {
   private score: number = 0;
   private bestScore: number = 0;
   private targetColor: GameColor = GameColor.RED;
-  private bombCountText: string | null = null;
 
   constructor() {
     super('SimpleUI');
@@ -159,7 +158,6 @@ export class SimpleUIScene extends Scene {
     this.events.on('updateTime', this.updateTime, this);
     this.events.on('updateTargetColor', this.updateTargetColor, this);
     // updateSlowMoCharges event listener removed - simplified logic
-    this.events.on('updateBombCount', this.updateBombCount, this);
   }
 
   /**
@@ -311,35 +309,6 @@ export class SimpleUIScene extends Scene {
     }
   }
 
-  /**
-   * Update bomb count display
-   */
-  private updateBombCount(data: { currentBombs: number; maxBombs: number }): void {
-    const { currentBombs, maxBombs } = data;
-    
-    if (!this.domTextRenderer) return;
-    
-    const bombCountText = `Bombs: ${currentBombs}/${maxBombs}`;
-    
-    if (!this.bombCountText) {
-      // Create bomb count display
-      this.domTextRenderer.createText('bombCount', bombCountText, this.scale.width - 120, 100, {
-        fontSize: '16px',
-        color: '#ff6b6b',
-        fontFamily: 'Poppins, sans-serif',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        background: 'rgba(0, 0, 0, 0.8)',
-        padding: '4px 8px',
-        borderRadius: '4px'
-      });
-      this.bombCountText = bombCountText;
-    } else {
-      // Update existing bomb count display
-      this.domTextRenderer.updateText('bombCount', bombCountText);
-      this.bombCountText = bombCountText;
-    }
-  }
 
   /**
    * Get best score from localStorage
@@ -372,9 +341,6 @@ export class SimpleUIScene extends Scene {
 
   // setSlowMoCharges removed - simplified slow mo logic
 
-  public setBombCount(currentBombs: number, maxBombs: number): void {
-    this.events.emit('updateBombCount', { currentBombs, maxBombs });
-  }
 
   /**
    * Show or hide the entire UI
@@ -409,7 +375,6 @@ export class SimpleUIScene extends Scene {
     this.events.off('updateTime');
     this.events.off('updateTargetColor');
     // updateSlowMoCharges event listener removal removed - simplified logic
-    this.events.off('updateBombCount');
     
     // Remove resize handlers
     this.scale.off('resize', this.handleResize, this);
