@@ -290,7 +290,6 @@ export class Game extends Scene {
     const activeDots = this.objectPool.getActiveDots();
     for (const dot of activeDots) {
       if (this.isPointInBounds(x, y, dot.getBounds())) {
-        console.log(`[COLLISION] Dot collision detected at (${x}, ${y}) with dot at (${dot.x}, ${dot.y}), color: ${dot.getColor()}, target: ${this.targetColor}`);
         return dot;
       }
     }
@@ -299,7 +298,6 @@ export class Game extends Scene {
     const activeSlowMoDots = this.objectPool.getActiveSlowMoDots();
     for (const slowMoDot of activeSlowMoDots) {
       if (this.isPointInBounds(x, y, slowMoDot.getBounds())) {
-        console.log(`[COLLISION] SlowMoDot collision detected at (${x}, ${y}) with slowMoDot at (${slowMoDot.x}, ${slowMoDot.y})`);
         return slowMoDot;
       }
     }
@@ -308,12 +306,10 @@ export class Game extends Scene {
     const activeBombs = this.objectPool.getActiveBombs();
     for (const bomb of activeBombs) {
       if (this.isPointInBounds(x, y, bomb.getBounds())) {
-        console.log(`[COLLISION] Bomb collision detected at (${x}, ${y}) with bomb at (${bomb.x}, ${bomb.y})`);
         return bomb;
       }
     }
 
-    console.log(`[COLLISION] No collision detected at (${x}, ${y}) - empty space tap`);
     return null;
   }
 
