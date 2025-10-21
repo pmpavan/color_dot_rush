@@ -11,7 +11,7 @@ export class SimpleUIScene extends Scene {
   
   // Phaser Elements (for graphics)
   private targetColorBg: Phaser.GameObjects.Rectangle | null = null;
-  private slowMoCharges: Phaser.GameObjects.Arc[] = [];
+  // slowMoCharges removed - simplified slow mo logic
 
   // Game State
   private score: number = 0;
@@ -80,10 +80,7 @@ export class SimpleUIScene extends Scene {
       textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
     };
 
-    // Slow-mo charges (left side) - still using Phaser for graphics
-    const chargeSize = Math.max(10, Math.min(16, width * 0.04)); // 4% of screen width, between 10-16px
-    const chargeSpacing = Math.max(25, Math.min(35, width * 0.08)); // 8% of screen width, between 25-35px
-    const chargeStartX = margin + chargeSize + 10;
+    // slowMoCharges variables removed - simplified logic
 
     // Score display (center) - using DOMTextRenderer
     const scoreStyle: DOMTextStyle = {
@@ -111,13 +108,7 @@ export class SimpleUIScene extends Scene {
       timeStyle
     );
     
-    for (let i = 0; i < 3; i++) {
-      const chargeX = chargeStartX + (i * chargeSpacing);
-      const charge = this.add.circle(chargeX, headerY, chargeSize, 0x3498DB, 0.8);
-      charge.setStrokeStyle(2, 0xFFFFFF, 0.6);
-      charge.setDepth(101);
-      this.slowMoCharges.push(charge);
-    }
+    // slowMoCharges creation removed - simplified logic
 
     // Target color display (below header) - responsive sizing
     const targetY = Math.max(80, height * 0.12); // 12% of screen height, minimum 80px
@@ -167,7 +158,7 @@ export class SimpleUIScene extends Scene {
     this.events.on('updateScore', this.updateScore, this);
     this.events.on('updateTime', this.updateTime, this);
     this.events.on('updateTargetColor', this.updateTargetColor, this);
-    this.events.on('updateSlowMoCharges', this.updateSlowMoCharges, this);
+    // updateSlowMoCharges event listener removed - simplified logic
     this.events.on('updateBombCount', this.updateBombCount, this);
   }
 
@@ -214,8 +205,7 @@ export class SimpleUIScene extends Scene {
       this.targetColorBg.destroy();
       this.targetColorBg = null;
     }
-    this.slowMoCharges.forEach(charge => charge.destroy());
-    this.slowMoCharges = [];
+    // slowMoCharges cleanup removed - simplified logic
     
     // Recreate with new dimensions
     this.createSimpleHUD();
@@ -291,37 +281,7 @@ export class SimpleUIScene extends Scene {
     }
   }
 
-  /**
-   * Update slow-mo charges display
-   */
-  private updateSlowMoCharges(charges: number): void {
-    this.slowMoCharges.forEach((charge, index) => {
-      if (index < charges) {
-        // Active charge
-        charge.setFillStyle(0x3498DB, 1.0);
-        charge.setStrokeStyle(2, 0xFFFFFF, 1.0);
-        
-        // Subtle pulsing animation
-        this.tweens.add({
-          targets: charge,
-          scaleX: 1.1,
-          scaleY: 1.1,
-          duration: 800,
-          ease: 'Sine.easeInOut',
-          yoyo: true,
-          repeat: -1
-        });
-      } else {
-        // Inactive charge
-        charge.setFillStyle(0x7F8C8D, 0.4);
-        charge.setStrokeStyle(2, 0x95A5A6, 0.6);
-        
-        // Stop pulsing animation
-        this.tweens.killTweensOf(charge);
-        charge.setScale(1.0);
-      }
-    });
-  }
+  // updateSlowMoCharges method removed - simplified slow mo logic
 
   /**
    * Get color name for display
@@ -410,9 +370,7 @@ export class SimpleUIScene extends Scene {
     this.events.emit('updateTargetColor', color);
   }
 
-  public setSlowMoCharges(charges: number): void {
-    this.events.emit('updateSlowMoCharges', charges);
-  }
+  // setSlowMoCharges removed - simplified slow mo logic
 
   public setBombCount(currentBombs: number, maxBombs: number): void {
     this.events.emit('updateBombCount', { currentBombs, maxBombs });
@@ -430,9 +388,7 @@ export class SimpleUIScene extends Scene {
     
     if (this.targetColorBg) this.targetColorBg.setVisible(visible);
     
-    this.slowMoCharges.forEach(charge => {
-      if (charge) charge.setVisible(visible);
-    });
+    // slowMoCharges visibility update removed - simplified logic
   }
 
   /**
@@ -452,7 +408,7 @@ export class SimpleUIScene extends Scene {
     this.events.off('updateScore');
     this.events.off('updateTime');
     this.events.off('updateTargetColor');
-    this.events.off('updateSlowMoCharges');
+    // updateSlowMoCharges event listener removal removed - simplified logic
     this.events.off('updateBombCount');
     
     // Remove resize handlers
@@ -472,6 +428,6 @@ export class SimpleUIScene extends Scene {
     
     // Clear references
     this.targetColorBg = null;
-    this.slowMoCharges = [];
+    // slowMoCharges cleanup removed - simplified logic
   }
 }

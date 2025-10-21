@@ -20,7 +20,7 @@ export class UIScene extends Scene {
   private targetColorText: Phaser.GameObjects.Text | null = null;
   private targetColorBg: Phaser.GameObjects.Rectangle | null = null;
   private headerBg: Phaser.GameObjects.Rectangle | null = null;
-  private slowMoCharges: Phaser.GameObjects.Arc[] = [];
+  // slowMoCharges removed - simplified slow mo logic
   private slowMoClockIcons: Phaser.GameObjects.Line[] = [];
 
   private score: number = 0;
@@ -92,7 +92,7 @@ export class UIScene extends Scene {
       this.events.off('updateScore');
       this.events.off('updateTime');
       this.events.off('updateTargetColor');
-      this.events.off('updateSlowMoCharges');
+      // updateSlowMoCharges event listener removal removed - simplified logic
 
       // Remove scene event listeners
       this.events.off('shutdown');
@@ -136,12 +136,7 @@ export class UIScene extends Scene {
           this.tweens.killTweensOf(this.targetColorText);
         }
         
-        // Kill tweens for slow-mo charges
-        this.slowMoCharges.forEach(charge => {
-          if (charge) {
-            this.tweens.killTweensOf(charge);
-          }
-        });
+        // slowMoCharges tween cleanup removed - simplified logic
       }
 
       console.log('UIScene: Animations and tweens cleaned up');
@@ -166,16 +161,7 @@ export class UIScene extends Scene {
       }
 
       // Clean up arrays of UI elements
-      this.slowMoCharges.forEach(charge => {
-        if (charge && charge.active) {
-          try {
-            // Don't manually destroy - let Phaser handle it
-            charge.setVisible(false);
-          } catch (error) {
-            console.warn('UIScene: Error hiding slow-mo charge:', error);
-          }
-        }
-      });
+      // slowMoCharges cleanup removed - simplified logic
 
       this.slowMoClockIcons.forEach(icon => {
         if (icon && icon.active) {
@@ -208,7 +194,7 @@ export class UIScene extends Scene {
     this.headerBg = null;
     
     // Clear arrays
-    this.slowMoCharges = [];
+    // slowMoCharges reset removed - simplified logic
     this.slowMoClockIcons = [];
 
     // Clear factory system references
@@ -271,7 +257,7 @@ export class UIScene extends Scene {
       this.targetColorText = null;
       this.targetColorBg = null;
       this.headerBg = null;
-      this.slowMoCharges = [];
+      // slowMoCharges reset removed - simplified logic
       this.slowMoClockIcons = [];
 
       // Reset game state
@@ -337,7 +323,7 @@ export class UIScene extends Scene {
       this.events.on('updateScore', this.updateScore, this);
       this.events.on('updateTime', this.updateTime, this);
       this.events.on('updateTargetColor', this.updateTargetColor, this);
-      this.events.on('updateSlowMoCharges', this.updateSlowMoCharges, this);
+      // updateSlowMoCharges event listener removed - simplified logic
 
       // Listen for scene lifecycle events
       this.events.once('shutdown', () => {
@@ -515,46 +501,7 @@ export class UIScene extends Scene {
       this.uiElements.timer = timerResult;
     }
 
-    // Create slow-mo charges with recovery (handle array creation directly)
-    try {
-      this.uiElements.slowMoCharges = this.uiElementFactory.createSlowMoCharges(
-        layout.slowMoCharges.startX,
-        layout.slowMoCharges.y,
-        3
-      );
-    } catch (error) {
-      uiLogger.log(LogLevel.WARN, 'UIScene', 'createUIComponentsWithRecovery', 'Failed to create slow-mo charges, attempting recovery', undefined, error instanceof Error ? error : undefined);
-      
-      // Create emergency charges as fallback
-      const emergencyCharges: any[] = [];
-      for (let i = 0; i < 3; i++) {
-        const chargeX = layout.slowMoCharges.startX - (i * 35);
-        try {
-          const emergencyCharge = await this.errorRecovery.recoverUIElement(
-            `slowMoCharge${i}`,
-            () => {
-              const container = this.add.container(chargeX, layout.slowMoCharges.y);
-              const charge = this.add.circle(0, 0, 10, 0x3498DB);
-              container.add(charge);
-              return {
-                container,
-                graphicsElements: [charge],
-                type: 'minimal' as any,
-                updateMethod: (isActive: boolean) => {
-                  charge.setAlpha(isActive ? 1.0 : 0.4);
-                }
-              };
-            }
-          );
-          if (emergencyCharge) {
-            emergencyCharges.push(emergencyCharge);
-          }
-        } catch (chargeError) {
-          uiLogger.log(LogLevel.ERROR, 'UIScene', 'createUIComponentsWithRecovery', `Failed to create emergency charge ${i}`, undefined, chargeError instanceof Error ? chargeError : undefined);
-        }
-      }
-      this.uiElements.slowMoCharges = emergencyCharges;
-    }
+    // slowMoCharges creation removed - simplified slow mo logic
 
     // Create target color display with recovery
     const targetColorResult = await this.errorRecovery.recoverUIElement(
@@ -579,7 +526,7 @@ export class UIScene extends Scene {
       header: !!this.uiElements.header,
       score: !!this.uiElements.score,
       timer: !!this.uiElements.timer,
-      slowMoCharges: !!this.uiElements.slowMoCharges,
+      // slowMoCharges removed - simplified logic
       targetColor: !!this.uiElements.targetColor
     });
   }
@@ -750,34 +697,7 @@ export class UIScene extends Scene {
       this.timeContainer.add(timeText);
       console.log('UIScene: Time text added to container, container children:', this.timeContainer.list.length);
 
-      // Slow-mo charges (right side) - Clock icons as per Frontend Spec
-      console.log('UIScene: Creating slow-mo charges...');
-      const chargeSpacing = 35; // Fixed spacing for clock icons
-      const chargeStartX = width - margin - 60; // Start from right edge with margin
-      console.log('UIScene: Charge layout - startX:', chargeStartX, 'spacing:', chargeSpacing);
-
-      for (let i = 0; i < 3; i++) {
-        const chargeX = chargeStartX - (i * chargeSpacing);
-        console.log('UIScene: Creating charge', i, 'at x:', chargeX);
-
-        // Clock icon background circle
-        const charge = this.add
-          .circle(chargeX, headerY, 15, 0xECF0F1)
-          .setStrokeStyle(2, 0x3498DB);
-        charge.setDepth(101);
-        console.log('UIScene: Charge circle created at:', charge.x, charge.y);
-
-        // Clock hands - simple clock icon
-        const hourHand = this.add.line(chargeX, headerY, 0, 0, 0, -8, 0x3498DB, 1).setLineWidth(2);
-        const minuteHand = this.add.line(chargeX, headerY, 0, 0, 6, 0, 0x3498DB, 1).setLineWidth(2);
-        hourHand.setDepth(102);
-        minuteHand.setDepth(102);
-        console.log('UIScene: Clock hands created for charge', i);
-
-        this.slowMoCharges.push(charge);
-        this.slowMoClockIcons.push(hourHand, minuteHand);
-      }
-      console.log('UIScene: All slow-mo charges created, total charges:', this.slowMoCharges.length);
+      // slowMoCharges creation removed - simplified slow mo logic
 
 
 
@@ -865,25 +785,7 @@ export class UIScene extends Scene {
     this.timeContainer.add(timeBg);
     this.timeContainer.add(timeHand);
 
-    // Slow-mo charges (right side) - Clock icons as per Frontend Spec
-    const chargeSpacing = 35; // Fixed spacing for clock icons
-    const chargeStartX = width - margin - 60; // Start from right edge with margin
-
-    for (let i = 0; i < 3; i++) {
-      const chargeX = chargeStartX - (i * chargeSpacing);
-
-      // Clock icon background circle
-      const charge = this.add
-        .circle(chargeX, headerY, 15, 0xECF0F1)
-        .setStrokeStyle(2, 0x3498DB);
-
-      // Clock hands - simple clock icon
-      const hourHand = this.add.line(chargeX, headerY, 0, 0, 0, -8, 0x3498DB, 1).setLineWidth(2);
-      const minuteHand = this.add.line(chargeX, headerY, 0, 0, 6, 0, 0x3498DB, 1).setLineWidth(2);
-
-      this.slowMoCharges.push(charge);
-      this.slowMoClockIcons.push(hourHand, minuteHand);
-    }
+    // slowMoCharges creation removed - simplified slow mo logic
 
     // Target color display (below header) - Graphics-only approach
     const targetY = 100; // Below header
@@ -934,12 +836,7 @@ export class UIScene extends Scene {
       this.timeContainer.setPosition(width / 2, headerY);
     }
 
-    // Update slow-mo charges positions
-    const chargeStartX = width - margin - 60;
-    this.slowMoCharges.forEach((charge, index) => {
-      const chargeX = chargeStartX - (index * chargeSpacing);
-      charge.setPosition(chargeX, headerY);
-    });
+    // slowMoCharges position update removed - simplified logic
 
     // Update clock icon positions
     this.slowMoClockIcons.forEach((icon, index) => {
@@ -1104,72 +1001,7 @@ export class UIScene extends Scene {
     }
   }
 
-  private updateSlowMoCharges(charges: number): void {
-    console.log('UIScene: updateSlowMoCharges called with:', charges);
-
-    // Use UpdateHandler for proper UI state management
-    if (this.updateHandler) {
-      try {
-        this.updateHandler.updateSlowMoCharges(charges);
-        return;
-      } catch (error) {
-        console.warn('UIScene: UpdateHandler slow-mo charges update failed, using fallback:', error);
-      }
-    }
-
-    // Legacy fallback system
-    console.log('UIScene: Using legacy slow-mo charges update, total charges available:', this.slowMoCharges.length);
-    this.slowMoCharges.forEach((charge, index) => {
-      if (index < charges) {
-        // Active charge - bright and pulsing
-        charge.fillColor = 0xECF0F1; // Active - Shimmering White
-        charge.setAlpha(1.0);
-        charge.setStrokeStyle(2, 0x3498DB, 1.0); // Bright blue outline
-
-        // Add subtle pulsing animation to active charges
-        this.tweens.add({
-          targets: charge,
-          scaleX: 1.1,
-          scaleY: 1.1,
-          duration: 800,
-          ease: 'Sine.easeInOut',
-          yoyo: true,
-          repeat: -1
-        });
-      } else {
-        // Inactive charge - dimmed and static
-        charge.fillColor = 0x95A5A6; // Inactive - Mid Grey
-        charge.setAlpha(0.4);
-        charge.setStrokeStyle(2, 0x7F8C8D, 0.6); // Dim grey outline
-
-        // Stop any pulsing animation
-        this.tweens.killTweensOf(charge);
-        charge.setScale(1.0);
-      }
-    });
-
-    // If a charge was just used, create a brief flash effect
-    if (charges < 3) {
-      const usedChargeIndex = charges; // The charge that was just used
-      if (usedChargeIndex < this.slowMoCharges.length) {
-        const usedCharge = this.slowMoCharges[usedChargeIndex];
-
-        if (usedCharge) {
-          // Brief blue flash effect
-          this.tweens.add({
-            targets: usedCharge,
-            alpha: 0.1,
-            duration: 150,
-            ease: 'Power2.easeOut',
-            yoyo: true,
-            onComplete: () => {
-              usedCharge.setAlpha(0.4); // Set to inactive alpha
-            }
-          });
-        }
-      }
-    }
-  }
+  // updateSlowMoCharges method removed - simplified slow mo logic
 
 
 
@@ -1197,10 +1029,7 @@ export class UIScene extends Scene {
     this.events.emit('updateTargetColor', color);
   }
 
-  public setSlowMoCharges(charges: number): void {
-    console.log('UIScene: setSlowMoCharges called with:', charges);
-    this.events.emit('updateSlowMoCharges', charges);
-  }
+  // setSlowMoCharges removed - simplified slow mo logic
 
   /**
    * Log the current state of all UI elements for debugging
@@ -1212,7 +1041,7 @@ export class UIScene extends Scene {
     console.log('  - timeContainer:', this.timeContainer ? 'created' : 'null', this.timeContainer?.visible ? 'visible' : 'hidden');
     console.log('  - targetColorBg:', this.targetColorBg ? 'created' : 'null', this.targetColorBg?.visible ? 'visible' : 'hidden');
     console.log('  - targetColorText:', this.targetColorText ? 'created' : 'null', this.targetColorText?.visible ? 'visible' : 'hidden');
-    console.log('  - slowMoCharges count:', this.slowMoCharges.length);
+    // slowMoCharges logging removed - simplified logic
     console.log('  - slowMoClockIcons count:', this.slowMoClockIcons.length);
     console.log('  - Scene children count:', this.children.length);
 
@@ -1278,11 +1107,7 @@ export class UIScene extends Scene {
     }
 
     // Set visibility and depth for slow-mo charges
-    this.slowMoCharges.forEach((charge) => {
-      if (charge) {
-        charge.setVisible(true).setDepth(uiDepth + 1);
-      }
-    });
+    // slowMoCharges visibility update removed - simplified logic
 
     // Set visibility and depth for slow-mo clock icons
     this.slowMoClockIcons.forEach((icon) => {
@@ -1319,11 +1144,7 @@ export class UIScene extends Scene {
     }
 
     // Set visibility for slow-mo charges
-    this.slowMoCharges.forEach(charge => {
-      if (charge) {
-        charge.setVisible(visible);
-      }
-    });
+    // slowMoCharges visibility update removed - simplified logic
 
     // Set visibility for slow-mo clock icons
     this.slowMoClockIcons.forEach(icon => {

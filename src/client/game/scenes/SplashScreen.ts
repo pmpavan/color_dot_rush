@@ -329,6 +329,7 @@ export class SplashScreen extends Scene {
     // Try to create logo with multiple retry attempts in case texture is still loading
     this.time.delayedCall(50, () => {
       if (!this.logo && this.textures.exists('logo')) {
+        console.log('SplashScreen: First retry - creating logo');
         this.createLogo();
       }
     });
@@ -336,13 +337,25 @@ export class SplashScreen extends Scene {
     // Additional retry attempts
     this.time.delayedCall(200, () => {
       if (!this.logo && this.textures.exists('logo')) {
+        console.log('SplashScreen: Second retry - creating logo');
         this.createLogo();
       }
     });
     
     this.time.delayedCall(500, () => {
       if (!this.logo && this.textures.exists('logo')) {
+        console.log('SplashScreen: Third retry - creating logo');
         this.createLogo();
+      }
+    });
+    
+    // Final retry attempt
+    this.time.delayedCall(1000, () => {
+      if (!this.logo && this.textures.exists('logo')) {
+        console.log('SplashScreen: Final retry - creating logo');
+        this.createLogo();
+      } else if (!this.logo) {
+        console.error('SplashScreen: Logo texture still not available after all retries');
       }
     });
 
@@ -439,6 +452,9 @@ export class SplashScreen extends Scene {
       
       // Start font preloading process with loading indicators
       this.initializeFontLoading();
+
+      // Create interactive buttons (main app logic)
+      this.createInteractiveButtons();
 
       // Test modal responsiveness in development (optional)
       if (process.env.NODE_ENV === 'development') {
@@ -667,6 +683,7 @@ export class SplashScreen extends Scene {
           console.warn('SplashScreen: Failed to create logo image - asset may not be loaded');
           return;
         }
+        console.log('SplashScreen: Logo image created successfully');
       } catch (error) {
         console.error('SplashScreen: Error creating logo image:', error);
         return;
@@ -687,9 +704,17 @@ export class SplashScreen extends Scene {
       const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond original size
       
       this.logo.setScale(scale);
+      console.log(`SplashScreen: Logo scaled to ${scale} (${this.logo.width}x${this.logo.height})`);
+    } else {
+      console.warn('SplashScreen: Logo dimensions not available yet, using default scale');
+      this.logo.setScale(0.5); // Default scale
     }
 
-    console.log('SplashScreen: Logo created and positioned');
+    // Make sure logo is visible
+    this.logo.setVisible(true);
+    this.logo.setDepth(10); // Ensure it's above other elements
+
+    console.log('SplashScreen: Logo created and positioned at', this.logo.x, this.logo.y);
   }
 
   /**
@@ -801,8 +826,11 @@ export class SplashScreen extends Scene {
       this.domTextRenderer.setVisible('how-to-play-button', false);
       this.domTextRenderer.setVisible('leaderboard-button', false);
 
+      // Show loading state
+      this.showLoadingState();
+
       // Add a delay to show loading state, then transition
-      this.time.delayedCall(300, () => {
+      this.time.delayedCall(800, () => {
         this.performGameTransition();
       });
     } catch (error) {
@@ -1029,6 +1057,12 @@ Good luck!
         this.domTextRenderer.setVisible('subtitle', false);
       }
 
+      // Hide logo during transition
+      if (this.logo) {
+        this.logo.setVisible(false);
+        console.log('SplashScreen: Logo hidden during transition');
+      }
+
       // Fade out background
       if (this.background) {
         this.tweens.add({
@@ -1146,6 +1180,81 @@ Good luck!
         }
       });
     });
+  }
+
+  /**
+   * Show loading state with spinner and text
+   */
+  private showLoadingState(): void {
+    try {
+      const { width, height } = this.scale;
+      
+      // Hide subtitle text during loading
+      if (this.domTextRenderer) {
+        this.domTextRenderer.setVisible('subtitle', false);
+      }
+      
+      // Create loading overlay
+      const loadingOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x2C3E50, 0.9);
+      loadingOverlay.setDepth(1000);
+      
+      // Create loading spinner
+      const spinner = this.add.circle(width / 2, height / 2 - 20, 30, 0x3498DB, 0.3);
+      spinner.setDepth(1001);
+      
+      // Create spinning dots
+      const dots: Phaser.GameObjects.Arc[] = [];
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const x = width / 2 + Math.cos(angle) * 25;
+        const y = height / 2 - 20 + Math.sin(angle) * 25;
+        const dot = this.add.circle(x, y, 4, 0x3498DB);
+        dot.setDepth(1002);
+        dots.push(dot);
+      }
+      
+      // Animate spinner rotation
+      this.tweens.add({
+        targets: spinner,
+        rotation: Math.PI * 2,
+        duration: 1200,
+        repeat: -1,
+        ease: 'Linear'
+      });
+      
+      // Animate dots
+      this.tweens.add({
+        targets: dots,
+        alpha: 0.3,
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+      
+      // Create loading text using DOM
+      if (this.domTextRenderer) {
+        const loadingStyle: DOMTextStyle = {
+          fontFamily: this.fontPreloader.getFontFamily(),
+          fontSize: this.layoutManager.getResponsiveFontSize(18),
+          fontWeight: '500',
+          color: '#FFFFFF',
+          textAlign: 'center'
+        };
+        
+        this.domTextRenderer.createText(
+          'loading-text',
+          'Loading Game...',
+          width / 2,
+          height / 2 + 30,
+          loadingStyle
+        );
+      }
+      
+      console.log('SplashScreen: Loading state displayed');
+    } catch (error) {
+      console.error('SplashScreen: Error showing loading state:', error);
+    }
   }
 
   /**

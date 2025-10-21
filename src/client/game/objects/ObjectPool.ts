@@ -344,6 +344,53 @@ export class ObjectPoolManager {
   }
 
   /**
+   * Pause all active objects in pools (for Game Over modal)
+   */
+  public pauseAllObjects(): void {
+    // Pause all active dots
+    this.dotPool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
+      if (item && item.active) {
+        try {
+          const dot = item as Dot;
+          if (dot && typeof dot.setVisible === 'function') {
+            dot.setVisible(false);
+          }
+        } catch (error) {
+          console.warn('Error pausing dot:', error);
+        }
+      }
+    });
+    
+    // Pause all active bombs
+    this.bombPool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
+      if (item && item.active) {
+        try {
+          const bomb = item as Bomb;
+          if (bomb && typeof bomb.setVisible === 'function') {
+            bomb.setVisible(false);
+          }
+        } catch (error) {
+          console.warn('Error pausing bomb:', error);
+        }
+      }
+    });
+    
+    // Pause all active slow-mo dots
+    this.slowMoPool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
+      if (item && item.active) {
+        try {
+          const slowMo = item as SlowMoDot;
+          if (slowMo && typeof slowMo.setVisible === 'function') {
+            slowMo.setVisible(false);
+          }
+        } catch (error) {
+          console.warn('Error pausing slow-mo dot:', error);
+        }
+      }
+    });
+  }
+
+  /**
    * Clear all objects from pools
    */
   public clearAll(): void {

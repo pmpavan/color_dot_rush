@@ -26,9 +26,10 @@ export class Game extends Scene {
   private score: number = 0;
   private elapsedTime: number = 0;
   private targetColor: GameColor = GameColor.RED;
-  private slowMoCharges: number = 3;
+  // slowMoCharges removed - simplified slow mo logic
   private gameStartTime: number = 0;
   private gameTimer: Phaser.Time.TimerEvent | null = null;
+  private userRank: number | null = null;
 
   // Slow-motion state management
   private isSlowMoActive: boolean = false;
@@ -80,7 +81,7 @@ export class Game extends Scene {
     this.score = 0;
     this.elapsedTime = 0;
     this.targetColor = GameColor.RED;
-    this.slowMoCharges = 3;
+    // slowMoCharges initialization removed - simplified logic
     this.gameStartTime = 0;
     this.gameTimer = null;
     this.uiScene = null;
@@ -132,7 +133,7 @@ export class Game extends Scene {
       this.objectPool.setSlowMotionCallback((object) => this.applySlowMotionToNewObject(object));
       
       // Set up slow motion charge checker for ObjectSpawner
-      this.objectSpawner.setSlowMoChargeChecker(() => this.slowMoCharges);
+      // setSlowMoChargeChecker removed - simplified logic
 
       console.log('Game: Core systems initialized');
     } catch (error) {
@@ -526,17 +527,14 @@ export class Game extends Scene {
 
 
   private handleSlowMoActivation(slowMoDot: SlowMoDot): void {
-    console.log(`[SLOW-MO] handleSlowMoActivation called - State: ${this.currentState}, Charges: ${this.slowMoCharges}, Active: ${this.isSlowMoActive}`);
+    console.log(`[SLOW-MO] handleSlowMoActivation called - State: ${this.currentState}, Active: ${this.isSlowMoActive}`);
     
-    if (this.currentState !== GameState.PLAYING || this.slowMoCharges <= 0 || this.isSlowMoActive) {
+    if (this.currentState !== GameState.PLAYING || this.isSlowMoActive) {
       console.log('[SLOW-MO] Slow-mo activation blocked - conditions not met');
       return;
     }
 
-    console.log(`[SLOW-MO] Slow-mo activated! Charges remaining: ${this.slowMoCharges - 1}`);
-
-    // Consume a slow-mo charge
-    this.slowMoCharges--;
+    console.log(`[SLOW-MO] Slow-mo activated! (simplified - no charge limits)`);
 
     // Create radial blue glow and visual feedback
     this.createSlowMoActivationEffect(slowMoDot);
@@ -642,44 +640,9 @@ export class Game extends Scene {
     });
   }
 
-  /**
-   * Create a temporary object that will be tracked for cleanup
-   */
-  private createTemporaryObject<T extends Phaser.GameObjects.GameObject>(
-    createFn: () => T,
-    duration?: number
-  ): T {
-    const obj = createFn();
-    this.temporaryObjects.push(obj);
+  // createTemporaryObject method removed - not used
 
-    // Auto-cleanup after duration if specified
-    if (duration) {
-      this.time.delayedCall(duration, () => {
-        this.cleanupTemporaryObject(obj);
-      });
-    }
-
-    return obj;
-  }
-
-  /**
-   * Clean up a temporary object
-   */
-  private cleanupTemporaryObject(obj: Phaser.GameObjects.GameObject): void {
-    const index = this.temporaryObjects.indexOf(obj);
-    if (index !== -1) {
-      this.temporaryObjects.splice(index, 1);
-    }
-
-    if (obj && typeof obj.destroy === 'function') {
-      try {
-        obj.destroy();
-      } catch (error) {
-        // Ignore errors during cleanup
-        console.warn('Error cleaning up temporary object:', error);
-      }
-    }
-  }
+  // cleanupTemporaryObject method removed - not used
 
   /**
    * Clean up all temporary objects
@@ -1064,7 +1027,7 @@ export class Game extends Scene {
     this.score = 0;
     this.elapsedTime = 0;
     this.targetColor = this.getRandomColor();
-    this.slowMoCharges = SlowMoDot.getInitialCharges(); // Use constant from SlowMoDot
+    // slowMoCharges reset removed - simplified logic
 
     // Reset slow-motion state
     this.isSlowMoActive = false;
@@ -1133,11 +1096,37 @@ export class Game extends Scene {
       }
     }
 
-    // Clear any remaining visual effects
+    // Stop all game animations and effects
     try {
       this.tweens.killAll();
     } catch (error) {
       console.warn('Error killing tweens:', error);
+    }
+
+    // Pause all game objects and animations
+    try {
+      if (this.objectPool) {
+        this.objectPool.pauseAllObjects();
+      }
+    } catch (error) {
+      console.warn('Error pausing object pool:', error);
+    }
+
+    // Stop game timer
+    try {
+      if (this.gameTimer) {
+        this.gameTimer.destroy();
+        this.gameTimer = null;
+      }
+    } catch (error) {
+      console.warn('Error stopping game timer:', error);
+    }
+
+    // Hide all game objects to prevent them from showing behind modal
+    try {
+      this.hideAllGameObjects();
+    } catch (error) {
+      console.warn('Error hiding game objects:', error);
     }
 
     // Calculate final session time in seconds and milliseconds
@@ -1161,7 +1150,8 @@ export class Game extends Scene {
       finalScore: this.score,
       sessionTime: sessionTimeSeconds,
       bestScore: Math.max(this.score, currentBestScore),
-      targetColor: this.targetColor
+      targetColor: this.targetColor,
+      userRank: this.userRank
     };
 
     // Transition to GameOver scene
@@ -1201,7 +1191,13 @@ export class Game extends Scene {
       if (result.success) {
         console.log('Score submitted successfully:', result.message);
         if (result.rank) {
+          this.userRank = result.rank;
           console.log(`Current leaderboard rank: ${result.rank}`);
+          
+          // Update Game Over overlay if it exists and user is in top 5
+          if (result.rank <= 5) {
+            this.updateGameOverWithRank(result.rank);
+          }
         }
       } else {
         console.warn('Score submission failed:', result.message);
@@ -1221,7 +1217,7 @@ export class Game extends Scene {
    * Show user-friendly error message for score submission failures
    * Provides fallback messaging as required by task specifications
    */
-  private showScoreSubmissionError(message: string): void {
+  private showScoreSubmissionError(_message: string): void {
     // Create a visual error indicator using graphics only
     const errorIndicator = this.add.rectangle(
       this.scale.width / 2,
@@ -1288,11 +1284,11 @@ export class Game extends Scene {
   private updateUI(): void {
     console.log('Game: updateUI called - uiScene exists:', !!this.uiScene);
     if (this.uiScene) {
-      console.log('Game: Updating UI with - score:', this.score, 'time:', this.elapsedTime, 'target:', this.targetColor, 'charges:', this.slowMoCharges);
+      console.log('Game: Updating UI with - score:', this.score, 'time:', this.elapsedTime, 'target:', this.targetColor);
       this.uiScene.setScore(this.score);
       this.uiScene.setTime(this.elapsedTime);
       this.uiScene.setTargetColor(this.targetColor);
-      this.uiScene.setSlowMoCharges(this.slowMoCharges);
+      // setSlowMoCharges removed - simplified logic
       console.log('Game: UI update calls completed');
     } else {
       console.warn('Game: Cannot update UI - uiScene is null');
@@ -1323,7 +1319,8 @@ export class Game extends Scene {
   }
 
   public getSlowMoCharges(): number {
-    return this.slowMoCharges;
+    // getSlowMoCharges removed - simplified logic
+    return 0; // Always return 0 since charges are no longer used
   }
 
   public isSlowMotionActive(): boolean {
@@ -1335,7 +1332,7 @@ export class Game extends Scene {
    */
   private createSimpleGameOverOverlay(gameOverData: any): void {
     // Create dark overlay
-    const overlay = this.add.rectangle(
+    this.add.rectangle(
       this.scale.width / 2,
       this.scale.height / 2,
       this.scale.width,
@@ -1344,40 +1341,63 @@ export class Game extends Scene {
       0.8
     ).setDepth(3000);
 
-    // Create modal background
+    // Create modal background - make it larger to accommodate congratulations and buttons
+    const modalHeight = gameOverData.userRank && gameOverData.userRank <= 5 ? 450 : 400;
     const modalBg = this.add.rectangle(
       this.scale.width / 2,
       this.scale.height / 2,
-      320,
-      280,
+      360,
+      modalHeight,
       0x34495E,
       0.95
     ).setDepth(3001);
     modalBg.setStrokeStyle(2, 0xFFFFFF, 0.3);
 
-    // Create restart button
-    const restartButton = this.add.rectangle(
+    // Create Play Again button
+    const playAgainButton = this.add.rectangle(
       this.scale.width / 2,
-      this.scale.height / 2 + 80,
+      this.scale.height / 2 + 60,
       200,
       50,
       0x3498DB,
       1
     ).setDepth(3002).setInteractive();
-    restartButton.setStrokeStyle(2, 0xFFFFFF, 0.8);
+    playAgainButton.setStrokeStyle(2, 0xFFFFFF, 0.8);
+
+    // Create View Leaderboard button
+    const leaderboardButton = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2 + 120,
+      200,
+      45,
+      0x95A5A6,
+      1
+    ).setDepth(3002).setInteractive();
+    leaderboardButton.setStrokeStyle(2, 0xFFFFFF, 0.6);
+
+    // Create Main Menu button
+    const mainMenuButton = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2 + 180,
+      160,
+      40,
+      0x34495E,
+      1
+    ).setDepth(3002).setInteractive();
+    mainMenuButton.setStrokeStyle(2, 0xFFFFFF, 0.4);
 
     // Add DOM text elements
     this.createGameOverText(gameOverData);
 
-    // Button interactions
-    restartButton.on('pointerover', () => {
-      restartButton.setScale(1.05);
+    // Play Again button interactions
+    playAgainButton.on('pointerover', () => {
+      playAgainButton.setScale(1.05);
     });
-    restartButton.on('pointerout', () => {
-      restartButton.setScale(1.0);
+    playAgainButton.on('pointerout', () => {
+      playAgainButton.setScale(1.0);
     });
-    restartButton.on('pointerdown', () => {
-      restartButton.setScale(0.95);
+    playAgainButton.on('pointerdown', () => {
+      playAgainButton.setScale(0.95);
       // Clean up DOM elements before restarting
       this.cleanupGameOverText();
       
@@ -1404,6 +1424,58 @@ export class Game extends Scene {
       });
     });
 
+    // View Leaderboard button interactions
+    leaderboardButton.on('pointerover', () => {
+      leaderboardButton.setScale(1.05);
+    });
+    leaderboardButton.on('pointerout', () => {
+      leaderboardButton.setScale(1.0);
+    });
+    leaderboardButton.on('pointerdown', () => {
+      leaderboardButton.setScale(0.95);
+      // Clean up DOM elements before transitioning
+      this.cleanupGameOverText();
+      
+      // Add a small delay to ensure all current operations complete
+      this.time.delayedCall(100, () => {
+        try {
+          // Force cleanup before transitioning
+          this.forceCleanupBeforeRestart();
+          
+          // Transition to leaderboard scene
+          this.scene.start('Leaderboard');
+        } catch (error) {
+          console.error('Error transitioning to leaderboard:', error);
+        }
+      });
+    });
+
+    // Main Menu button interactions
+    mainMenuButton.on('pointerover', () => {
+      mainMenuButton.setScale(1.05);
+    });
+    mainMenuButton.on('pointerout', () => {
+      mainMenuButton.setScale(1.0);
+    });
+    mainMenuButton.on('pointerdown', () => {
+      mainMenuButton.setScale(0.95);
+      // Clean up DOM elements before transitioning
+      this.cleanupGameOverText();
+      
+      // Add a small delay to ensure all current operations complete
+      this.time.delayedCall(100, () => {
+        try {
+          // Force cleanup before transitioning
+          this.forceCleanupBeforeRestart();
+          
+          // Transition to splash screen
+          this.scene.start('SplashScreen');
+        } catch (error) {
+          console.error('Error transitioning to main menu:', error);
+        }
+      });
+    });
+
     console.log('Game over overlay created with score:', gameOverData.finalScore);
   }
 
@@ -1414,12 +1486,15 @@ export class Game extends Scene {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
 
-    // Game Over title
+    // Check if user is in top 5 for positioning adjustments
+    const isTop5 = gameOverData.userRank && gameOverData.userRank <= 5;
+    
+    // Game Over title - hide when congratulations are shown
     const titleElement = document.createElement('div');
     titleElement.innerHTML = 'GAME OVER';
     titleElement.style.position = 'absolute';
     titleElement.style.left = '50%';
-    titleElement.style.top = '40%';
+    titleElement.style.top = '35%';
     titleElement.style.transform = 'translate(-50%, -50%)';
     titleElement.style.fontSize = '28px';
     titleElement.style.color = '#E74C3C';
@@ -1428,6 +1503,8 @@ export class Game extends Scene {
     titleElement.style.textAlign = 'center';
     titleElement.style.pointerEvents = 'none';
     titleElement.style.zIndex = '3003';
+    titleElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+    titleElement.style.display = isTop5 ? 'none' : 'block'; // Hide when congratulations are shown
     titleElement.id = 'gameover-title';
 
     // Score display
@@ -1435,7 +1512,7 @@ export class Game extends Scene {
     scoreElement.innerHTML = `Score: ${gameOverData.finalScore}`;
     scoreElement.style.position = 'absolute';
     scoreElement.style.left = '50%';
-    scoreElement.style.top = '48%';
+    scoreElement.style.top = isTop5 ? '40%' : '42%';
     scoreElement.style.transform = 'translate(-50%, -50%)';
     scoreElement.style.fontSize = '20px';
     scoreElement.style.color = '#FFFFFF';
@@ -1446,56 +1523,225 @@ export class Game extends Scene {
     scoreElement.style.zIndex = '3003';
     scoreElement.id = 'gameover-score';
 
-    // Best score display
+    // Best score display with new record indication
+    const isNewRecord = gameOverData.finalScore === gameOverData.bestScore && gameOverData.finalScore > 0;
     const bestScoreElement = document.createElement('div');
-    bestScoreElement.innerHTML = `Best: ${gameOverData.bestScore}`;
+    bestScoreElement.innerHTML = isNewRecord 
+      ? `🏆 PERSONAL BEST: ${gameOverData.bestScore}` 
+      : `Best: ${gameOverData.bestScore}`;
     bestScoreElement.style.position = 'absolute';
     bestScoreElement.style.left = '50%';
-    bestScoreElement.style.top = '54%';
+    bestScoreElement.style.top = isTop5 ? '46%' : '48%';
     bestScoreElement.style.transform = 'translate(-50%, -50%)';
-    bestScoreElement.style.fontSize = '16px';
-    bestScoreElement.style.color = '#BDC3C7';
+    bestScoreElement.style.fontSize = isNewRecord ? '18px' : '16px';
+    bestScoreElement.style.color = isNewRecord ? '#F1C40F' : '#BDC3C7';
     bestScoreElement.style.fontFamily = 'Poppins, Arial, sans-serif';
-    bestScoreElement.style.fontWeight = '400';
+    bestScoreElement.style.fontWeight = isNewRecord ? 'bold' : '400';
     bestScoreElement.style.textAlign = 'center';
     bestScoreElement.style.pointerEvents = 'none';
     bestScoreElement.style.zIndex = '3003';
     bestScoreElement.id = 'gameover-best';
 
     // Play Again button text
-    const buttonTextElement = document.createElement('div');
-    buttonTextElement.innerHTML = 'PLAY AGAIN';
-    buttonTextElement.style.position = 'absolute';
-    buttonTextElement.style.left = '50%';
-    buttonTextElement.style.top = '66%';
-    buttonTextElement.style.transform = 'translate(-50%, -50%)';
-    buttonTextElement.style.fontSize = '18px';
-    buttonTextElement.style.color = '#FFFFFF';
-    buttonTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
-    buttonTextElement.style.fontWeight = 'bold';
-    buttonTextElement.style.textAlign = 'center';
-    buttonTextElement.style.pointerEvents = 'none';
-    buttonTextElement.style.zIndex = '3003';
-    buttonTextElement.id = 'gameover-button-text';
+    const playAgainTextElement = document.createElement('div');
+    playAgainTextElement.innerHTML = 'PLAY AGAIN';
+    playAgainTextElement.style.position = 'absolute';
+    playAgainTextElement.style.left = '50%';
+    playAgainTextElement.style.top = isTop5 ? '56%' : '58%';
+    playAgainTextElement.style.transform = 'translate(-50%, -50%)';
+    playAgainTextElement.style.fontSize = '18px';
+    playAgainTextElement.style.color = '#FFFFFF';
+    playAgainTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    playAgainTextElement.style.fontWeight = 'bold';
+    playAgainTextElement.style.textAlign = 'center';
+    playAgainTextElement.style.pointerEvents = 'none';
+    playAgainTextElement.style.zIndex = '3003';
+    playAgainTextElement.id = 'gameover-play-again-text';
+
+    // View Leaderboard button text
+    const leaderboardTextElement = document.createElement('div');
+    leaderboardTextElement.innerHTML = '🏆 VIEW LEADERBOARD';
+    leaderboardTextElement.style.position = 'absolute';
+    leaderboardTextElement.style.left = '50%';
+    leaderboardTextElement.style.top = isTop5 ? '66%' : '68%';
+    leaderboardTextElement.style.transform = 'translate(-50%, -50%)';
+    leaderboardTextElement.style.fontSize = '16px';
+    leaderboardTextElement.style.color = '#FFFFFF';
+    leaderboardTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    leaderboardTextElement.style.fontWeight = 'bold';
+    leaderboardTextElement.style.textAlign = 'center';
+    leaderboardTextElement.style.pointerEvents = 'none';
+    leaderboardTextElement.style.zIndex = '3003';
+    leaderboardTextElement.id = 'gameover-leaderboard-text';
+
+    // Main Menu button text
+    const mainMenuTextElement = document.createElement('div');
+    mainMenuTextElement.innerHTML = '🏠 MAIN MENU';
+    mainMenuTextElement.style.position = 'absolute';
+    mainMenuTextElement.style.left = '50%';
+    mainMenuTextElement.style.top = isTop5 ? '76%' : '78%';
+    mainMenuTextElement.style.transform = 'translate(-50%, -50%)';
+    mainMenuTextElement.style.fontSize = '14px';
+    mainMenuTextElement.style.color = '#FFFFFF';
+    mainMenuTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    mainMenuTextElement.style.fontWeight = 'bold';
+    mainMenuTextElement.style.textAlign = 'center';
+    mainMenuTextElement.style.pointerEvents = 'none';
+    mainMenuTextElement.style.zIndex = '3003';
+    mainMenuTextElement.id = 'gameover-main-menu-text';
 
     // Add all elements to container
     gameContainer.appendChild(titleElement);
     gameContainer.appendChild(scoreElement);
     gameContainer.appendChild(bestScoreElement);
-    gameContainer.appendChild(buttonTextElement);
+    gameContainer.appendChild(playAgainTextElement);
+    gameContainer.appendChild(leaderboardTextElement);
+    gameContainer.appendChild(mainMenuTextElement);
   }
 
   /**
    * Clean up game over DOM text elements
    */
   private cleanupGameOverText(): void {
-    const elementsToRemove = ['gameover-title', 'gameover-score', 'gameover-best', 'gameover-button-text'];
+    const elementsToRemove = [
+      'gameover-title', 
+      'gameover-score', 
+      'gameover-best', 
+      'gameover-play-again-text',
+      'gameover-leaderboard-text',
+      'gameover-main-menu-text',
+      'gameover-congratulations',
+      'gameover-rank'
+    ];
     elementsToRemove.forEach(id => {
       const element = document.getElementById(id);
       if (element) {
         element.remove();
       }
     });
+  }
+
+  /**
+   * Update Game Over overlay with rank information for top 5 players
+   */
+  private updateGameOverWithRank(rank: number): void {
+    const gameContainer = document.getElementById('game-container');
+    if (!gameContainer) return;
+
+    // Hide the GAME OVER title when congratulations are shown
+    const gameOverTitle = document.getElementById('gameover-title');
+    if (gameOverTitle) {
+      gameOverTitle.style.display = 'none';
+    }
+
+    // Remove existing congratulations if any
+    const existingCongrats = document.getElementById('gameover-congratulations');
+    const existingRank = document.getElementById('gameover-rank');
+    if (existingCongrats) existingCongrats.remove();
+    if (existingRank) existingRank.remove();
+
+    // Create congratulations message
+    const congratulationsElement = document.createElement('div');
+    congratulationsElement.innerHTML = `🎉 CONGRATULATIONS! 🎉`;
+    congratulationsElement.style.position = 'absolute';
+    congratulationsElement.style.left = '50%';
+    congratulationsElement.style.top = '25%';
+    congratulationsElement.style.transform = 'translate(-50%, -50%)';
+    congratulationsElement.style.fontSize = '22px';
+    congratulationsElement.style.color = '#F1C40F';
+    congratulationsElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    congratulationsElement.style.fontWeight = 'bold';
+    congratulationsElement.style.textAlign = 'center';
+    congratulationsElement.style.pointerEvents = 'none';
+    congratulationsElement.style.zIndex = '3003';
+    congratulationsElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+    congratulationsElement.id = 'gameover-congratulations';
+
+    // Create rank display
+    const rankElement = document.createElement('div');
+    const rankText = rank === 1 ? '🥇 1ST PLACE!' : 
+                     rank === 2 ? '🥈 2ND PLACE!' : 
+                     rank === 3 ? '🥉 3RD PLACE!' : 
+                     `🏆 RANK: ${rank}`;
+    rankElement.innerHTML = rankText;
+    rankElement.style.position = 'absolute';
+    rankElement.style.left = '50%';
+    rankElement.style.top = '32%';
+    rankElement.style.transform = 'translate(-50%, -50%)';
+    rankElement.style.fontSize = '18px';
+    rankElement.style.color = '#E74C3C';
+    rankElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    rankElement.style.fontWeight = 'bold';
+    rankElement.style.textAlign = 'center';
+    rankElement.style.pointerEvents = 'none';
+    rankElement.style.zIndex = '3003';
+    rankElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+    rankElement.id = 'gameover-rank';
+
+    // Add elements to container
+    gameContainer.appendChild(congratulationsElement);
+    gameContainer.appendChild(rankElement);
+
+    // Add celebration animation
+    this.createRankCelebrationAnimation();
+  }
+
+  /**
+   * Create celebration animation for top 5 rank achievement
+   */
+  private createRankCelebrationAnimation(): void {
+    // Create sparkle effects around the congratulations
+    for (let i = 0; i < 8; i++) {
+      const sparkle = this.add.circle(
+        this.scale.width / 2 + (Math.random() - 0.5) * 200,
+        this.scale.height / 2 + (Math.random() - 0.5) * 100,
+        4 + Math.random() * 3,
+        0xF1C40F,
+        1
+      ).setDepth(3004);
+      
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 100 + Math.random() * 50;
+      
+      this.tweens.add({
+        targets: sparkle,
+        x: this.scale.width / 2 + Math.cos(angle) * distance,
+        y: this.scale.height / 2 + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 2000,
+        ease: 'Power2.easeOut',
+        onComplete: () => sparkle.destroy()
+      });
+    }
+  }
+
+  /**
+   * Hide all game objects to prevent them from showing behind the Game Over modal
+   */
+  private hideAllGameObjects(): void {
+    try {
+      // Hide all children of the scene
+      this.children.list.forEach(child => {
+        if (child && 'setVisible' in child && typeof child.setVisible === 'function') {
+          (child as any).setVisible(false);
+        }
+      });
+
+      // Hide background specifically
+      if (this.background) {
+        this.background.setVisible(false);
+      }
+
+      // Hide slow motion vignette if it exists
+      if (this.slowMoVignette) {
+        this.slowMoVignette.setVisible(false);
+      }
+
+      console.log('All game objects hidden for Game Over modal');
+    } catch (error) {
+      console.warn('Error hiding game objects:', error);
+    }
   }
 
   /**

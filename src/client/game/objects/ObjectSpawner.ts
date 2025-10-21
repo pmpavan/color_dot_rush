@@ -41,8 +41,7 @@ export class ObjectSpawner {
   // Spawn configuration
   private config: SpawnConfig;
   
-  // Slow motion charge checker
-  private slowMoChargeChecker: (() => number) | null = null;
+  // Slow motion charge checker - removed for simplified logic
   
   // Spawn timing
   private lastSpawnTime: number = 0;
@@ -157,15 +156,8 @@ export class ObjectSpawner {
       // Spawn a bomb (only if under the limit)
       this.spawnBomb(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     } else if (spawnRoll < this.config.bombChance + this.config.slowMoChance) {
-      // Check if slow motion charges are available before spawning slow-mo dot
-      const slowMoCharges = this.slowMoChargeChecker ? this.slowMoChargeChecker() : 0;
-      if (slowMoCharges > 0) {
-        // Spawn a slow-mo dot only if charges are available
-        this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
-      } else {
-        // No slow-mo charges available, spawn a regular dot instead
-        this.spawnDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
-      }
+      // Spawn a slow-mo dot (simplified - no charge limits)
+      this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
     } else {
       // Spawn a regular dot
       this.spawnDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
@@ -332,12 +324,7 @@ export class ObjectSpawner {
     this.targetColor = color;
   }
 
-  /**
-   * Set the slow motion charge checker function
-   */
-  public setSlowMoChargeChecker(checker: () => number): void {
-    this.slowMoChargeChecker = checker;
-  }
+  // setSlowMoChargeChecker method removed - no longer needed with simplified logic
 
   /**
    * Get the current target color
