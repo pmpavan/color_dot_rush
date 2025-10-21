@@ -13,12 +13,12 @@ export class Loading extends Scene {
   private centerHub: Phaser.GameObjects.Arc | null = null;
   private progressRing: Phaser.GameObjects.Arc | null = null;
   
-  // Animation properties
-  private readonly INNER_RADIUS = 60;
-  private readonly OUTER_RADIUS = 120;
-  private readonly DOT_SIZE = 8;
-  private readonly HUB_SIZE = 12;
-  private readonly RING_RADIUS = 80;
+  // Animation properties - scaled to 15% of screen
+  private innerRadius: number = 0;
+  private outerRadius: number = 0;
+  private dotSize: number = 0;
+  private hubSize: number = 0;
+  private ringRadius: number = 0;
   
   // Game colors for orbital dots
   private readonly GAME_COLORS = [
@@ -55,6 +55,9 @@ export class Loading extends Scene {
     const centerX = width / 2;
     const centerY = height / 2;
     
+    // Calculate responsive sizes (15% of screen)
+    this.calculateResponsiveSizes(width, height);
+    
     // Create subtle background gradient
     this.createBackgroundGradient(centerX, centerY, width, height);
     
@@ -72,6 +75,23 @@ export class Loading extends Scene {
     
     // Start loading processes
     this.startLoadingProcesses();
+  }
+
+  /**
+   * Calculate responsive sizes based on screen dimensions (15% of screen)
+   */
+  private calculateResponsiveSizes(width: number, height: number): void {
+    // Use the smaller dimension to ensure it fits on all screens
+    const baseSize = Math.min(width, height);
+    const scaleFactor = baseSize * 0.15; // 15% of screen
+    
+    this.innerRadius = Math.max(scaleFactor * 0.3, 20); // 30% of scale, minimum 20px
+    this.outerRadius = Math.max(scaleFactor * 0.6, 40); // 60% of scale, minimum 40px
+    this.dotSize = Math.max(scaleFactor * 0.05, 4); // 5% of scale, minimum 4px
+    this.hubSize = Math.max(scaleFactor * 0.08, 6); // 8% of scale, minimum 6px
+    this.ringRadius = Math.max(scaleFactor * 0.5, 30); // 50% of scale, minimum 30px
+    
+    console.log(`Loading: Calculated responsive sizes - inner: ${this.innerRadius}, outer: ${this.outerRadius}, dots: ${this.dotSize}, hub: ${this.hubSize}, ring: ${this.ringRadius}`);
   }
 
   /**
@@ -183,7 +203,7 @@ export class Loading extends Scene {
    * Create central pulsing hub
    */
   private createCenterHub(centerX: number, centerY: number): void {
-    this.centerHub = this.add.circle(centerX, centerY, this.HUB_SIZE, 0xFFFFFF, 0.6);
+    this.centerHub = this.add.circle(centerX, centerY, this.hubSize, 0xFFFFFF, 0.6);
     this.centerHub.setDepth(10);
     
     // Pulsing animation for the hub
@@ -206,11 +226,11 @@ export class Loading extends Scene {
     // Inner ring - 3 dots, fast rotation
     for (let i = 0; i < 3; i++) {
       const angle = (i * 120) * Math.PI / 180; // 120 degrees apart
-      const x = centerX + Math.cos(angle) * this.INNER_RADIUS;
-      const y = centerY + Math.sin(angle) * this.INNER_RADIUS;
+      const x = centerX + Math.cos(angle) * this.innerRadius;
+      const y = centerY + Math.sin(angle) * this.innerRadius;
       
       const color = this.GAME_COLORS[i % this.GAME_COLORS.length] || GameColor.RED;
-      const dot = this.add.circle(x, y, this.DOT_SIZE, this.getColorHex(color), 0.9);
+      const dot = this.add.circle(x, y, this.dotSize, this.getColorHex(color), 0.9);
       dot.setDepth(5);
       this.orbitalDots.push(dot);
     }
@@ -218,11 +238,11 @@ export class Loading extends Scene {
     // Outer ring - 5 dots, slower rotation
     for (let i = 0; i < 5; i++) {
       const angle = (i * 72) * Math.PI / 180; // 72 degrees apart
-      const x = centerX + Math.cos(angle) * this.OUTER_RADIUS;
-      const y = centerY + Math.sin(angle) * this.OUTER_RADIUS;
+      const x = centerX + Math.cos(angle) * this.outerRadius;
+      const y = centerY + Math.sin(angle) * this.outerRadius;
       
       const color = this.GAME_COLORS[i % this.GAME_COLORS.length] || GameColor.RED;
-      const dot = this.add.circle(x, y, this.DOT_SIZE, this.getColorHex(color), 0.7);
+      const dot = this.add.circle(x, y, this.dotSize, this.getColorHex(color), 0.7);
       dot.setDepth(5);
       this.orbitalDots.push(dot);
     }
@@ -233,10 +253,10 @@ export class Loading extends Scene {
    */
   private createProgressRing(centerX: number, centerY: number): void {
     // Outer ring (background)
-    this.add.circle(centerX, centerY, this.RING_RADIUS, 0xFFFFFF, 0.1).setStrokeStyle(3, 0xFFFFFF, 0.3);
+    this.add.circle(centerX, centerY, this.ringRadius, 0xFFFFFF, 0.1).setStrokeStyle(3, 0xFFFFFF, 0.3);
     
     // Progress ring (foreground)
-    this.progressRing = this.add.circle(centerX, centerY, this.RING_RADIUS, 0x2ECC71, 0.8);
+    this.progressRing = this.add.circle(centerX, centerY, this.ringRadius, 0x2ECC71, 0.8);
     this.progressRing.setStrokeStyle(3, 0x2ECC71, 1);
     this.progressRing.setDepth(8);
     
@@ -261,8 +281,8 @@ export class Loading extends Scene {
           onUpdate: (tween) => {
             const angle = tween.getValue();
             const radians = angle * Math.PI / 180;
-            dot.x = centerX + Math.cos(radians) * this.INNER_RADIUS;
-            dot.y = centerY + Math.sin(radians) * this.INNER_RADIUS;
+            dot.x = centerX + Math.cos(radians) * this.innerRadius;
+            dot.y = centerY + Math.sin(radians) * this.innerRadius;
           }
         });
         this.orbitalTweens.push(tween);
@@ -282,8 +302,8 @@ export class Loading extends Scene {
           onUpdate: (tween) => {
             const angle = tween.getValue();
             const radians = angle * Math.PI / 180;
-            dot.x = centerX + Math.cos(radians) * this.OUTER_RADIUS;
-            dot.y = centerY + Math.sin(radians) * this.OUTER_RADIUS;
+            dot.x = centerX + Math.cos(radians) * this.outerRadius;
+            dot.y = centerY + Math.sin(radians) * this.outerRadius;
           }
         });
         this.orbitalTweens.push(tween);
