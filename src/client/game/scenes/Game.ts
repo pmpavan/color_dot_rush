@@ -290,6 +290,7 @@ export class Game extends Scene {
     const activeDots = this.objectPool.getActiveDots();
     for (const dot of activeDots) {
       if (this.isPointInBounds(x, y, dot.getBounds())) {
+        console.log(`[COLLISION] Dot collision detected at (${x}, ${y}) with dot at (${dot.x}, ${dot.y}), color: ${dot.getColor()}, target: ${this.targetColor}`);
         return dot;
       }
     }
@@ -298,6 +299,7 @@ export class Game extends Scene {
     const activeSlowMoDots = this.objectPool.getActiveSlowMoDots();
     for (const slowMoDot of activeSlowMoDots) {
       if (this.isPointInBounds(x, y, slowMoDot.getBounds())) {
+        console.log(`[COLLISION] SlowMoDot collision detected at (${x}, ${y}) with slowMoDot at (${slowMoDot.x}, ${slowMoDot.y})`);
         return slowMoDot;
       }
     }
@@ -306,10 +308,12 @@ export class Game extends Scene {
     const activeBombs = this.objectPool.getActiveBombs();
     for (const bomb of activeBombs) {
       if (this.isPointInBounds(x, y, bomb.getBounds())) {
+        console.log(`[COLLISION] Bomb collision detected at (${x}, ${y}) with bomb at (${bomb.x}, ${bomb.y})`);
         return bomb;
       }
     }
 
+    console.log(`[COLLISION] No collision detected at (${x}, ${y}) - empty space tap`);
     return null;
   }
 
@@ -322,6 +326,8 @@ export class Game extends Scene {
 
   private handleDotTap(dot: Dot): void {
     if (this.currentState !== GameState.PLAYING) return;
+
+    console.log(`[DOT_TAP] Handling dot tap - Dot color: ${dot.getColor()}, Target color: ${this.targetColor}, isCorrect: ${dot.isCorrectColor(this.targetColor)}`);
 
     // Check if dot matches target color
     if (dot.isCorrectColor(this.targetColor)) {
@@ -342,10 +348,10 @@ export class Game extends Scene {
         }
       }
 
-      console.log(`Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
+      console.log(`[DOT_TAP] Correct tap! Score: ${this.score}, Target: ${this.targetColor}`);
     } else {
       // Wrong color - immediate game over (no delay, immediate termination)
-      console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
+      console.log(`[DOT_TAP] Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()} - GAME OVER!`);
       this.createWrongTapEffect(dot);
 
       // Deactivate the wrong dot immediately to prevent further interaction
