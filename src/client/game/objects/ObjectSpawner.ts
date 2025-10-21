@@ -47,10 +47,10 @@ export class ObjectSpawner {
   private lastSpawnTime: number = 0;
   private nextSpawnDelay: number = 0;
   
-  // Slow mo timing - exponential rate spawning
+  // Slow mo timing - inverse exponential rate spawning
   private lastSlowMoTime: number = 0;
-  private baseSlowMoInterval: number = 20000; // 20 seconds base interval
-  private minSlowMoInterval: number = 5000; // 5 seconds minimum interval
+  private minSlowMoInterval: number = 5000; // 5 seconds minimum interval (start)
+  private maxSlowMoInterval: number = 20000; // 20 seconds maximum interval (end)
   
   // Screen boundaries
   private screenBounds: Phaser.Geom.Rectangle;
@@ -460,21 +460,21 @@ export class ObjectSpawner {
   }
 
   /**
-   * Calculate exponential slow mo interval based on elapsed time
-   * Starts at baseSlowMoInterval and decreases exponentially to minSlowMoInterval
+   * Calculate inverse exponential slow mo interval based on elapsed time
+   * Starts at minSlowMoInterval (frequent) and increases exponentially to maxSlowMoInterval (less frequent)
    */
   private calculateSlowMoInterval(elapsedTime: number): number {
     const elapsedSeconds = elapsedTime / 1000; // Convert to seconds
     
-    // Exponential decay: interval = base * e^(-rate * time) + min
-    // Using a rate of 0.1 for gradual decrease over time
-    const decayRate = 0.1;
-    const exponentialFactor = Math.exp(-decayRate * elapsedSeconds);
+    // Inverse exponential growth: interval = min + (max - min) * (1 - e^(-rate * time))
+    // Using a rate of 0.1 for gradual increase over time
+    const growthRate = 0.1;
+    const exponentialFactor = 1 - Math.exp(-growthRate * elapsedSeconds);
     
-    const calculatedInterval = (this.baseSlowMoInterval - this.minSlowMoInterval) * exponentialFactor + this.minSlowMoInterval;
+    const calculatedInterval = this.minSlowMoInterval + (this.maxSlowMoInterval - this.minSlowMoInterval) * exponentialFactor;
     
-    // Ensure we don't go below minimum
-    return Math.max(calculatedInterval, this.minSlowMoInterval);
+    // Ensure we don't go above maximum
+    return Math.min(calculatedInterval, this.maxSlowMoInterval);
   }
 
   /**
