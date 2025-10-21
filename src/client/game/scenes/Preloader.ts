@@ -7,19 +7,15 @@ export class Preloader extends Scene {
   }
 
   init() {
-    console.log('Color Rush: Preloader init started');
+    console.log('Color Dot Rush: Preloader init started');
     
     // Set background color
     this.cameras.main.setBackgroundColor('#2C3E50');
     
     const { width, height } = this.scale;
     
-    //  We loaded this image in our Boot Scene, so we can display it here
-    try {
-      this.add.image(width / 2, height / 2, 'background');
-    } catch (error) {
-      console.warn('Color Rush: Background image not available, using solid color');
-    }
+    //  Background will be handled by the camera background color
+    console.log('Color Dot Rush: Using camera background color for preloader');
 
     //  A simple progress bar. This is the outline of the bar.
     this.add.rectangle(width / 2, height / 2, 468, 32).setStrokeStyle(1, 0xffffff);
@@ -54,50 +50,53 @@ export class Preloader extends Scene {
     this.load.on('progress', (progress: number) => {
       //  Update the progress bar (our bar is 464px wide, so 100% = 464px)
       bar.width = 4 + 460 * progress;
-      console.log(`Color Rush: Preloader progress: ${Math.round(progress * 100)}%`);
+      console.log(`Color Dot Rush: Preloader progress: ${Math.round(progress * 100)}%`);
     });
   }
 
   preload() {
-    console.log('Color Rush: Using graphics-only mode for Reddit webview compatibility');
+    console.log('Color Dot Rush: Loading essential assets for Reddit webview compatibility');
     
-    // Create graphics-based assets instead of loading external files
-    this.createGraphicsAssets();
+    // Load essential assets that are needed for the splash screen
+    this.loadEssentialAssets();
     
-    // Simulate loading progress for visual feedback
-    let progress = 0;
-    const progressTimer = this.time.addEvent({
-      delay: 50,
-      callback: () => {
-        progress += 0.2;
-        this.load.emit('progress', Math.min(progress, 1));
-        if (progress >= 1) {
-          progressTimer.destroy();
-          // Manually trigger the create method after loading is "complete"
-          this.time.delayedCall(100, () => {
-            this.scene.start('SplashScreen');
-          });
-        }
-      },
-      repeat: 5
+    // Wait for the actual loading to complete instead of simulating it
+    this.load.on('complete', () => {
+      console.log('Color Dot Rush: All assets loaded successfully');
+      this.time.delayedCall(100, () => {
+        this.scene.start('SplashScreen');
+      });
     });
+    
+    // Also handle loading errors
+    this.load.on('loaderror', (file: any) => {
+      console.error('Color Dot Rush: Failed to load asset:', file.key, file.url);
+      // Still proceed to splash screen even if logo fails to load
+      this.time.delayedCall(500, () => {
+        this.scene.start('SplashScreen');
+      });
+    });
+    
+    // Start the actual loading process
+    this.load.start();
   }
 
-  private createGraphicsAssets(): void {
+  private loadEssentialAssets(): void {
     try {
-      console.log('Preloader: Creating graphics-based assets...');
+      console.log('Preloader: Loading essential assets...');
       
-      // Skip texture generation for now to avoid the source error
-      // The game objects will create their own graphics when needed
-      console.log('Preloader: Skipping texture generation to avoid initialization issues');
+      // Load the logo image that's needed for the splash screen
+      this.load.image('logo', 'assets/logo.png');
+      
+      console.log('Preloader: Essential assets loaded successfully');
       
     } catch (error) {
-      console.error('Preloader: Error creating graphics assets:', error);
+      console.error('Preloader: Error loading essential assets:', error);
     }
   }
 
   create() {
-    console.log('Color Rush: Preloader create started');
+    console.log('Color Dot Rush: Preloader create started');
     
     // Show completion with a green checkmark circle (CSP-compliant)
     const checkmark = this.add.circle(
@@ -117,7 +116,7 @@ export class Preloader extends Scene {
       onComplete: () => {
         // Wait a moment to show the checkmark, then transition
         this.time.delayedCall(500, () => {
-          console.log('Color Rush: Preloader complete - transitioning to SplashScreen');
+          console.log('Color Dot Rush: Preloader complete - transitioning to SplashScreen');
           this.scene.start('SplashScreen');
         });
       }

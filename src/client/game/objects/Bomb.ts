@@ -1,4 +1,4 @@
-// Bomb game object implementation for Color Rush
+// Bomb game object implementation for Color Dot Rush
 
 import Phaser from 'phaser';
 

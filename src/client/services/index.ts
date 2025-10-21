@@ -1,4 +1,4 @@
-// Color Rush Services
+// Color Dot Rush Services
 export { DebugService, ProductionDebugService } from './DebugService';
 export { DifficultyManager } from './DifficultyManager';
 export { 

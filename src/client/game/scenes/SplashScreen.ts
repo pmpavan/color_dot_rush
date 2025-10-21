@@ -2,12 +2,13 @@ import { Scene, GameObjects } from 'phaser';
 import { FontPreloader } from '../utils/FontPreloader';
 // import { FontLoadingIndicator } from '../utils/FontLoadingIndicator'; // Not needed with WOFF2
 import { FontErrorHandler } from '../utils/FontErrorHandler';
-import { DOMTextRenderer, DOMTextStyle, GradientTextConfig } from '../utils/DOMTextRenderer';
+import { DOMTextRenderer, DOMTextStyle } from '../utils/DOMTextRenderer';
 import { ResponsiveLayoutManager, IResponsiveLayoutManager, ButtonType } from '../utils/ResponsiveLayoutManager';
 import { HowToPlayModal, IHowToPlayModal } from '../utils/HowToPlayModal';
 
 export class SplashScreen extends Scene {
   background: GameObjects.Rectangle | null = null;
+  logo: GameObjects.Image | null = null;
 
   // Component systems
   private fontPreloader: FontPreloader;
@@ -40,7 +41,7 @@ export class SplashScreen extends Scene {
       this.fontErrorHandler = FontErrorHandler.getInstance();
 
       // Initialize responsive layout manager
-      this.layoutManager = new ResponsiveLayoutManager();
+      this.layoutManager = new ResponsiveLayoutManager(this);
 
       // Mark components as initialized
       this.componentsInitialized = true;
@@ -98,15 +99,40 @@ export class SplashScreen extends Scene {
       this.background.setDisplaySize(width, height);
     }
 
+    // Try to create logo if it doesn't exist and texture is now available
+    if (!this.logo && this.textures.exists('logo')) {
+      this.createLogo();
+    }
+
+    // Update logo position and scale
+    if (this.logo) {
+      const logoY = height * 0.25; // Position at 25% from top (main title position)
+      this.logo.setPosition(width / 2, logoY);
+
+      // Rescale logo for new dimensions - larger since it's now the main title
+      const maxLogoWidth = Math.min(width * 0.6, 300);
+      const maxLogoHeight = Math.min(height * 0.25, 200);
+      
+      if (this.logo.width > 0 && this.logo.height > 0) {
+        const scaleX = maxLogoWidth / this.logo.width;
+        const scaleY = maxLogoHeight / this.logo.height;
+        const scale = Math.min(scaleX, scaleY, 1);
+        
+        this.logo.setScale(scale);
+      }
+    }
+
     // Update DOM text renderer size
     if (this.domTextRenderer) {
       this.domTextRenderer.updateSize(width, height);
 
       // Update text positions
-      const titlePos = this.layoutManager.getTitlePosition();
-      this.domTextRenderer.updatePosition('title', titlePos.x, titlePos.y);
-
-      const subtitlePos = this.layoutManager.getSubtitlePosition();
+      // Note: We no longer have a title text since the logo serves as the title
+      // Update subtitle position to be below the logo
+      const subtitlePos = {
+        x: width / 2,
+        y: height * 0.40 // Position below the logo
+      };
       this.domTextRenderer.updatePosition('subtitle', subtitlePos.x, subtitlePos.y);
 
       // Update button positions
@@ -115,6 +141,13 @@ export class SplashScreen extends Scene {
 
       const howToPlayButtonPos = this.layoutManager.getButtonPosition(ButtonType.SECONDARY);
       this.domTextRenderer.updatePosition('how-to-play-button', howToPlayButtonPos.x, howToPlayButtonPos.y);
+
+      // Update leaderboard button position
+      const leaderboardButtonPos = {
+        x: howToPlayButtonPos.x,
+        y: howToPlayButtonPos.y + 70
+      };
+      this.domTextRenderer.updatePosition('leaderboard-button', leaderboardButtonPos.x, leaderboardButtonPos.y);
     }
 
     // Update HowToPlayModal layout for responsive behavior
@@ -183,6 +216,12 @@ export class SplashScreen extends Scene {
     if (this.background) {
       this.background.destroy();
       this.background = null;
+    }
+
+    // Clean up logo
+    if (this.logo) {
+      this.logo.destroy();
+      this.logo = null;
     }
   }
 
@@ -287,6 +326,26 @@ export class SplashScreen extends Scene {
     // Create interactive buttons using DOM text
     this.createInteractiveButtons();
 
+    // Try to create logo with multiple retry attempts in case texture is still loading
+    this.time.delayedCall(50, () => {
+      if (!this.logo && this.textures.exists('logo')) {
+        this.createLogo();
+      }
+    });
+    
+    // Additional retry attempts
+    this.time.delayedCall(200, () => {
+      if (!this.logo && this.textures.exists('logo')) {
+        this.createLogo();
+      }
+    });
+    
+    this.time.delayedCall(500, () => {
+      if (!this.logo && this.textures.exists('logo')) {
+        this.createLogo();
+      }
+    });
+
     console.log('SplashScreen: UI elements created successfully');
   }
 
@@ -373,6 +432,11 @@ export class SplashScreen extends Scene {
       // Recreate background (loading state already created one)
       this.createBackground();
 
+      // Try to create logo immediately if texture is already available
+      if (this.textures.exists('logo')) {
+        this.createLogo();
+      }
+      
       // Start font preloading process with loading indicators
       this.initializeFontLoading();
 
@@ -441,7 +505,7 @@ export class SplashScreen extends Scene {
 
       this.domTextRenderer.createText(
         'fallback-title',
-        'COLOR RUSH',
+        'COLOR DOT RUSH',
         width / 2,
         height * 0.3,
         titleStyle
@@ -538,7 +602,8 @@ export class SplashScreen extends Scene {
   };
 
   /**
-   * Create title and subtitle using DOM text with responsive layout positioning
+   * Create logo and subtitle using DOM text with responsive layout positioning
+   * The logo now serves as the main title, so we only create a subtitle
    */
   private createTitleAndSubtitle(): void {
     if (!this.domTextRenderer) {
@@ -548,49 +613,31 @@ export class SplashScreen extends Scene {
 
     // Log font status for debugging
     const status = this.fontPreloader.getLoadingStatus();
-    console.log('SplashScreen: Creating title and subtitle with font status:', status);
+    console.log('SplashScreen: Creating logo and subtitle with font status:', status);
+
+    // Create and position logo as the main title element
+    this.createLogo();
 
     // Get responsive positions from layout manager
-    const titlePos = this.layoutManager.getTitlePosition();
-    const subtitlePos = this.layoutManager.getSubtitlePosition();
-    const layoutConfig = this.layoutManager.getLayoutConfig();
-
-    // Create the main title with color-shifting gradient using responsive sizing
-    const titleStyle: DOMTextStyle = {
-      fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: `${layoutConfig.title.fontSize}px`,
-      fontWeight: layoutConfig.title.fontWeight,
-      color: '#FFFFFF',
-      textAlign: 'center',
-      textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+    const { width, height } = this.layoutManager.getCurrentDimensions();
+    
+    // Position subtitle below the logo (logo is at 25%, so subtitle goes at 40%)
+    const subtitlePos = {
+      x: width / 2,
+      y: height * 0.40 // Position below the logo
     };
-
-    const gradientConfig: GradientTextConfig = {
-      colors: ['#E74C3C', '#3498DB', '#2ECC71', '#F1C40F', '#9B59B6'],
-      animationDuration: 4000
-    };
-
-    // Position title centered
-    this.domTextRenderer.createText(
-      'title',
-      'COLOR RUSH',
-      titlePos.x,
-      titlePos.y,
-      titleStyle,
-      gradientConfig
-    );
 
     // Create subtitle with responsive sizing and positioning
     const subtitleStyle: DOMTextStyle = {
       fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: `${layoutConfig.subtitle.fontSize}px`,
-      fontWeight: layoutConfig.subtitle.fontWeight,
+      fontSize: this.layoutManager.getResponsiveFontSize(24),
+      fontWeight: 'normal',
       color: '#ECF0F1',
       textAlign: 'center',
       textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
     };
 
-    // Position subtitle centered
+    // Position subtitle centered below the logo
     this.domTextRenderer.createText(
       'subtitle',
       'Test Your Reflexes',
@@ -598,6 +645,51 @@ export class SplashScreen extends Scene {
       subtitlePos.y,
       subtitleStyle
     );
+  }
+
+  /**
+   * Create and position the logo image responsively
+   */
+  private createLogo(): void {
+    const { width, height } = this.layoutManager.getCurrentDimensions();
+
+    // Create logo if it doesn't exist
+    if (!this.logo) {
+      // Check if the logo texture is available before creating the image
+      if (!this.textures.exists('logo')) {
+        console.warn('SplashScreen: Logo texture not available yet, skipping logo creation');
+        return;
+      }
+      
+      try {
+        this.logo = this.add.image(0, 0, 'logo');
+        if (!this.logo) {
+          console.warn('SplashScreen: Failed to create logo image - asset may not be loaded');
+          return;
+        }
+      } catch (error) {
+        console.error('SplashScreen: Error creating logo image:', error);
+        return;
+      }
+    }
+
+    // Position logo as the main title element (more centered)
+    const logoY = height * 0.25; // Position at 25% from top (main title position)
+    this.logo.setPosition(width / 2, logoY);
+
+    // Scale logo responsively - make it larger since it's now the main title
+    const maxLogoWidth = Math.min(width * 0.6, 300); // Max 60% of screen width or 300px
+    const maxLogoHeight = Math.min(height * 0.25, 200); // Max 25% of screen height or 200px
+    
+    if (this.logo.width > 0 && this.logo.height > 0) {
+      const scaleX = maxLogoWidth / this.logo.width;
+      const scaleY = maxLogoHeight / this.logo.height;
+      const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond original size
+      
+      this.logo.setScale(scale);
+    }
+
+    console.log('SplashScreen: Logo created and positioned');
   }
 
   /**
@@ -609,13 +701,11 @@ export class SplashScreen extends Scene {
       return;
     }
 
-    const layoutConfig = this.layoutManager.getLayoutConfig();
-
     // Create "Start Game" button (Primary Button - Bright Blue #3498DB)
     const startButtonPos = this.layoutManager.getButtonPosition(ButtonType.PRIMARY);
     const startButtonStyle: DOMTextStyle = {
       fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: `${layoutConfig.primaryButton.fontSize}px`,
+      fontSize: this.layoutManager.getResponsiveFontSize(18),
       fontWeight: '500',
       color: '#FFFFFF',
       textAlign: 'center',
@@ -630,8 +720,8 @@ export class SplashScreen extends Scene {
       'START GAME',
       startButtonPos.x,
       startButtonPos.y,
-      layoutConfig.primaryButton.width,
-      layoutConfig.primaryButton.height,
+      200,
+      50,
       startButtonStyle,
       () => this.handleStartGameClick()
     );
@@ -640,7 +730,7 @@ export class SplashScreen extends Scene {
     const howToPlayButtonPos = this.layoutManager.getButtonPosition(ButtonType.SECONDARY);
     const howToPlayButtonStyle: DOMTextStyle = {
       fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: `${layoutConfig.secondaryButton.fontSize}px`,
+      fontSize: this.layoutManager.getResponsiveFontSize(16),
       fontWeight: '500',
       color: '#FFFFFF',
       textAlign: 'center',
@@ -655,10 +745,40 @@ export class SplashScreen extends Scene {
       'HOW TO PLAY',
       howToPlayButtonPos.x,
       howToPlayButtonPos.y,
-      layoutConfig.secondaryButton.width,
-      layoutConfig.secondaryButton.height,
+      180,
+      45,
       howToPlayButtonStyle,
       () => this.handleHowToPlayClick()
+    );
+
+    // Create "View Leaderboard" button (Tertiary Button - Purple #9B59B6)
+    const leaderboardButtonStyle: DOMTextStyle = {
+      fontFamily: this.fontPreloader.getFontFamily(),
+      fontSize: this.layoutManager.getResponsiveFontSize(14),
+      fontWeight: '500',
+      color: '#FFFFFF',
+      textAlign: 'center',
+      background: '#9B59B6',
+      padding: '8px 16px',
+      borderRadius: '6px',
+      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+    };
+
+    // Position leaderboard button below the How to Play button
+    const leaderboardButtonPos = {
+      x: howToPlayButtonPos.x,
+      y: howToPlayButtonPos.y + 70
+    };
+
+    this.domTextRenderer.createButton(
+      'leaderboard-button',
+      'VIEW LEADERBOARD',
+      leaderboardButtonPos.x,
+      leaderboardButtonPos.y,
+      170,
+      40,
+      leaderboardButtonStyle,
+      () => this.handleLeaderboardClick()
     );
 
     console.log('SplashScreen: Interactive buttons created successfully');
@@ -679,6 +799,7 @@ export class SplashScreen extends Scene {
       // Disable buttons during transition
       this.domTextRenderer.setVisible('start-button', false);
       this.domTextRenderer.setVisible('how-to-play-button', false);
+      this.domTextRenderer.setVisible('leaderboard-button', false);
 
       // Add a delay to show loading state, then transition
       this.time.delayedCall(300, () => {
@@ -687,6 +808,50 @@ export class SplashScreen extends Scene {
     } catch (error) {
       console.error('SplashScreen: Error handling start game click:', error);
       this.handleTransitionError(error);
+    }
+  }
+
+  /**
+   * Handle Leaderboard button click
+   */
+  private handleLeaderboardClick(): void {
+    console.log('SplashScreen: Leaderboard button clicked');
+
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOM text renderer not available');
+      return;
+    }
+
+    try {
+      // Disable buttons during transition
+      this.domTextRenderer.setVisible('start-button', false);
+      this.domTextRenderer.setVisible('how-to-play-button', false);
+      this.domTextRenderer.setVisible('leaderboard-button', false);
+
+      // Transition to leaderboard scene
+      this.time.delayedCall(300, () => {
+        try {
+          // Clean up DOM elements before transitioning
+          if (this.domTextRenderer) {
+            this.domTextRenderer.destroy();
+            this.domTextRenderer = null;
+          }
+          
+          if (this.cameras?.main?.fadeOut) {
+            this.cameras.main.fadeOut(250, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+              this.scene.start('Leaderboard');
+            });
+          } else {
+            // Fallback for test environment
+            this.scene.start('Leaderboard');
+          }
+        } catch (error) {
+          console.error('SplashScreen: Error transitioning to leaderboard:', error);
+        }
+      });
+    } catch (error) {
+      console.error('SplashScreen: Error handling leaderboard click:', error);
     }
   }
 
@@ -715,7 +880,7 @@ export class SplashScreen extends Scene {
    */
   private showFallbackInstructions(): void {
     const instructions = `
-COLOR RUSH - How to Play:
+COLOR DOT RUSH - How to Play:
 
 🎯 Tap dots that match the Target Color
 ❌ Avoid wrong colors and bombs  
@@ -992,6 +1157,7 @@ Good luck!
 
     // Reset visual elements
     this.background = null;
+    this.logo = null;
 
     // Re-initialize components for scene restart
     this.initializeComponents();

@@ -1,4 +1,4 @@
-// Color Rush API Types
+// Color Dot Rush API Types
 export type SubmitScoreRequest = {
   score: number;
   sessionTime: number;

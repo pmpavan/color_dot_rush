@@ -1,5 +1,5 @@
 /**
- * Performance System Tests for Color Rush
+ * Performance System Tests for Color Dot Rush
  * Tests core performance monitoring and CSP compliance functionality
  */
 

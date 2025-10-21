@@ -1,8 +1,8 @@
 import { Scene } from 'phaser';
 import { UIElement, LayoutConfig } from './UIElementFactory';
-import { 
-  safeEventListenerRemoval, 
-  handlePartialDestructionState, 
+import {
+  safeEventListenerRemoval,
+  handlePartialDestructionState,
   validateSceneState
 } from './SafeCleanupHelpers';
 
@@ -51,6 +51,7 @@ export interface IResponsiveLayoutManager {
   getButtonPosition(buttonType: ButtonType): Position;
   getButtonBounds(buttonType: ButtonType): Phaser.Geom.Rectangle;
   getLayoutConfig(): SplashLayoutConfig;
+  getResponsiveFontSize(baseSize: number): string;
   onResize(callback: (width: number, height: number) => void): void;
   destroy(): void;
 }
@@ -92,7 +93,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
 
     // Calculate responsive margin - minimum 20px, 3% of screen width
     const margin = Math.max(20, screenWidth * 0.03);
-    
+
     // Header configuration
     const headerHeight = 60;
     const headerY = headerHeight / 2; // Center of header bar
@@ -152,7 +153,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
       // Update header background
       if (elements.header?.container) {
         elements.header.container.setPosition(0, layout.header.y);
-        
+
         // Update header background size if it has graphics elements
         if (elements.header.graphicsElements && elements.header.graphicsElements[0]) {
           const headerBg = elements.header.graphicsElements[0] as Phaser.GameObjects.Rectangle;
@@ -189,7 +190,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
       // Update target color display position and size
       if (elements.targetColor?.container) {
         elements.targetColor.container.setPosition(layout.targetColor.x, layout.targetColor.y);
-        
+
         // Update target color background size if it has graphics elements
         if (elements.targetColor.graphicsElements && elements.targetColor.graphicsElements[0]) {
           const targetBg = elements.targetColor.graphicsElements[0] as Phaser.GameObjects.Rectangle;
@@ -248,9 +249,14 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    */
   private handleResize(): void {
     console.log('ResponsiveLayoutManager: Resize event triggered');
-    
+
+    if (!this.scene || !this.scene.scale) {
+      console.warn('ResponsiveLayoutManager: Scene not available during resize');
+      return;
+    }
+
     const newLayout = this.calculateLayout(this.scene.scale.width, this.scene.scale.height);
-    
+
     // Notify all registered callbacks
     this.resizeCallbacks.forEach(callback => {
       try {
@@ -275,10 +281,15 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    */
   forceLayoutUpdate(elements: UIElementMap): void {
     console.log('ResponsiveLayoutManager: Forcing layout update');
-    
+
+    if (!this.scene || !this.scene.scale) {
+      console.warn('ResponsiveLayoutManager: Scene not available for layout update');
+      return;
+    }
+
     const layout = this.calculateLayout(this.scene.scale.width, this.scene.scale.height);
     this.updateElementPositions(elements, layout);
-    
+
     // Notify callbacks
     this.resizeCallbacks.forEach(callback => {
       try {
@@ -293,6 +304,11 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    * Validate that UI elements are within screen bounds
    */
   validateElementBounds(elements: UIElementMap): boolean {
+    if (!this.scene || !this.scene.scale) {
+      console.warn('ResponsiveLayoutManager: Scene not available for validation');
+      return true; // Assume valid if we can't check
+    }
+
     const screenWidth = this.scene.scale.width;
     const screenHeight = this.scene.scale.height;
     let allValid = true;
@@ -301,13 +317,13 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
 
     // Check score element
     if (elements.score?.container) {
-      const inBounds = elements.score.container.x >= 0 && 
-                      elements.score.container.x <= screenWidth &&
-                      elements.score.container.y >= 0 && 
-                      elements.score.container.y <= screenHeight;
-      
+      const inBounds = elements.score.container.x >= 0 &&
+        elements.score.container.x <= screenWidth &&
+        elements.score.container.y >= 0 &&
+        elements.score.container.y <= screenHeight;
+
       if (!inBounds) {
-        console.warn('ResponsiveLayoutManager: Score element out of bounds:', 
+        console.warn('ResponsiveLayoutManager: Score element out of bounds:',
           elements.score.container.x, elements.score.container.y);
         allValid = false;
       }
@@ -315,13 +331,13 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
 
     // Check timer element
     if (elements.timer?.container) {
-      const inBounds = elements.timer.container.x >= 0 && 
-                      elements.timer.container.x <= screenWidth &&
-                      elements.timer.container.y >= 0 && 
-                      elements.timer.container.y <= screenHeight;
-      
+      const inBounds = elements.timer.container.x >= 0 &&
+        elements.timer.container.x <= screenWidth &&
+        elements.timer.container.y >= 0 &&
+        elements.timer.container.y <= screenHeight;
+
       if (!inBounds) {
-        console.warn('ResponsiveLayoutManager: Timer element out of bounds:', 
+        console.warn('ResponsiveLayoutManager: Timer element out of bounds:',
           elements.timer.container.x, elements.timer.container.y);
         allValid = false;
       }
@@ -329,13 +345,13 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
 
     // Check target color element
     if (elements.targetColor?.container) {
-      const inBounds = elements.targetColor.container.x >= 0 && 
-                      elements.targetColor.container.x <= screenWidth &&
-                      elements.targetColor.container.y >= 0 && 
-                      elements.targetColor.container.y <= screenHeight;
-      
+      const inBounds = elements.targetColor.container.x >= 0 &&
+        elements.targetColor.container.x <= screenWidth &&
+        elements.targetColor.container.y >= 0 &&
+        elements.targetColor.container.y <= screenHeight;
+
       if (!inBounds) {
-        console.warn('ResponsiveLayoutManager: Target color element out of bounds:', 
+        console.warn('ResponsiveLayoutManager: Target color element out of bounds:',
           elements.targetColor.container.x, elements.targetColor.container.y);
         allValid = false;
       }
@@ -345,13 +361,13 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
     if (elements.slowMoCharges) {
       elements.slowMoCharges.forEach((charge, index) => {
         if (charge?.container) {
-          const inBounds = charge.container.x >= 0 && 
-                          charge.container.x <= screenWidth &&
-                          charge.container.y >= 0 && 
-                          charge.container.y <= screenHeight;
-          
+          const inBounds = charge.container.x >= 0 &&
+            charge.container.x <= screenWidth &&
+            charge.container.y >= 0 &&
+            charge.container.y <= screenHeight;
+
           if (!inBounds) {
-            console.warn(`ResponsiveLayoutManager: Slow-mo charge ${index} out of bounds:`, 
+            console.warn(`ResponsiveLayoutManager: Slow-mo charge ${index} out of bounds:`,
               charge.container.x, charge.container.y);
             allValid = false;
           }
@@ -367,6 +383,11 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    * Get minimum margins for the current screen size
    */
   getMinimumMargins(): { horizontal: number; vertical: number } {
+    if (!this.scene || !this.scene.scale) {
+      console.warn('ResponsiveLayoutManager: Scene not available, using default margins');
+      return { horizontal: 20, vertical: 20 };
+    }
+
     const screenWidth = this.scene.scale.width;
     const screenHeight = this.scene.scale.height;
 
@@ -380,6 +401,11 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    * Check if current screen size is mobile-like
    */
   isMobileLayout(): boolean {
+    if (!this.scene || !this.scene.scale) {
+      console.warn('ResponsiveLayoutManager: Scene not available, assuming desktop layout');
+      return false;
+    }
+
     const screenWidth = this.scene.scale.width;
     return screenWidth < 768; // Common mobile breakpoint
   }
@@ -388,10 +414,16 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    * Get responsive font size based on screen dimensions
    */
   getResponsiveFontSize(baseSize: number): string {
+    // Safety check for scene availability
+    if (!this.scene || !this.scene.scale) {
+      console.warn('ResponsiveLayoutManager: Scene not available, using base font size');
+      return `${baseSize}px`;
+    }
+
     const screenWidth = this.scene.scale.width;
     const scaleFactor = Math.max(0.8, Math.min(1.2, screenWidth / 800)); // Scale between 0.8x and 1.2x
     const responsiveSize = Math.round(baseSize * scaleFactor);
-    
+
     return `${responsiveSize}px`;
   }
 
@@ -401,12 +433,12 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
   updateLayout(width: number, height: number): void {
     console.log('ResponsiveLayoutManager: updateLayout called with', width, 'x', height);
     this.currentDimensions = { width, height };
-    
+
     // Update the UI layout if we have UI elements and scene
     if (this.scene) {
       this.calculateLayout(width, height);
     }
-    
+
     // Notify legacy callbacks
     this.legacyResizeCallbacks.forEach(callback => {
       try {
@@ -452,7 +484,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
   getButtonPosition(buttonType: ButtonType): Position {
     const { width, height } = this.currentDimensions;
     const buttonY = height * 0.7; // 70% from top
-    
+
     if (buttonType === ButtonType.PRIMARY) {
       return {
         x: width / 2,
@@ -473,7 +505,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
     const position = this.getButtonPosition(buttonType);
     const buttonWidth = Math.min(300, this.currentDimensions.width * 0.8);
     const buttonHeight = 60;
-    
+
     return new Phaser.Geom.Rectangle(
       position.x - buttonWidth / 2,
       position.y - buttonHeight / 2,
@@ -516,7 +548,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
 
     // Validate scene state before attempting cleanup
     const sceneValidation = validateSceneState(this.scene, 'ResponsiveLayoutManager');
-    
+
     if (!sceneValidation.isValid) {
       console.warn('ResponsiveLayoutManager: Scene validation failed, proceeding with limited cleanup', {
         validationErrors: sceneValidation.validationErrors
@@ -536,7 +568,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
             this,
             'ResponsiveLayoutManager'
           );
-          
+
           if (destructionContext.errorOccurred) {
             throw new Error(destructionContext.errorMessage || 'Scale listener removal failed');
           }

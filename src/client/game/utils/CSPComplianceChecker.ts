@@ -1,5 +1,5 @@
 /**
- * CSP Compliance Checker for Color Rush
+ * CSP Compliance Checker for Color Dot Rush
  * Verifies all assets are bundled locally and no external resources are loaded
  * Ensures compliance with Content Security Policy requirements
  */

@@ -1,5 +1,5 @@
 /**
- * Responsive Canvas Utility for Color Rush
+ * Responsive Canvas Utility for Color Dot Rush
  * Handles dynamic canvas resizing for mobile-first Reddit experience
  */
 

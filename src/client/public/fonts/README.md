@@ -8,7 +8,7 @@ This directory contains locally bundled Poppins font files for CSP compliance.
 - poppins-medium.ttf (500 weight)
 - poppins-bold.ttf (700 weight)
 
-## Usage in Color Rush UI:
+## Usage in Color Dot Rush UI:
 
 - H1 (Game Title): 72pt Poppins Bold
 - H2 (Modal Titles): 48pt Poppins Bold

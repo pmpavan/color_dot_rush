@@ -19,7 +19,7 @@ app.use(express.text());
 
 const router = express.Router();
 
-// Color Rush API Endpoints
+// Color Dot Rush API Endpoints
 
 router.post<Record<string, never>, SubmitScoreResponse, SubmitScoreRequest>(
   '/api/submit-score',

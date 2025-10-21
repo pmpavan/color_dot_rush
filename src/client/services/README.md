@@ -1,6 +1,6 @@
-# Color Rush Services
+# Color Dot Rush Services
 
-This directory contains the core services for the Color Rush game.
+This directory contains the core services for the Color Dot Rush game.
 
 ## DebugService
 

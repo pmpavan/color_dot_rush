@@ -1,4 +1,4 @@
-## Color Rush
+## Color Dot Rush
 
 A high-energy reflex game for Reddit Community Games 2025. Tap the correct colored dots while avoiding bombs and wrong colors!
 

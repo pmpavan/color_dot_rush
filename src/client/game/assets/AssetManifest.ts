@@ -1,5 +1,5 @@
 /**
- * Asset Manifest for Color Rush
+ * Asset Manifest for Color Dot Rush
  * Centralized asset management for CSP compliance
  */
 
@@ -22,7 +22,7 @@ export const GAME_ASSETS: AssetDefinition[] = [
     key: 'logo',
     type: 'image',
     path: 'assets/logo.png',
-    description: 'Color Rush logo',
+    description: 'Color Dot Rush logo',
   },
 
   // Colored dots for gameplay

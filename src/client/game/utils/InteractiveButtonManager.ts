@@ -1,5 +1,5 @@
 /**
- * InteractiveButtonManager for Color Rush Splash Screen
+ * InteractiveButtonManager for Color Dot Rush Splash Screen
  * Manages unified button creation with Phaser GameObjects, interactive areas, and state management
  */
 

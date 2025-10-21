@@ -1,5 +1,5 @@
 /**
- * Performance Optimizer for Color Rush
+ * Performance Optimizer for Color Dot Rush
  * Automatically adjusts game settings based on performance metrics
  * Ensures consistent 60 FPS performance across different devices
  */

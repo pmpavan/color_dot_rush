@@ -601,7 +601,7 @@ export class HowToPlayModal implements IHowToPlayModal {
 
     const subtitle = document.createElement('p');
     subtitle.className = 'modal-subtitle';
-    subtitle.textContent = 'Color Rush';
+    subtitle.textContent = 'Color Dot Rush';
     subtitle.style.cssText = `
       font-size: ${this.modalLayout.fontSize.body}px;
       color: rgba(255, 255, 255, 0.7);
@@ -854,7 +854,7 @@ export class HowToPlayModal implements IHowToPlayModal {
    */
   private showFallbackInstructions(): void {
     const instructions = `
-COLOR RUSH - How to Play:
+COLOR DOT RUSH - How to Play:
 
 🎯 Tap dots that match the Target Color
 ❌ Avoid wrong colors and bombs  

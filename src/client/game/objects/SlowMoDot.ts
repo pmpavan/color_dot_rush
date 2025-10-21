@@ -1,4 +1,4 @@
-// SlowMoDot power-up implementation for Color Rush
+// SlowMoDot power-up implementation for Color Dot Rush
 
 import Phaser from 'phaser';
 

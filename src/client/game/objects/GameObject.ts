@@ -1,4 +1,4 @@
-// Base GameObject interface and implementations for Color Rush
+// Base GameObject interface and implementations for Color Dot Rush
 
 import Phaser from 'phaser';
 

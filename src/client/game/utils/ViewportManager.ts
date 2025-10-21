@@ -1,5 +1,5 @@
 /**
- * ViewportManager for Color Rush
+ * ViewportManager for Color Dot Rush
  * Handles proper viewport and camera resize handling with device pixel ratio support
  */
 

@@ -1,4 +1,4 @@
-// Dot game object implementation for Color Rush
+// Dot game object implementation for Color Dot Rush
 
 import Phaser from 'phaser';
 import { GameColor } from '../../../shared/types/game';

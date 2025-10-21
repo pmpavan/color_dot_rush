@@ -1,4 +1,4 @@
-// Debug System Types for Color Rush
+// Debug System Types for Color Dot Rush
 
 export interface DifficultyParams {
   baseSpeed: number;

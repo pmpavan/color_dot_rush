@@ -32,26 +32,26 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const StartGame = (parent: string) => {
-  console.log('Color Rush: Creating Phaser game instance...');
-  console.log('Color Rush: Config:', config);
+  console.log('Color Dot Rush: Creating Phaser game instance...');
+  console.log('Color Dot Rush: Config:', config);
 
   try {
     const game = new Game({ ...config, parent });
-    console.log('Color Rush: Phaser game created successfully');
-    console.log('Color Rush: Scene manager:', game.scene);
-    console.log('Color Rush: Available scenes:', game.scene.scenes.map(s => s.scene.key));
+    console.log('Color Dot Rush: Phaser game created successfully');
+    console.log('Color Dot Rush: Scene manager:', game.scene);
+    console.log('Color Dot Rush: Available scenes:', game.scene.scenes.map(s => s.scene.key));
 
     // Add global access for debugging
     (window as any).colorRushGame = game;
 
     // Add debugging for scene events
     game.events.on('ready', () => {
-      console.log('Color Rush: Game ready event fired');
+      console.log('Color Dot Rush: Game ready event fired');
     });
 
     return game;
   } catch (error) {
-    console.error('Color Rush: Failed to create Phaser game:', error);
+    console.error('Color Dot Rush: Failed to create Phaser game:', error);
     throw error;
   }
 };

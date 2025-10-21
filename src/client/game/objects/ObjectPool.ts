@@ -1,4 +1,4 @@
-// Object pooling system for Color Rush game objects
+// Object pooling system for Color Dot Rush game objects
 
 import Phaser from 'phaser';
 import { Dot } from './Dot';

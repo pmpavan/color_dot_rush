@@ -1,5 +1,5 @@
 /**
- * ResponsiveSystem for Color Rush Splash Screen
+ * ResponsiveSystem for Color Dot Rush Splash Screen
  * Coordinates ResponsiveLayoutManager and ViewportManager for unified responsive behavior
  */
 

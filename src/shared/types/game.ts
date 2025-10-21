@@ -1,4 +1,4 @@
-// Color Rush Game Types
+// Color Dot Rush Game Types
 
 export enum GameColor {
   RED = '#E74C3C',

@@ -19,8 +19,8 @@
   "menu": {
     "items": [
       {
-        "label": "Create Color Rush Game Post",
-        "description": "Create a new Color Rush game post - Reddit Community Games 2025",
+        "label": "Create Color Dot Rush Game Post",
+        "description": "Create a new Color Dot Rush game post - Reddit Community Games 2025",
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-create"

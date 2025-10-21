@@ -1,5 +1,5 @@
 /**
- * Performance Monitor for Color Rush
+ * Performance Monitor for Color Dot Rush
  * Monitors FPS, memory usage, and input response times
  * Ensures 60 FPS performance and 16ms input response requirements
  */

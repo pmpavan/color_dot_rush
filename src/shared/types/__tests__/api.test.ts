@@ -58,7 +58,7 @@ const validateSubmitScoreResponse = (data: any): data is SubmitScoreResponse => 
   );
 };
 
-describe('Color Rush API Types', () => {
+describe('Color Dot Rush API Types', () => {
   describe('SubmitScoreRequest', () => {
     it('should validate correct SubmitScoreRequest', () => {
       const validRequest: SubmitScoreRequest = {
@@ -105,7 +105,7 @@ describe('Color Rush API Types', () => {
       expect(validateSubmitScoreRequest(invalidRequest)).toBe(false);
     });
 
-    it('should handle maximum score values (Color Rush specific)', () => {
+    it('should handle maximum score values (Color Dot Rush specific)', () => {
       const maxScoreRequest: SubmitScoreRequest = {
         score: 999999, // Very high score for long sessions
         sessionTime: 300000, // 5 minutes
@@ -259,7 +259,7 @@ describe('Color Rush API Types', () => {
       expect(validateLeaderboardResponse(invalidResponse)).toBe(false);
     });
 
-    it('should handle empty leaderboard (Color Rush specific)', () => {
+    it('should handle empty leaderboard (Color Dot Rush specific)', () => {
       const emptyResponse: LeaderboardResponse = {
         entries: [],
         totalPlayers: 0,
@@ -323,8 +323,8 @@ describe('Color Rush API Types', () => {
       expect(validateSubmitScoreResponse(invalidResponse)).toBe(false);
     });
 
-    it('should handle Color Rush specific success messages', () => {
-      const colorRushMessages = [
+    it('should handle Color Dot Rush specific success messages', () => {
+      const colorDotRushMessages = [
         'New personal best!',
         'You made it to the weekly leaderboard!',
         'Score submitted to r/ColorRush community!',
@@ -388,7 +388,7 @@ describe('Color Rush API Types', () => {
 
   describe('Integration Scenarios', () => {
     it('should handle complete game session flow', () => {
-      // Simulate a complete Color Rush game session
+      // Simulate a complete Color Dot Rush game session
       const gameSession = {
         startTime: Date.now() - 90000, // 90 seconds ago
         endTime: Date.now(),
