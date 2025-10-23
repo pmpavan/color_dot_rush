@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
-import { SimpleUIScene } from './SimpleUIScene';
+import SimpleUIScene from './SimpleUIScene';
 import { DebugService, ProductionDebugService } from '../../services/DebugService';
 import { DifficultyManager } from '../../services/DifficultyManager';
 import { ILeaderboardService, DevvitLeaderboardService, MockLeaderboardService } from '../../services/LeaderboardService';

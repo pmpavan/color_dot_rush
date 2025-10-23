@@ -4,7 +4,7 @@ import { GameOver } from './scenes/GameOver';
 import { Game as MainGame } from './scenes/Game';
 import { Leaderboard } from './scenes/Leaderboard';
 import { SplashScreen } from './scenes/SplashScreen';
-import { SimpleUIScene } from './scenes/SimpleUIScene';
+import SimpleUIScene from './scenes/SimpleUIScene';
 import * as Phaser from 'phaser';
 import { Game } from 'phaser';
 

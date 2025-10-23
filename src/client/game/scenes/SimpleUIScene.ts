@@ -6,7 +6,7 @@ import { NeonTextConfig, NeonTextEffectType, NeonTextSize } from '../utils/NeonT
 /**
  * Simplified UI Scene - Clean, minimal HUD using DOMTextRenderer for better performance
  */
-export class SimpleUIScene extends Scene {
+export default class SimpleUIScene extends Scene {
   // DOM Text Renderer
   private domTextRenderer: DOMTextRenderer | null = null;
   
@@ -22,6 +22,9 @@ export class SimpleUIScene extends Scene {
   // Track previous values for change detection
   private previousScore: number = 0;
   private previousTargetColor: GameColor = GameColor.RED;
+  
+  // Border element for target color
+  private targetColorBorder: Phaser.GameObjects.Rectangle | null = null;
 
   constructor() {
     super('SimpleUI');
@@ -102,10 +105,13 @@ export class SimpleUIScene extends Scene {
       performance: 'high'
     };
 
+    // Calculate safe position for best score (left side with same padding as timer)
+    const bestScoreX = margin; // Use same margin as timer on the right
+    
     this.domTextRenderer.createNeonText(
       'best-score',
       `BEST: ${this.bestScore.toLocaleString()}`,
-      width * 0.3,
+      bestScoreX,
       headerY,
       bestScoreConfig
     );
@@ -122,7 +128,7 @@ export class SimpleUIScene extends Scene {
     this.domTextRenderer.createNeonText(
       'score',
       `SCORE: ${this.score.toLocaleString()}`,
-      width * 0.6,
+      width / 2,
       headerY,
       scoreConfig
     );
@@ -176,9 +182,60 @@ export class SimpleUIScene extends Scene {
 
     // Update the color immediately
     this.updateTargetColorDisplay();
+    
+    // Create colored border around the target color text after text is created
+    // Add small delay to ensure text is fully rendered
+    this.time.delayedCall(50, () => {
+      this.createTargetColorBorder();
+    });
   }
 
 
+
+  /**
+   * Create colored border around the target color text
+   */
+  private createTargetColorBorder(): void {
+    if (!this.domTextRenderer) return;
+    
+    // Get the actual text element to measure its dimensions
+    const textElement = this.domTextRenderer.getElement('target-color');
+    if (!textElement) return;
+    
+    const { width, height } = this.scale;
+    const targetY = height * 0.15;
+    
+    // Get actual text dimensions from DOM element
+    const textWidth = textElement.element.offsetWidth;
+    const textHeight = textElement.element.offsetHeight;
+    
+    console.log('Target color text dimensions:', { textWidth, textHeight });
+    
+    // Add more padding around the text to prevent overlap
+    const padding = 25;
+    const borderWidth = textWidth + (padding * 2);
+    const borderHeight = textHeight + (padding * 2);
+    
+    console.log('Border dimensions:', { borderWidth, borderHeight });
+    
+    // Center the border around the text
+    const borderX = (width - borderWidth) / 2;
+    const borderY = targetY - borderHeight / 2;
+    
+    // Create border rectangle
+    this.targetColorBorder = this.add.rectangle(
+      borderX + borderWidth / 2,
+      borderY + borderHeight / 2,
+      borderWidth,
+      borderHeight,
+      0x000000,
+      0
+    );
+    
+    // Set border properties with thinner stroke
+    this.targetColorBorder.setStrokeStyle(2, this.getColorHex(this.targetColor), 1);
+    this.targetColorBorder.setDepth(1); // Ensure it's above background but below text
+  }
 
   /**
    * Update target color display with instant color changes
@@ -234,6 +291,26 @@ export class SimpleUIScene extends Scene {
   }
 
   /**
+   * Get hex color value for a game color
+   */
+  private getColorHex(color: GameColor): number {
+    switch (color) {
+      case GameColor.RED:
+        return 0xff0000;
+      case GameColor.GREEN:
+        return 0x00ff00;
+      case GameColor.BLUE:
+        return 0x0000ff;
+      case GameColor.YELLOW:
+        return 0xffff00;
+      case GameColor.PURPLE:
+        return 0xff00ff;
+      default:
+        return 0xffffff;
+    }
+  }
+
+  /**
    * Setup event listeners
    */
   private setupEventListeners(): void {
@@ -285,6 +362,11 @@ export class SimpleUIScene extends Scene {
     if (this.targetColorBg) {
       this.targetColorBg.destroy();
       this.targetColorBg = null;
+    }
+    
+    if (this.targetColorBorder) {
+      this.targetColorBorder.destroy();
+      this.targetColorBorder = null;
     }
     // slowMoCharges cleanup removed - simplified logic
     
@@ -353,6 +435,13 @@ export class SimpleUIScene extends Scene {
     if (colorChanged) {
       // Update the target color display with new neon glow
       this.updateTargetColorDisplay();
+      
+      // Recreate border with new text dimensions
+      if (this.targetColorBorder) {
+        this.targetColorBorder.destroy();
+        this.targetColorBorder = null;
+      }
+      this.createTargetColorBorder();
     }
     
     // Update previous target color
@@ -420,6 +509,7 @@ export class SimpleUIScene extends Scene {
     }
     
     if (this.targetColorBg) this.targetColorBg.setVisible(visible);
+    if (this.targetColorBorder) this.targetColorBorder.setVisible(visible);
     
     // slowMoCharges visibility update removed - simplified logic
   }
@@ -460,6 +550,7 @@ export class SimpleUIScene extends Scene {
     
     // Clear references
     this.targetColorBg = null;
+    this.targetColorBorder = null;
     // slowMoCharges cleanup removed - simplified logic
   }
 }
