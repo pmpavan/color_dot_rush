@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import { FontPreloader } from '../utils/FontPreloader';
 import { ReusableLoader } from '../utils/ReusableLoader';
+import { NeonBackgroundSystem } from '../utils/NeonBackgroundSystem';
 
 /**
  * Unified Loading Scene - Combines Boot and Preloader functionality
@@ -9,6 +10,7 @@ import { ReusableLoader } from '../utils/ReusableLoader';
 export class Loading extends Scene {
   // Reusable loader component
   private loader: ReusableLoader | null = null;
+  private neonBackground: NeonBackgroundSystem | null = null;
 
   // Loading state
   private fontsLoaded: boolean = false;
@@ -28,7 +30,7 @@ export class Loading extends Scene {
     this.sceneStartTime = Date.now();
     
     // Set background color
-    this.cameras.main.setBackgroundColor('#2C3E50');
+    this.cameras.main.setBackgroundColor('#080808'); // Deep Space Black
     
     // Create loader immediately so it shows right away
     const { width, height } = this.scale;
@@ -45,10 +47,34 @@ export class Loading extends Scene {
   create() {
     console.log('Color Dot Rush: Loading scene created - loader already shown');
     
+    // Initialize and create neon background system
+    this.neonBackground = new NeonBackgroundSystem(this);
+    this.neonBackground.createBackground();
+    
+    // Setup responsive layout
+    this.updateLayout(this.scale.width, this.scale.height);
+    this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
+      const { width, height } = gameSize;
+      this.updateLayout(width, height);
+    });
+    
     // Start loading processes
     this.startLoadingProcesses();
   }
 
+
+  /**
+   * Update layout for responsive design
+   */
+  private updateLayout(width: number, height: number): void {
+    // Update camera
+    this.cameras.resize(width, height);
+    
+    // Update neon background system
+    if (this.neonBackground) {
+      this.neonBackground.updateDimensions(width, height);
+    }
+  }
 
   /**
    * Start both font loading and asset loading in parallel
@@ -175,6 +201,12 @@ export class Loading extends Scene {
     if (this.loader) {
       this.loader.destroy();
       this.loader = null;
+    }
+    
+    // Clean up neon background system
+    if (this.neonBackground) {
+      this.neonBackground.destroy();
+      this.neonBackground = null;
     }
   }
 }

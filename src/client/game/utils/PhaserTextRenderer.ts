@@ -1,4 +1,5 @@
 import { Scene, GameObjects } from 'phaser';
+import { NeonTextEffects, NeonTextConfig, NeonTextEffectType, NeonTextSize } from './NeonTextEffects';
 
 /**
  * Text style configuration interface
@@ -87,7 +88,7 @@ export class PhaserTextRenderer implements ITextRenderer {
       // Fallback: create text with minimal safe styling
       try {
         const fallbackStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-          fontFamily: 'Arial, sans-serif',
+          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
           fontSize: style.fontSize,
           color: style.color,
           align: 'center'
@@ -141,7 +142,7 @@ export class PhaserTextRenderer implements ITextRenderer {
       // Fallback: create text with minimal safe styling
       try {
         const fallbackStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-          fontFamily: 'Arial, sans-serif',
+          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
           fontSize: style.fontSize,
           color: style.color,
           align: 'center'
@@ -374,6 +375,98 @@ export class PhaserTextRenderer implements ITextRenderer {
     textObject.setOrigin(0.5, 0.5);
     
     return textObject;
+  }
+
+  /**
+   * Create a neon-styled text object with glow effects
+   */
+  createNeonText(x: number, y: number, text: string, config: NeonTextConfig): GameObjects.Text {
+    console.log(`PhaserTextRenderer: Creating neon text "${text}" with effect ${config.effectType}`);
+    
+    // Get neon text style from NeonTextEffects
+    const style = NeonTextEffects.createPhaserNeonTextStyle(config);
+    
+    // Create the text object
+    const textObject = this.scene.add.text(x, y, text, style);
+    
+    // Add animation if enabled
+    if (config.animation) {
+      this.addNeonAnimation(textObject, config);
+    }
+    
+    // Set depth to ensure proper layering
+    textObject.setDepth(1000);
+    
+    console.log(`PhaserTextRenderer: Created neon text object at (${x}, ${y})`);
+    return textObject;
+  }
+
+  /**
+   * Add neon animation to a text object
+   */
+  private addNeonAnimation(textObject: GameObjects.Text, config: NeonTextConfig): void {
+    switch (config.effectType) {
+      case NeonTextEffectType.PULSE:
+        this.addPulseAnimation(textObject, config);
+        break;
+      case NeonTextEffectType.FADE:
+        this.addFadeAnimation(textObject, config);
+        break;
+      case NeonTextEffectType.SHIMMER:
+        this.addShimmerAnimation(textObject, config);
+        break;
+    }
+  }
+
+  /**
+   * Add pulsing glow animation
+   */
+  private addPulseAnimation(textObject: GameObjects.Text, config: NeonTextConfig): void {
+    const intensity = config.intensity || 0.8;
+    const baseBlur = 10 * intensity;
+    const maxBlur = 20 * intensity;
+
+    this.scene.tweens.add({
+      targets: textObject,
+      duration: 2000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+      onUpdate: (tween) => {
+        const progress = tween.progress;
+        const currentBlur = baseBlur + (maxBlur - baseBlur) * Math.sin(progress * Math.PI);
+        textObject.setShadow(0, 0, currentBlur, textObject.style.shadow?.color || '#00BFFF');
+      }
+    });
+  }
+
+  /**
+   * Add fade animation
+   */
+  private addFadeAnimation(textObject: GameObjects.Text, config: NeonTextConfig): void {
+    this.scene.tweens.add({
+      targets: textObject,
+      alpha: 0.7,
+      duration: 2500,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  /**
+   * Add shimmer animation (simulated with alpha changes)
+   */
+  private addShimmerAnimation(textObject: GameObjects.Text, config: NeonTextConfig): void {
+    this.scene.tweens.add({
+      targets: textObject,
+      alpha: 0.5,
+      duration: 1500,
+      ease: 'Power2.easeInOut',
+      yoyo: true,
+      repeat: -1,
+      delay: Math.random() * 1000 // Randomize start time for multiple shimmer texts
+    });
   }
 
   /**

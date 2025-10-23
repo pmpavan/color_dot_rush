@@ -4,12 +4,16 @@ import { FontPreloader } from '../utils/FontPreloader';
 import { FontErrorHandler } from '../utils/FontErrorHandler';
 import { DOMTextRenderer, DOMTextStyle } from '../utils/DOMTextRenderer';
 import { ResponsiveLayoutManager, IResponsiveLayoutManager, ButtonType } from '../utils/ResponsiveLayoutManager';
+import { NeonButtonConfig, NeonButtonVariant, NeonButtonSize } from '../utils/NeonButtonSystem';
+import { NeonTextConfig, NeonTextEffectType, NeonTextSize } from '../utils/NeonTextEffects';
 import { HowToPlayModal, IHowToPlayModal } from '../utils/HowToPlayModal';
 import { ReusableLoader } from '../utils/ReusableLoader';
+import { NeonBackgroundSystem } from '../utils/NeonBackgroundSystem';
 
 export class SplashScreen extends Scene {
   background: GameObjects.Rectangle | null = null;
   logo: GameObjects.Image | null = null;
+  private neonBackground: NeonBackgroundSystem | null = null;
 
   // Component systems
   private fontPreloader: FontPreloader;
@@ -44,6 +48,9 @@ export class SplashScreen extends Scene {
 
       // Initialize responsive layout manager
       this.layoutManager = new ResponsiveLayoutManager(this);
+
+      // Initialize neon background system
+      this.neonBackground = new NeonBackgroundSystem(this);
 
       // Mark components as initialized
       this.componentsInitialized = true;
@@ -100,6 +107,11 @@ export class SplashScreen extends Scene {
     if (this.background) {
       this.background.setDisplaySize(width, height);
     }
+    
+    // Update neon background system
+    if (this.neonBackground) {
+      this.neonBackground.updateDimensions(width, height);
+    }
 
     // Try to create logo if it doesn't exist and texture is now available
     if (!this.logo && this.textures.exists('logo')) {
@@ -144,11 +156,7 @@ export class SplashScreen extends Scene {
       const howToPlayButtonPos = this.layoutManager.getButtonPosition(ButtonType.SECONDARY);
       this.domTextRenderer.updatePosition('how-to-play-button', howToPlayButtonPos.x, howToPlayButtonPos.y);
 
-      // Update leaderboard button position
-      const leaderboardButtonPos = {
-        x: howToPlayButtonPos.x,
-        y: howToPlayButtonPos.y + 70
-      };
+      const leaderboardButtonPos = this.layoutManager.getButtonPosition(ButtonType.TERTIARY);
       this.domTextRenderer.updatePosition('leaderboard-button', leaderboardButtonPos.x, leaderboardButtonPos.y);
     }
 
@@ -188,6 +196,12 @@ export class SplashScreen extends Scene {
     // Clean up layout manager
     if (this.layoutManager) {
       this.layoutManager.destroy();
+    }
+    
+    // Clean up neon background system
+    if (this.neonBackground) {
+      this.neonBackground.destroy();
+      this.neonBackground = null;
     }
 
     // No font loading indicator to clean up
@@ -364,16 +378,6 @@ export class SplashScreen extends Scene {
     console.log('SplashScreen: UI elements created successfully');
   }
 
-  /**
-   * Create background using current layout dimensions
-   */
-  private createBackground(): void {
-    const { width, height } = this.layoutManager.getCurrentDimensions();
-
-    // Background – solid color rectangle (Dark Slate #2C3E50)
-    this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
-    this.background.setDisplaySize(width, height);
-  }
 
   create() {
     console.log('SplashScreen: Starting scene creation');
@@ -394,12 +398,12 @@ export class SplashScreen extends Scene {
     try {
       const { width, height } = this.scale;
 
-      // Create background immediately
-      this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
+      // Set camera background color to Deep Space Black
+      this.cameras.main.setBackgroundColor(0x080808);
 
       // Create simple loading indicator using graphics only
-      const loadingCircle = this.add.circle(width / 2, height / 2, 30, 0x3498DB, 0.3);
-      const loadingDot = this.add.circle(width / 2, height / 2 - 25, 8, 0x3498DB);
+      const loadingCircle = this.add.circle(width / 2, height / 2, 30, 0x00BFFF, 0.3);
+      const loadingDot = this.add.circle(width / 2, height / 2 - 25, 8, 0x00BFFF);
 
       // Animate loading indicator
       this.tweens.add({
@@ -429,6 +433,9 @@ export class SplashScreen extends Scene {
       // Clean up loading state
       this.cleanupLoadingState();
 
+      // Set camera background color to Deep Space Black
+      this.cameras.main.setBackgroundColor(0x080808);
+
       // Fade in from black for smooth transition (with safety check for tests)
       if (this.cameras?.main?.fadeIn) {
         this.cameras.main.fadeIn(250, 0, 0, 0);
@@ -444,8 +451,12 @@ export class SplashScreen extends Scene {
       // Set up proper resize event handling with throttling
       this.setupResizeEventHandling();
 
-      // Recreate background (loading state already created one)
-      this.createBackground();
+      // Create neon background system
+      if (this.neonBackground) {
+        this.neonBackground.createBackground();
+      }
+      
+      // Note: No need to recreate background - neon background system handles it
 
       // Try to create logo immediately if texture is already available
       if (this.textures.exists('logo')) {
@@ -502,72 +513,65 @@ export class SplashScreen extends Scene {
     try {
       console.log('SplashScreen: Creating fallback UI');
 
-      // Create simple background
+      // Set camera background color to Deep Space Black
+      this.cameras.main.setBackgroundColor(0x080808);
+
+      // Get screen dimensions
       const { width, height } = this.scale;
-      this.background = this.add.rectangle(0, 0, width, height, 0x2C3E50).setOrigin(0);
 
       // Initialize DOM text renderer if not already done
       if (!this.domTextRenderer) {
         this.domTextRenderer = new DOMTextRenderer('game-container');
       }
 
-      // Create simple title
-      const titleStyle: DOMTextStyle = {
-        fontFamily: 'Poppins, Arial, sans-serif',
-        fontSize: '48px',
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-        textAlign: 'center',
-        textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+      // Create neon title
+      const titleConfig: NeonTextConfig = {
+        effectType: NeonTextEffectType.GLOW_BLUE,
+        size: NeonTextSize.HERO,
+        intensity: 0.8,
+        animation: true,
+        performance: 'high'
       };
 
-      this.domTextRenderer.createText(
+      this.domTextRenderer.createNeonText(
         'fallback-title',
         'COLOR DOT RUSH',
         width / 2,
         height * 0.3,
-        titleStyle
+        titleConfig
       );
 
-      // Create simple subtitle
-      const subtitleStyle: DOMTextStyle = {
-        fontFamily: 'Poppins, Arial, sans-serif',
-        fontSize: '24px',
-        fontWeight: 'normal',
-        color: '#ECF0F1',
-        textAlign: 'center',
-        textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+      // Create neon subtitle
+      const subtitleConfig: NeonTextConfig = {
+        effectType: NeonTextEffectType.GLOW_WHITE,
+        size: NeonTextSize.HUGE,
+        intensity: 0.6,
+        animation: true,
+        performance: 'high'
       };
 
-      this.domTextRenderer.createText(
+      this.domTextRenderer.createNeonText(
         'fallback-subtitle',
-        'Test Your Reflexes',
+        'Tap into Chaos',
         width / 2,
         height * 0.45,
-        subtitleStyle
+        subtitleConfig
       );
 
-      // Create simple start button
-      const buttonStyle: DOMTextStyle = {
-        fontFamily: 'Poppins, Arial, sans-serif',
-        fontSize: '18px',
-        fontWeight: '500',
-        color: '#FFFFFF',
-        textAlign: 'center',
-        background: '#3498DB',
-        padding: '15px 30px',
-        borderRadius: '8px',
-        textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+      // Create neon start button
+      const fallbackButtonConfig: NeonButtonConfig = {
+        variant: NeonButtonVariant.PRIMARY,
+        size: NeonButtonSize.XLARGE,
+        width: 200,
+        height: 60
       };
 
-      this.domTextRenderer.createButton(
+      this.domTextRenderer.createNeonButton(
         'fallback-start-button',
         'START GAME',
         width / 2,
         height * 0.65,
-        200,
-        60,
-        buttonStyle,
+        fallbackButtonConfig,
         () => this.handleStartGameClick()
       );
 
@@ -645,23 +649,22 @@ export class SplashScreen extends Scene {
       y: height * 0.40 // Position below the logo
     };
 
-    // Create subtitle with responsive sizing and positioning
-    const subtitleStyle: DOMTextStyle = {
-      fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: this.layoutManager.getResponsiveFontSize(24),
-      fontWeight: 'normal',
-      color: '#ECF0F1',
-      textAlign: 'center',
-      textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+    // Create subtitle with neon text effects (White Glow as per specification)
+    const subtitleConfig: NeonTextConfig = {
+      effectType: NeonTextEffectType.GLOW_WHITE,
+      size: NeonTextSize.HUGE,
+      intensity: 0.6,
+      animation: true,
+      performance: 'high'
     };
 
-    // Position subtitle centered below the logo
-    this.domTextRenderer.createText(
+    // Position subtitle centered below the logo with neon effects
+    this.domTextRenderer.createNeonText(
       'subtitle',
-      'Test Your Reflexes',
+      'Tap into Chaos',
       subtitlePos.x,
       subtitlePos.y,
-      subtitleStyle
+      subtitleConfig
     );
   }
 
@@ -714,13 +717,13 @@ export class SplashScreen extends Scene {
 
     // Make sure logo is visible
     this.logo.setVisible(true);
-    this.logo.setDepth(10); // Ensure it's above other elements
+    this.logo.setDepth(10); // Ensure it's above the background
 
     console.log('SplashScreen: Logo created and positioned at', this.logo.x, this.logo.y);
   }
 
   /**
-   * Create interactive buttons using DOM text system
+   * Create complete main menu layout according to specification mockup
    */
   private createInteractiveButtons(): void {
     if (!this.domTextRenderer) {
@@ -728,88 +731,101 @@ export class SplashScreen extends Scene {
       return;
     }
 
-    // Create "Start Game" button (Primary Button - Bright Blue #3498DB)
-    const startButtonPos = this.layoutManager.getButtonPosition(ButtonType.PRIMARY);
-    const startButtonStyle: DOMTextStyle = {
-      fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: this.layoutManager.getResponsiveFontSize(18),
-      fontWeight: '500',
-      color: '#FFFFFF',
-      textAlign: 'center',
-      background: '#3498DB',
-      padding: '12px 24px',
-      borderRadius: '8px',
-      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
-    };
+    // Create main action buttons according to specification
+    this.createMainMenuButtons();
 
-    this.domTextRenderer.createButton(
-      'start-button',
-      'START GAME',
-      startButtonPos.x,
-      startButtonPos.y,
-      200,
-      50,
-      startButtonStyle,
-      () => this.handleStartGameClick()
-    );
-
-    // Create "How to Play" button (Secondary Button - Mid Grey #95A5A6)
-    const howToPlayButtonPos = this.layoutManager.getButtonPosition(ButtonType.SECONDARY);
-    const howToPlayButtonStyle: DOMTextStyle = {
-      fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: this.layoutManager.getResponsiveFontSize(16),
-      fontWeight: '500',
-      color: '#FFFFFF',
-      textAlign: 'center',
-      background: '#95A5A6',
-      padding: '10px 20px',
-      borderRadius: '6px',
-      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
-    };
-
-    this.domTextRenderer.createButton(
-      'how-to-play-button',
-      'HOW TO PLAY',
-      howToPlayButtonPos.x,
-      howToPlayButtonPos.y,
-      180,
-      45,
-      howToPlayButtonStyle,
-      () => this.handleHowToPlayClick()
-    );
-
-    // Create "View Leaderboard" button (Tertiary Button - Purple #9B59B6)
-    const leaderboardButtonStyle: DOMTextStyle = {
-      fontFamily: this.fontPreloader.getFontFamily(),
-      fontSize: this.layoutManager.getResponsiveFontSize(14),
-      fontWeight: '500',
-      color: '#FFFFFF',
-      textAlign: 'center',
-      background: '#9B59B6',
-      padding: '8px 16px',
-      borderRadius: '6px',
-      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
-    };
-
-    // Position leaderboard button below the How to Play button
-    const leaderboardButtonPos = {
-      x: howToPlayButtonPos.x,
-      y: howToPlayButtonPos.y + 70
-    };
-
-    this.domTextRenderer.createButton(
-      'leaderboard-button',
-      'VIEW LEADERBOARD',
-      leaderboardButtonPos.x,
-      leaderboardButtonPos.y,
-      170,
-      40,
-      leaderboardButtonStyle,
-      () => this.handleLeaderboardClick()
-    );
-
-    console.log('SplashScreen: Interactive buttons created successfully');
+    console.log('SplashScreen: Complete main menu layout created successfully');
   }
+
+
+  /**
+   * Create main menu buttons according to specification
+   */
+  private createMainMenuButtons(): void {
+    const { width } = this.layoutManager.getCurrentDimensions();
+    const buttonWidth = Math.min(width * 0.8, 400); // 80% of screen width, max 400px
+
+    // Create "Start Game" button (Electric Blue Border Glow)
+    const startButtonPos = this.layoutManager.getButtonPosition(ButtonType.PRIMARY);
+    const startButtonConfig: NeonButtonConfig = {
+      variant: NeonButtonVariant.PRIMARY, // Electric Blue
+      size: NeonButtonSize.LARGE,
+      width: buttonWidth,
+      height: 60
+    };
+
+    if (this.domTextRenderer) {
+      this.domTextRenderer.createNeonButton(
+        'start-button',
+        'START GAME',
+        startButtonPos.x,
+        startButtonPos.y,
+        startButtonConfig,
+        () => this.handleStartGameClick()
+      );
+    }
+
+    // Create "How to Play" button (Cyber Pink Border Glow)
+    const howToPlayButtonPos = this.layoutManager.getButtonPosition(ButtonType.SECONDARY);
+    const howToPlayButtonConfig: NeonButtonConfig = {
+      variant: NeonButtonVariant.SECONDARY, // Cyber Pink
+      size: NeonButtonSize.MEDIUM,
+      width: buttonWidth,
+      height: 50
+    };
+
+    if (this.domTextRenderer) {
+      this.domTextRenderer.createNeonButton(
+        'how-to-play-button',
+        'HOW TO PLAY',
+        howToPlayButtonPos.x,
+        howToPlayButtonPos.y,
+        howToPlayButtonConfig,
+        () => this.handleHowToPlayClick()
+      );
+    }
+
+    // Create "View Leaderboard" button (White Border Glow)
+    const leaderboardButtonPos = this.layoutManager.getButtonPosition(ButtonType.TERTIARY);
+    const leaderboardButtonConfig: NeonButtonConfig = {
+      variant: NeonButtonVariant.TERTIARY, // Volt Green (closest to white glow)
+      size: NeonButtonSize.MEDIUM,
+      width: buttonWidth,
+      height: 50
+    };
+
+    if (this.domTextRenderer) {
+      this.domTextRenderer.createNeonButton(
+        'leaderboard-button',
+        'VIEW LEADERBOARD',
+        leaderboardButtonPos.x,
+        leaderboardButtonPos.y,
+        leaderboardButtonConfig,
+        () => this.handleLeaderboardClick()
+      );
+    }
+
+    // Create "Accessibility Settings" button (Purple Border Glow)
+    const accessibilityButtonPos = this.layoutManager.getButtonPosition(ButtonType.QUATERNARY);
+    const accessibilityButtonConfig: NeonButtonConfig = {
+      variant: NeonButtonVariant.QUATERNARY, // Purple glow
+      size: NeonButtonSize.MEDIUM,
+      width: buttonWidth,
+      height: 50
+    };
+
+    if (this.domTextRenderer) {
+      this.domTextRenderer.createNeonButton(
+        'accessibility-button',
+        'ACCESSIBILITY SETTINGS',
+        accessibilityButtonPos.x,
+        accessibilityButtonPos.y,
+        accessibilityButtonConfig,
+        this.handleAccessibilityClick
+      );
+    }
+  }
+
 
   /**
    * Handle Start Game button click with proper loading state management
@@ -903,6 +919,263 @@ export class SplashScreen extends Scene {
       console.error('SplashScreen: Error showing HowToPlayModal:', error);
       this.showFallbackInstructions();
     }
+  }
+
+  /**
+   * Handle Accessibility Settings button click
+   */
+  private handleAccessibilityClick = (): void => {
+    console.log('SplashScreen: Accessibility Settings button clicked');
+    
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOM text renderer not available');
+      return;
+    }
+
+    try {
+      // Hide main menu buttons
+      this.domTextRenderer.setVisible('start-button', false);
+      this.domTextRenderer.setVisible('how-to-play-button', false);
+      this.domTextRenderer.setVisible('leaderboard-button', false);
+      this.domTextRenderer.setVisible('accessibility-button', false);
+
+      // Show accessibility settings panel
+      this.showAccessibilitySettings();
+    } catch (error) {
+      console.error('SplashScreen: Error handling accessibility click:', error);
+    }
+  }
+
+  /**
+   * Show accessibility settings panel
+   */
+  private showAccessibilitySettings(): void {
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOMTextRenderer not available for accessibility settings');
+      return;
+    }
+
+    console.log('SplashScreen: Creating accessibility settings panel');
+    const { width, height } = this.scale;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    console.log('SplashScreen: Screen dimensions:', width, 'x', height);
+
+    // Create background overlay
+    this.domTextRenderer.createButton(
+      'accessibility-overlay',
+      '',
+      centerX,
+      centerY,
+      width,
+      height,
+      {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '16px',
+        fontWeight: 'normal',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        background: 'rgba(0, 0, 0, 0.8)',
+        display: 'block',
+        pointerEvents: 'auto',
+        cursor: 'default'
+      }
+    );
+
+    // Create settings panel background
+    this.domTextRenderer.createButton(
+      'accessibility-panel',
+      '',
+      centerX,
+      centerY,
+      Math.min(width * 0.8, 400),
+      400,
+      {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '16px',
+        fontWeight: 'normal',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        background: 'rgba(30, 30, 30, 0.95)',
+        borderRadius: '12px',
+        border: '2px solid #9B59B6',
+        boxShadow: '0 0 30px rgba(155, 89, 182, 0.3)',
+        display: 'block',
+        pointerEvents: 'auto',
+        cursor: 'default'
+      }
+    );
+
+    // Create title
+    this.domTextRenderer.createText(
+      'accessibility-title',
+      'ACCESSIBILITY SETTINGS',
+      centerX,
+      centerY - 150,
+      {
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        fontSize: '20px',
+        fontWeight: 'bold',
+        color: '#9B59B6',
+        textAlign: 'center',
+        display: 'block'
+      }
+    );
+
+    // Create High Contrast toggle
+    console.log('SplashScreen: Creating High Contrast toggle');
+    this.createAccessibilityToggle('high-contrast', 'High Contrast Mode', centerX, centerY - 80, 'highContrastMode');
+    
+    // Create Shape Overlays toggle
+    console.log('SplashScreen: Creating Shape Overlays toggle');
+    this.createAccessibilityToggle('shape-overlays', 'Shape Overlays (Color-blind support)', centerX, centerY - 20, 'shapeOverlays');
+    
+    // Create Reduced Motion toggle
+    console.log('SplashScreen: Creating Reduced Motion toggle');
+    this.createAccessibilityToggle('reduced-motion', 'Reduced Motion', centerX, centerY + 40, 'reducedMotion');
+    
+    // Create Large Tap Areas toggle
+    console.log('SplashScreen: Creating Large Tap Areas toggle');
+    this.createAccessibilityToggle('large-tap-areas', 'Large Tap Areas', centerX, centerY + 100, 'largeTapAreas');
+
+    // Create Back button
+    this.domTextRenderer.createButton(
+      'accessibility-back',
+      'BACK TO MENU',
+      centerX,
+      centerY + 150,
+      Math.min(width * 0.6, 300),
+      50,
+      {
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        background: 'rgba(155, 89, 182, 0.8)',
+        borderRadius: '8px',
+        border: '2px solid #9B59B6',
+        boxShadow: '0 0 20px rgba(155, 89, 182, 0.3)',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease'
+      },
+      () => this.hideAccessibilitySettings()
+    );
+    
+    console.log('SplashScreen: Accessibility settings panel created successfully');
+  }
+
+  /**
+   * Create accessibility toggle button
+   */
+  private createAccessibilityToggle(id: string, label: string, x: number, y: number, settingKey: string): void {
+    if (!this.domTextRenderer) {
+      console.error('SplashScreen: DOMTextRenderer not available for toggle creation');
+      return;
+    }
+    
+    console.log(`SplashScreen: Creating toggle for ${id} at position (${x}, ${y})`);
+
+    // Load current setting from localStorage
+    const savedSettings = localStorage.getItem('color-rush-accessibility');
+    let currentSettings = {};
+    if (savedSettings) {
+      try {
+        currentSettings = JSON.parse(savedSettings);
+      } catch (e) {
+        console.warn('Failed to parse accessibility settings');
+      }
+    }
+    
+    const isEnabled = (currentSettings as any)[settingKey] || false;
+    const buttonText = `${isEnabled ? '✓' : '○'} ${label}`;
+
+    this.domTextRenderer.createButton(
+      `accessibility-toggle-${id}`,
+      buttonText,
+      x,
+      y,
+      Math.min(this.scale.width * 0.6, 350),
+      40,
+      {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        fontWeight: 'normal',
+        color: '#FFFFFF',
+        textAlign: 'left',
+        background: 'rgba(51, 51, 51, 0.8)',
+        borderRadius: '6px',
+        border: '1px solid #9B59B6',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        padding: '8px 16px',
+        transition: 'all 0.2s ease'
+      },
+      () => this.toggleAccessibilitySetting(settingKey, id, label)
+    );
+    
+    console.log(`SplashScreen: Toggle ${id} created successfully`);
+  }
+
+  /**
+   * Toggle accessibility setting
+   */
+  private toggleAccessibilitySetting(settingKey: string, toggleId: string, label: string): void {
+    if (!this.domTextRenderer) return;
+
+    // Load current settings
+    const savedSettings = localStorage.getItem('color-rush-accessibility');
+    let currentSettings = {};
+    if (savedSettings) {
+      try {
+        currentSettings = JSON.parse(savedSettings);
+      } catch (e) {
+        console.warn('Failed to parse accessibility settings');
+      }
+    }
+
+    // Toggle the setting
+    (currentSettings as any)[settingKey] = !(currentSettings as any)[settingKey];
+
+    // Save settings
+    localStorage.setItem('color-rush-accessibility', JSON.stringify(currentSettings));
+
+    // Update button text
+    const isEnabled = (currentSettings as any)[settingKey];
+    const buttonText = `${isEnabled ? '✓' : '○'} ${label}`;
+    this.domTextRenderer.updateText(`accessibility-toggle-${toggleId}`, buttonText);
+
+    console.log(`Accessibility setting ${settingKey} toggled to:`, isEnabled);
+  }
+
+  /**
+   * Hide accessibility settings and return to main menu
+   */
+  private hideAccessibilitySettings(): void {
+    if (!this.domTextRenderer) return;
+
+    // Remove accessibility settings elements
+    this.domTextRenderer.removeText('accessibility-overlay');
+    this.domTextRenderer.removeText('accessibility-panel');
+    this.domTextRenderer.removeText('accessibility-title');
+    this.domTextRenderer.removeText('accessibility-toggle-high-contrast');
+    this.domTextRenderer.removeText('accessibility-toggle-shape-overlays');
+    this.domTextRenderer.removeText('accessibility-toggle-reduced-motion');
+    this.domTextRenderer.removeText('accessibility-toggle-large-tap-areas');
+    this.domTextRenderer.removeText('accessibility-back');
+
+    // Show main menu buttons again
+    this.domTextRenderer.setVisible('start-button', true);
+    this.domTextRenderer.setVisible('how-to-play-button', true);
+    this.domTextRenderer.setVisible('leaderboard-button', true);
+    this.domTextRenderer.setVisible('accessibility-button', true);
   }
 
   /**
@@ -1128,6 +1401,8 @@ Good luck!
     }
   }
 
+
+
   /**
    * Handle transition errors by restoring button state
    */
@@ -1197,7 +1472,7 @@ Good luck!
       }
       
       // Create loading overlay
-      const loadingOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x2C3E50, 0.9);
+      const loadingOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080808, 0.9);
       loadingOverlay.setDepth(1000);
       
       // Create reusable loader
@@ -1207,11 +1482,13 @@ Good luck!
       // Create loading text using DOM
       if (this.domTextRenderer) {
         const loadingStyle: DOMTextStyle = {
-          fontFamily: this.fontPreloader.getFontFamily(),
+          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
           fontSize: this.layoutManager.getResponsiveFontSize(18),
           fontWeight: '500',
           color: '#FFFFFF',
-          textAlign: 'center'
+          textAlign: 'center',
+          textShadow: '0 0 15px rgba(255, 255, 255, 0.8)',
+          letterSpacing: '0.5px'
         };
         
         this.domTextRenderer.createText(
@@ -1252,6 +1529,9 @@ Good luck!
 
     // Re-initialize components for scene restart
     this.initializeComponents();
+    
+    // Re-initialize neon background system
+    this.neonBackground = new NeonBackgroundSystem(this);
   }
 
 }

@@ -154,7 +154,8 @@ export class ObjectSpawner {
     
     // Check if it's time to spawn a slow mo dot (exponential rate)
     const currentSlowMoInterval = this.calculateSlowMoInterval(elapsedTime);
-    const shouldSpawnSlowMo = (elapsedTime - this.lastSlowMoTime) >= currentSlowMoInterval;
+    const hasActiveSlowMo = this.objectPool.getActiveSlowMoDots().length > 0;
+    const shouldSpawnSlowMo = !hasActiveSlowMo && (elapsedTime - this.lastSlowMoTime) >= currentSlowMoInterval;
     
     // Debug logging
     if (Math.random() < 0.05) { // 5% chance to log for debugging (increased for troubleshooting)

@@ -13,6 +13,8 @@ export interface OptimizationSettings {
   antialiasing: boolean;
   shadowsEnabled: boolean;
   targetFPS: number;
+  motionEffectsQuality: 'high' | 'medium' | 'low';
+  reducedMotion: boolean;
 }
 
 export class PerformanceOptimizer {
@@ -35,6 +37,8 @@ export class PerformanceOptimizer {
     antialiasing: true,
     shadowsEnabled: true,
     targetFPS: 60,
+    motionEffectsQuality: 'high',
+    reducedMotion: false,
   };
   
   // Medium quality settings for future use
@@ -54,6 +58,8 @@ export class PerformanceOptimizer {
     antialiasing: false,
     shadowsEnabled: false,
     targetFPS: 60,
+    motionEffectsQuality: 'low',
+    reducedMotion: true,
   };
 
   constructor(game: Phaser.Game, performanceMonitor: PerformanceMonitor) {

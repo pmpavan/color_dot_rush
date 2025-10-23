@@ -7,6 +7,8 @@ import { Scene } from 'phaser';
 import { UIElement, UIElementType, LayoutConfig } from './UIElementFactory';
 import { FallbackRenderer, FallbackMode, UIElementMap } from './FallbackRenderer';
 import { uiLogger, LogLevel } from './UIErrorLogger';
+import { NeonTextEffects, NeonTextEffectType, NeonTextSize } from './NeonTextEffects';
+import { UIColor } from '../../../shared/types/game';
 
 export interface RecoveryAttempt {
   timestamp: string;
@@ -690,6 +692,305 @@ export class UIErrorRecovery {
    */
   public getRecentRecoveryAttempts(count: number = 10): RecoveryAttempt[] {
     return this.recoveryAttempts.slice(-count);
+  }
+
+  /**
+   * Create non-intrusive glowing error banner
+   */
+  public createErrorBanner(message: string, type: 'warning' | 'error' | 'info' = 'error'): Phaser.GameObjects.Container | null {
+    try {
+      const { width, height } = this.scene.scale;
+      
+      // Create banner container
+      const banner = this.scene.add.container(width / 2, 50);
+      banner.setDepth(15000);
+      
+      // Choose colors based on type
+      let bgColor: number;
+      let glowColor: number;
+      let textColor: string;
+      
+      switch (type) {
+        case 'warning':
+          bgColor = 0xFFA500; // Orange
+          glowColor = 0xFF8C00;
+          textColor = '#FFFFFF';
+          break;
+        case 'error':
+          bgColor = 0xFF0000; // Red
+          glowColor = 0xDC143C;
+          textColor = '#FFFFFF';
+          break;
+        case 'info':
+        default:
+          bgColor = 0x00BFFF; // Electric Blue
+          glowColor = 0x0080FF;
+          textColor = '#FFFFFF';
+          break;
+      }
+      
+      // Create background with glow effect
+      const bg = this.scene.add.rectangle(0, 0, 400, 60, bgColor, 0.9);
+      bg.setStrokeStyle(2, glowColor, 0.8);
+      
+      // Add glow effect
+      const glow = this.scene.add.rectangle(0, 0, 420, 80, glowColor, 0.3);
+      glow.setBlendMode(Phaser.BlendModes.ADD);
+      
+      // Create text with neon effects
+      const text = this.scene.add.text(0, 0, message, {
+        fontSize: '18px',
+        color: textColor,
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      // Apply neon text effects
+      text.setStroke('#000000', 2);
+      text.setShadow(0, 0, 10, glowColor, 0.8, true);
+      
+      banner.add([glow, bg, text]);
+      
+      // Add entrance animation
+      banner.setAlpha(0);
+      banner.setScale(0.8);
+      
+      this.scene.tweens.add({
+        targets: banner,
+        alpha: 1,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 300,
+        ease: 'Back.easeOut'
+      });
+      
+      // Auto-hide after 3 seconds
+      this.scene.time.delayedCall(3000, () => {
+        this.hideErrorBanner(banner);
+      });
+      
+      uiLogger.log(LogLevel.INFO, 'UIErrorRecovery', 'createErrorBanner', `Created ${type} banner: ${message}`);
+      return banner;
+      
+    } catch (error) {
+      uiLogger.log(LogLevel.ERROR, 'UIErrorRecovery', 'createErrorBanner', 'Failed to create error banner', {
+        message,
+        type,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, error instanceof Error ? error : undefined);
+      return null;
+    }
+  }
+
+  /**
+   * Hide error banner with animation
+   */
+  private hideErrorBanner(banner: Phaser.GameObjects.Container): void {
+    if (!banner || !banner.active) return;
+    
+    this.scene.tweens.add({
+      targets: banner,
+      alpha: 0,
+      scaleX: 0.8,
+      scaleY: 0.8,
+      duration: 200,
+      ease: 'Power2.easeIn',
+      onComplete: () => {
+        banner.destroy();
+      }
+    });
+  }
+
+  /**
+   * Create connection lost message with retry indicator
+   */
+  public createConnectionLostMessage(): Phaser.GameObjects.Container | null {
+    try {
+      const { width, height } = this.scene.scale;
+      
+      const container = this.scene.add.container(width / 2, height / 2);
+      container.setDepth(15000);
+      
+      // Background with glass morphism effect
+      const bg = this.scene.add.rectangle(0, 0, 350, 120, 0x1E1E1E, 0.95);
+      bg.setStrokeStyle(2, 0xFF0000, 0.8);
+      
+      // Glow effect
+      const glow = this.scene.add.rectangle(0, 0, 370, 140, 0xFF0000, 0.2);
+      glow.setBlendMode(Phaser.BlendModes.ADD);
+      
+      // Main message
+      const message = this.scene.add.text(0, -20, 'CONNECTION LOST', {
+        fontSize: '24px',
+        color: '#FF0000',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      // Apply neon effects
+      message.setStroke('#000000', 2);
+      message.setShadow(0, 0, 15, 0xFF0000, 0.8, true);
+      
+      // Retry message
+      const retryText = this.scene.add.text(0, 20, 'Retrying...', {
+        fontSize: '16px',
+        color: '#FFFFFF',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      retryText.setShadow(0, 0, 8, 0x00BFFF, 0.6, true);
+      
+      // Animated dots
+      const dots = this.scene.add.text(0, 40, '...', {
+        fontSize: '20px',
+        color: '#00BFFF',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      // Animate dots
+      this.scene.tweens.add({
+        targets: dots,
+        alpha: 0.3,
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+      
+      container.add([glow, bg, message, retryText, dots]);
+      
+      // Entrance animation
+      container.setAlpha(0);
+      container.setScale(0.9);
+      
+      this.scene.tweens.add({
+        targets: container,
+        alpha: 1,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 400,
+        ease: 'Back.easeOut'
+      });
+      
+      uiLogger.log(LogLevel.WARN, 'UIErrorRecovery', 'createConnectionLostMessage', 'Created connection lost message');
+      return container;
+      
+    } catch (error) {
+      uiLogger.log(LogLevel.ERROR, 'UIErrorRecovery', 'createConnectionLostMessage', 'Failed to create connection lost message', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, error instanceof Error ? error : undefined);
+      return null;
+    }
+  }
+
+  /**
+   * Create system malfunction screen with glitch effects
+   */
+  public createSystemMalfunctionScreen(): Phaser.GameObjects.Container | null {
+    try {
+      const { width, height } = this.scene.scale;
+      
+      const container = this.scene.add.container(width / 2, height / 2);
+      container.setDepth(20000);
+      
+      // Dark background
+      const bg = this.scene.add.rectangle(0, 0, width, height, 0x000000, 0.9);
+      
+      // Glitch overlay
+      const glitchOverlay = this.scene.add.rectangle(0, 0, width, height, 0xFF0000, 0.1);
+      glitchOverlay.setBlendMode(Phaser.BlendModes.ADD);
+      
+      // Main error text
+      const errorText = this.scene.add.text(0, -50, 'SYSTEM MALFUNCTION', {
+        fontSize: '36px',
+        color: '#FF0000',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      errorText.setStroke('#000000', 3);
+      errorText.setShadow(0, 0, 20, 0xFF0000, 1, true);
+      
+      // Subtitle
+      const subtitle = this.scene.add.text(0, 0, 'Attempting Recovery...', {
+        fontSize: '20px',
+        color: '#FFFFFF',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      subtitle.setShadow(0, 0, 10, 0x00BFFF, 0.8, true);
+      
+      // Error code
+      const errorCode = this.scene.add.text(0, 50, 'ERROR: 0xNEON_PULSE_FAIL', {
+        fontSize: '16px',
+        color: '#00FF00',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      errorCode.setShadow(0, 0, 8, 0x00FF00, 0.6, true);
+      
+      container.add([bg, glitchOverlay, errorText, subtitle, errorCode]);
+      
+      // Glitch animation
+      this.scene.tweens.add({
+        targets: glitchOverlay,
+        alpha: 0.3,
+        duration: 200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Power2.easeInOut'
+      });
+      
+      // Text glitch effect
+      this.scene.tweens.add({
+        targets: errorText,
+        x: errorText.x + 5,
+        duration: 100,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Power2.easeInOut'
+      });
+      
+      // Entrance animation
+      container.setAlpha(0);
+      
+      this.scene.tweens.add({
+        targets: container,
+        alpha: 1,
+        duration: 500,
+        ease: 'Power2.easeOut'
+      });
+      
+      uiLogger.log(LogLevel.CRITICAL, 'UIErrorRecovery', 'createSystemMalfunctionScreen', 'Created system malfunction screen');
+      return container;
+      
+    } catch (error) {
+      uiLogger.log(LogLevel.CRITICAL, 'UIErrorRecovery', 'createSystemMalfunctionScreen', 'Failed to create system malfunction screen', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, error instanceof Error ? error : undefined);
+      return null;
+    }
+  }
+
+  /**
+   * Hide system malfunction screen
+   */
+  public hideSystemMalfunctionScreen(container: Phaser.GameObjects.Container): void {
+    if (!container || !container.active) return;
+    
+    this.scene.tweens.add({
+      targets: container,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2.easeIn',
+      onComplete: () => {
+        container.destroy();
+      }
+    });
   }
 
   /**

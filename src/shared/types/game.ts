@@ -1,21 +1,29 @@
 // Color Dot Rush Game Types
 
 export enum GameColor {
-  RED = '#E74C3C',
-  GREEN = '#2ECC71',
-  BLUE = '#3498DB',
-  YELLOW = '#F1C40F',
-  PURPLE = '#9B59B6',
+  RED = '#FF0000', // Warning Red - intense red with subtle flicker
+  GREEN = '#00FF00', // Volt Green - lime green with glow
+  BLUE = '#00BFFF', // Electric Blue - sky blue with glow
+  YELLOW = '#FFA500', // Plasma Orange - bright orange with glow
+  PURPLE = '#FF69B4', // Cyber Pink - hot pink with glow
 }
 
 export enum UIColor {
-  BACKGROUND = '#2C3E50', // Dark Slate
-  TEXT_PRIMARY = '#FFFFFF', // White
-  TEXT_SECONDARY = '#ECF0F1', // Light Grey
-  BUTTON_PRIMARY = '#3498DB', // Bright Blue
-  BUTTON_SECONDARY = '#95A5A6', // Mid Grey
-  BOMB = '#34495E', // Near Black
-  SLOW_MO = '#ECF0F1', // Shimmering White
+  BACKGROUND = '#080808', // Deep Space Black
+  TEXT_PRIMARY = '#FFFFFF', // Bright white with subtle blue/pink neon glow
+  TEXT_SECONDARY = '#E0E0E0', // Very light gray with neon glow
+  BUTTON_PRIMARY = '#00BFFF', // Electric Blue - primary button glow
+  BUTTON_SECONDARY = '#FF69B4', // Cyber Pink - secondary button glow
+  BUTTON_TERTIARY = '#00FF00', // Volt Green - tertiary button glow
+  BUTTON_QUATERNARY = '#FFA500', // Plasma Orange - quaternary button glow
+  BOMB = '#FF0000', // Warning Red with subtle flicker
+  SLOW_MO = '#00BFFF', // Electric Blue for slow-mo power-up
+  LASER_GRID = '#32CD32', // Laser Grid Green with constant glow
+  GLOW_BLUE = '#00BFFF', // Electric Blue glow
+  GLOW_PINK = '#FF69B4', // Cyber Pink glow
+  GLOW_GREEN = '#00FF00', // Volt Green glow
+  GLOW_ORANGE = '#FFA500', // Plasma Orange glow
+  GLOW_RED = '#FF0000', // Warning Red glow
 }
 
 export interface GameConfig {
@@ -48,12 +56,12 @@ export interface GameState {
 // Legacy interface - moved to debug.ts
 
 // Default configuration values from PRD
-// Typography system from design document
+// Typography system from Neon Pulse theme
 export interface TypographyScale {
-  gameTitle: '72pt Poppins Bold'; // H1 - Game title with color-shifting gradient
-  modalTitle: '48pt Poppins Bold'; // H2 - Modal titles
-  headerUI: '24pt Poppins Regular'; // Header UI - Score, time, charges
-  bodyButton: '20pt Poppins Medium'; // Body/Button text
+  gameTitle: '72pt Orbitron Black'; // H1 - Game title with neon glow
+  modalTitle: '48pt Orbitron Bold'; // H2 - Modal titles with neon glow
+  headerUI: '24pt Orbitron Regular'; // Header UI - Score, time, charges with neon glow
+  bodyButton: '20pt Orbitron Medium'; // Body/Button text with neon glow
 }
 
 // Default configuration values from PRD

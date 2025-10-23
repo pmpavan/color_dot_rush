@@ -1,9 +1,12 @@
 /**
  * HowToPlayModal - Modal overlay component for displaying game instructions
  * Integrates with DOMTextRenderer and ResponsiveLayoutManager for consistent presentation
+ * Updated with Neon Pulse theme styling
  */
 
 import { IResponsiveLayoutManager } from './ResponsiveLayoutManager';
+import { NeonTextEffects, NeonTextEffectType, NeonTextSize } from './NeonTextEffects';
+import { UIColor } from '../../../shared/types/game';
 
 /**
  * Modal state enumeration for managing display lifecycle
@@ -116,16 +119,16 @@ const MODAL_CONTENT: ContentSection[] = [
 ];
 
 /**
- * Default modal configuration
+ * Default modal configuration with Neon Pulse theme
  */
 const DEFAULT_MODAL_CONFIG: ModalConfig = {
   maxWidth: 500,
   padding: 24,
   borderRadius: 12,
-  backgroundColor: '#1a1a1a',
+  backgroundColor: 'rgba(30, 30, 30, 0.95)', // Dark semi-transparent frosted glass
   textColor: '#ffffff',
   closeButtonSize: 32,
-  overlayColor: 'rgba(0, 0, 0, 0.8)',
+  overlayColor: 'rgba(8, 8, 8, 0.9)', // Deep Space Black overlay
   zIndex: 2000
 };
 
@@ -339,6 +342,12 @@ export class HowToPlayModal implements IHowToPlayModal {
         this.modalContainer.parentNode.removeChild(this.modalContainer);
       }
 
+      // Remove neon animations CSS
+      const styleElement = document.getElementById('how-to-play-neon-styles');
+      if (styleElement) {
+        styleElement.remove();
+      }
+
       // Reset all state and references for garbage collection
       this.modalContainer = null;
       this.modalState = ModalState.HIDDEN;
@@ -421,11 +430,57 @@ export class HowToPlayModal implements IHowToPlayModal {
   }
 
   /**
+   * Inject CSS animations for neon effects
+   */
+  private injectNeonAnimations(): void {
+    // Create or update style element for neon animations
+    let styleElement = document.getElementById('how-to-play-neon-styles') as HTMLStyleElement;
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = 'how-to-play-neon-styles';
+      document.head.appendChild(styleElement);
+    }
+    
+    styleElement.textContent = `
+      @keyframes iconPulse {
+        0%, 100% {
+          filter: drop-shadow(0 0 8px rgba(255, 105, 180, 0.6));
+          transform: scale(1);
+        }
+        50% {
+          filter: drop-shadow(0 0 15px rgba(255, 105, 180, 0.9));
+          transform: scale(1.1);
+        }
+      }
+      
+      @keyframes titleGlow {
+        0%, 100% {
+          text-shadow: 0 0 5px rgba(255, 105, 180, 0.8), 
+                       0 0 10px rgba(255, 105, 180, 0.6), 
+                       0 0 15px rgba(255, 105, 180, 0.4);
+        }
+        50% {
+          text-shadow: 0 0 10px rgba(255, 105, 180, 1), 
+                       0 0 20px rgba(255, 105, 180, 0.8), 
+                       0 0 30px rgba(255, 105, 180, 0.6);
+        }
+      }
+      
+      .modal-title {
+        animation: titleGlow 3s ease-in-out infinite;
+      }
+    `;
+  }
+
+  /**
    * Create the modal DOM structure using DOMTextRenderer
    */
   private createModal(): void {
     try {
       console.log('HowToPlayModal: Creating modal DOM structure');
+
+      // Inject CSS animations for neon effects
+      this.injectNeonAnimations();
 
       // Create modal overlay container with accessibility attributes
       this.modalContainer = document.createElement('div');
@@ -448,7 +503,7 @@ export class HowToPlayModal implements IHowToPlayModal {
         align-items: center;
         padding: 20px;
         box-sizing: border-box;
-        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: 'Orbitron', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       `;
 
       // Create modal content container
@@ -485,7 +540,7 @@ export class HowToPlayModal implements IHowToPlayModal {
   }
 
   /**
-   * Create the main content container
+   * Create the main content container with Neon Pulse styling
    */
   private createContentContainer(): HTMLElement {
     const container = document.createElement('div');
@@ -501,17 +556,19 @@ export class HowToPlayModal implements IHowToPlayModal {
       overflow-y: auto;
       position: relative;
       padding: ${this.modalLayout.spacing.margins}px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 30px rgba(255, 105, 180, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 105, 180, 0.4);
       color: ${this.modalConfig.textColor};
       box-sizing: border-box;
       outline: none;
+      backdrop-filter: blur(10px) saturate(180%);
     `;
 
     return container;
   }
 
   /**
-   * Create the close button
+   * Create the close button with Neon Pulse styling
    */
   private createCloseButton(): HTMLElement {
     const closeButton = document.createElement('button');
@@ -528,8 +585,8 @@ export class HowToPlayModal implements IHowToPlayModal {
       height: ${this.modalLayout.closeButton.size}px;
       min-width: 44px;
       min-height: 44px;
-      border: none;
-      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 105, 180, 0.6);
+      background: rgba(30, 30, 30, 0.8);
       color: ${this.modalConfig.textColor};
       font-size: ${this.modalLayout.closeButton.size * 0.6}px;
       font-weight: bold;
@@ -538,31 +595,37 @@ export class HowToPlayModal implements IHowToPlayModal {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
       z-index: 1;
       outline: 2px solid transparent;
       outline-offset: 2px;
+      box-shadow: 0 0 15px rgba(255, 105, 180, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
     `;
 
-    // Add hover and focus effects
+    // Add hover and focus effects with neon styling
     closeButton.addEventListener('mouseenter', () => {
-      closeButton.style.background = 'rgba(255, 255, 255, 0.2)';
+      closeButton.style.background = 'rgba(255, 105, 180, 0.3)';
       closeButton.style.transform = 'scale(1.1)';
+      closeButton.style.boxShadow = '0 0 25px rgba(255, 105, 180, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
     });
 
     closeButton.addEventListener('mouseleave', () => {
-      closeButton.style.background = 'rgba(255, 255, 255, 0.1)';
+      closeButton.style.background = 'rgba(30, 30, 30, 0.8)';
       closeButton.style.transform = 'scale(1)';
+      closeButton.style.boxShadow = '0 0 15px rgba(255, 105, 180, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
     });
 
     closeButton.addEventListener('focus', () => {
-      closeButton.style.outline = '2px solid #ffffff';
-      closeButton.style.background = 'rgba(255, 255, 255, 0.2)';
+      closeButton.style.outline = '2px solid rgba(255, 105, 180, 0.8)';
+      closeButton.style.background = 'rgba(255, 105, 180, 0.2)';
+      closeButton.style.boxShadow = '0 0 20px rgba(255, 105, 180, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
     });
 
     closeButton.addEventListener('blur', () => {
       closeButton.style.outline = '2px solid transparent';
-      closeButton.style.background = 'rgba(255, 255, 255, 0.1)';
+      closeButton.style.background = 'rgba(30, 30, 30, 0.8)';
+      closeButton.style.boxShadow = '0 0 15px rgba(255, 105, 180, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
     });
 
     // Add click handler
@@ -574,7 +637,7 @@ export class HowToPlayModal implements IHowToPlayModal {
   }
 
   /**
-   * Create the modal header with title
+   * Create the modal header with title and Cyber Pink glow
    */
   private createModalHeader(): HTMLElement {
     const header = document.createElement('div');
@@ -588,7 +651,7 @@ export class HowToPlayModal implements IHowToPlayModal {
     const title = document.createElement('h1');
     title.className = 'modal-title';
     title.id = 'modal-title';
-    title.textContent = 'How to Play';
+    title.textContent = 'HOW TO PLAY';
     title.style.cssText = `
       font-size: ${this.modalLayout.fontSize.title}px;
       font-weight: bold;
@@ -596,19 +659,35 @@ export class HowToPlayModal implements IHowToPlayModal {
       margin: 0;
       padding: 0;
       line-height: 1.2;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Orbitron', 'Poppins', sans-serif;
+      text-shadow: ${NeonTextEffects.createTextShadow({
+        effectType: NeonTextEffectType.GLOW_PINK,
+        size: NeonTextSize.TITLE,
+        intensity: 0.8,
+        animation: true
+      })};
+      text-transform: uppercase;
+      letter-spacing: 1px;
     `;
 
     const subtitle = document.createElement('p');
     subtitle.className = 'modal-subtitle';
-    subtitle.textContent = 'Color Dot Rush';
+    subtitle.textContent = 'COLOR DOT RUSH';
     subtitle.style.cssText = `
       font-size: ${this.modalLayout.fontSize.body}px;
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(255, 255, 255, 0.8);
       margin: 8px 0 0 0;
       padding: 0;
       font-weight: 400;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Orbitron', 'Poppins', sans-serif;
+      text-shadow: ${NeonTextEffects.createTextShadow({
+        effectType: NeonTextEffectType.GLOW_WHITE,
+        size: NeonTextSize.MEDIUM,
+        intensity: 0.5,
+        animation: false
+      })};
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     `;
 
     header.appendChild(title);
@@ -638,14 +717,15 @@ export class HowToPlayModal implements IHowToPlayModal {
   }
 
   /**
-   * Create a single content section
+   * Create a single content section with neon-styled icons
    */
   private createContentSection(section: ContentSection): HTMLElement {
     const sectionElement = document.createElement('div');
     sectionElement.className = `modal-section ${section.className || ''}`;
     sectionElement.style.cssText = `
       padding: ${this.modalLayout.spacing.paragraphs}px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 105, 180, 0.2);
+      position: relative;
     `;
 
     // Remove border from last section
@@ -653,9 +733,29 @@ export class HowToPlayModal implements IHowToPlayModal {
       sectionElement.style.borderBottom = 'none';
     }
 
+    // Create icon container
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'section-icon';
+    iconContainer.style.cssText = `
+      display: inline-block;
+      margin-right: 12px;
+      font-size: ${this.modalLayout.fontSize.heading}px;
+      filter: drop-shadow(0 0 8px rgba(255, 105, 180, 0.6));
+      vertical-align: middle;
+    `;
+
+    // Extract emoji from title and style it
+    const emojiMatch = section.title.match(/[\u{1F300}-\u{1F9FF}]/u);
+    if (emojiMatch) {
+      iconContainer.textContent = emojiMatch[0];
+      iconContainer.style.cssText += `
+        animation: iconPulse 2s ease-in-out infinite;
+      `;
+    }
+
     const heading = document.createElement('h3');
     heading.className = 'section-heading';
-    heading.textContent = section.title;
+    heading.textContent = section.title.replace(/[\u{1F300}-\u{1F9FF}]/u, '').trim();
     heading.style.cssText = `
       font-size: ${this.modalLayout.fontSize.heading}px;
       font-weight: 600;
@@ -663,8 +763,23 @@ export class HowToPlayModal implements IHowToPlayModal {
       margin: 0 0 ${this.modalLayout.spacing.paragraphs * 0.5}px 0;
       padding: 0;
       line-height: 1.3;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Orbitron', 'Poppins', sans-serif;
+      text-shadow: ${NeonTextEffects.createTextShadow({
+        effectType: NeonTextEffectType.GLOW_WHITE,
+        size: NeonTextSize.LARGE,
+        intensity: 0.6,
+        animation: false
+      })};
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
     `;
+
+    // Insert icon before heading text
+    if (emojiMatch) {
+      heading.insertBefore(iconContainer, heading.firstChild);
+    }
 
     const content = document.createElement('p');
     content.className = 'section-content';
@@ -676,7 +791,13 @@ export class HowToPlayModal implements IHowToPlayModal {
       padding: 0;
       line-height: 1.5;
       font-weight: 400;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Orbitron', 'Poppins', sans-serif;
+      text-shadow: ${NeonTextEffects.createTextShadow({
+        effectType: NeonTextEffectType.GLOW_WHITE,
+        size: NeonTextSize.MEDIUM,
+        intensity: 0.3,
+        animation: false
+      })};
     `;
 
     sectionElement.appendChild(heading);

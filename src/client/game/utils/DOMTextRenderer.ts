@@ -3,8 +3,12 @@
  * This avoids Phaser's text rendering issues and provides better font control
  */
 
+import { NeonButtonSystem, NeonButtonConfig } from './NeonButtonSystem';
+import { NeonTextEffects, NeonTextConfig, NeonTextEffectType } from './NeonTextEffects';
+import { NeonIconSystem, NeonIconConfig } from './NeonIconSystem';
+
 export interface DOMTextStyle {
-  fontFamily: string;
+  fontFamily?: string;
   fontSize: string;
   fontWeight: string;
   color: string;
@@ -13,6 +17,24 @@ export interface DOMTextStyle {
   background?: string;
   padding?: string;
   borderRadius?: string;
+  boxShadow?: string;
+  textTransform?: string;
+  letterSpacing?: string;
+  backdropFilter?: string;
+  border?: string;
+  borderColor?: string;
+  width?: string | number;
+  height?: string | number;
+  transition?: string;
+  cursor?: string;
+  pointerEvents?: string;
+  display?: string;
+  alignItems?: string;
+  justifyContent?: string;
+  opacity?: number;
+  lineHeight?: string;
+  fontSmooth?: string;
+  webkitFontSmoothing?: string;
 }
 
 export interface GradientTextConfig {
@@ -59,10 +81,12 @@ export class DOMTextRenderer {
       height: 100%;
       pointer-events: none;
       z-index: 1000;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-overflow-scrolling: touch;
     `;
 
     this.gameContainer.appendChild(this.container);
@@ -101,6 +125,13 @@ export class DOMTextRenderer {
     // Add to container
     this.container.appendChild(element);
 
+    // Force visibility and positioning
+    element.style.display = 'block';
+    element.style.visibility = 'visible';
+    element.style.opacity = '1';
+    element.style.position = 'absolute';
+    element.style.zIndex = '5001';
+
     const domTextElement: DOMTextElement = {
       id,
       element,
@@ -113,6 +144,35 @@ export class DOMTextRenderer {
 
     this.elements.set(id, domTextElement);
     console.log(`DOMTextRenderer: Created text element "${id}"`);
+    
+    // Debug: Log element details
+    console.log(`DOMTextRenderer: Element "${id}" details:`, {
+      id: element.id,
+      text: element.textContent,
+      position: { x, y },
+      styles: {
+        left: element.style.left,
+        top: element.style.top,
+        transform: element.style.transform,
+        color: element.style.color,
+        fontSize: element.style.fontSize,
+        fontFamily: element.style.fontFamily,
+        display: element.style.display,
+        visibility: element.style.visibility,
+        opacity: element.style.opacity,
+        zIndex: element.style.zIndex,
+        position: element.style.position
+      },
+      container: {
+        width: this.container.style.width,
+        height: this.container.style.height,
+        position: this.container.style.position,
+        zIndex: this.container.style.zIndex,
+        overflowY: this.container.style.overflowY
+      },
+      elementInDOM: document.contains(element),
+      elementVisible: element.offsetWidth > 0 && element.offsetHeight > 0
+    });
 
     return domTextElement;
   }
@@ -200,11 +260,201 @@ export class DOMTextRenderer {
   }
 
   /**
+   * Create a neon-styled button with glass morphism and glow effects
+   */
+  createNeonButton(
+    id: string,
+    text: string,
+    x: number,
+    y: number,
+    config: NeonButtonConfig,
+    onClick?: () => void
+  ): DOMTextElement {
+    // Remove existing element with same ID
+    this.removeText(id);
+
+    const element = document.createElement('button');
+    element.id = `dom-button-${id}`;
+    element.textContent = text;
+
+    // Get neon button style from NeonButtonSystem
+    const style = NeonButtonSystem.createNeonButtonStyle(config);
+
+    // Apply base styles
+    this.applyStyles(element, style);
+
+    // Position the element
+    this.positionElement(element, x, y);
+
+    // Add to container
+    this.container.appendChild(element);
+
+    // Inject CSS for hover/active states
+    NeonButtonSystem.injectButtonCSS(id, config.variant);
+
+    // Add click handler
+    if (onClick) {
+      element.addEventListener('click', onClick);
+    }
+
+    const domTextElement: DOMTextElement = {
+      id,
+      element,
+      cleanup: () => {
+        // Remove CSS
+        NeonButtonSystem.removeButtonCSS(id);
+        
+        // Remove event listeners
+        element.removeEventListener('click', onClick!);
+        
+        // Remove from DOM
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+      }
+    };
+
+    this.elements.set(id, domTextElement);
+    console.log(`DOMTextRenderer: Created neon button element "${id}" with variant ${config.variant}`);
+
+    return domTextElement;
+  }
+
+  /**
+   * Create a neon-styled text element with glow effects
+   */
+  createNeonText(
+    id: string,
+    text: string,
+    x: number,
+    y: number,
+    config: NeonTextConfig
+  ): DOMTextElement {
+    // Remove existing element with same ID
+    this.removeText(id);
+
+    const element = document.createElement('div');
+    element.id = `dom-text-${id}`;
+    element.textContent = text;
+
+    // Get neon text style from NeonTextEffects
+    const style = NeonTextEffects.createNeonTextStyle(config);
+
+    // Apply base styles
+    this.applyStyles(element, style);
+
+    // Position the element
+    this.positionElement(element, x, y);
+
+    // Add to container
+    this.container.appendChild(element);
+
+    // Add animation class if needed
+    if (config.animation) {
+      switch (config.effectType) {
+        case NeonTextEffectType.PULSE:
+          element.classList.add('neon-pulse');
+          break;
+        case NeonTextEffectType.SHIMMER:
+          element.classList.add('neon-shimmer');
+          break;
+        case NeonTextEffectType.FADE:
+          element.classList.add('neon-fade');
+          break;
+      }
+    }
+
+    // Inject CSS for animations
+    NeonTextEffects.injectTextEffectCSS(config);
+
+    const domTextElement: DOMTextElement = {
+      id,
+      element,
+      cleanup: () => {
+        // Remove from DOM
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+      }
+    };
+
+    this.elements.set(id, domTextElement);
+    console.log(`DOMTextRenderer: Created neon text element "${id}" with effect ${config.effectType}`);
+
+    return domTextElement;
+  }
+
+  /**
+   * Create a neon-styled icon element with glow effects
+   */
+  createNeonIcon(
+    id: string,
+    x: number,
+    y: number,
+    config: NeonIconConfig,
+    onClick?: () => void
+  ): DOMTextElement {
+    // Remove existing element with same ID
+    this.removeText(id);
+
+    const element = document.createElement('div');
+    element.id = `neon-icon-${id}`;
+    element.textContent = NeonIconSystem.getIconSymbol(config.iconType);
+
+    // Get neon icon style from NeonIconSystem
+    const style = NeonIconSystem.createNeonIconStyle(config);
+
+    // Apply base styles
+    this.applyStyles(element, style);
+
+    // Position the element
+    this.positionElement(element, x, y);
+
+    // Add to container
+    this.container.appendChild(element);
+
+    // Inject CSS for hover effects
+    NeonIconSystem.injectIconCSS(id, config);
+
+    // Add click handler if interactive
+    if (config.interactive && onClick) {
+      element.addEventListener('click', onClick);
+    }
+
+    const domTextElement: DOMTextElement = {
+      id,
+      element,
+      cleanup: () => {
+        // Remove CSS
+        NeonIconSystem.removeIconCSS(id);
+        
+        // Remove event listeners
+        if (config.interactive && onClick) {
+          element.removeEventListener('click', onClick);
+        }
+        
+        // Remove from DOM
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+      }
+    };
+
+    this.elements.set(id, domTextElement);
+    console.log(`DOMTextRenderer: Created neon icon element "${id}" with type ${config.iconType}`);
+
+    return domTextElement;
+  }
+
+  /**
    * Apply styles to an element
    */
   private applyStyles(element: HTMLElement, style: DOMTextStyle): void {
+    // Use default font family if none provided
+    const fontFamily = style.fontFamily || 'Orbitron, Poppins, Arial, sans-serif';
+    
     element.style.cssText += `
-      font-family: ${style.fontFamily};
+      font-family: ${fontFamily};
       font-size: ${style.fontSize};
       font-weight: ${style.fontWeight};
       color: ${style.color};
@@ -235,6 +485,79 @@ export class DOMTextRenderer {
     if (style.borderRadius) {
       element.style.borderRadius = style.borderRadius;
     }
+
+    if (style.boxShadow) {
+      element.style.boxShadow = style.boxShadow;
+    }
+
+    if (style.textTransform) {
+      element.style.textTransform = style.textTransform;
+    }
+
+    if (style.letterSpacing) {
+      element.style.letterSpacing = style.letterSpacing;
+    }
+
+    if (style.backdropFilter) {
+      element.style.backdropFilter = style.backdropFilter;
+      (element.style as any).webkitBackdropFilter = style.backdropFilter; // Safari support
+    }
+
+    if (style.border) {
+      element.style.border = style.border;
+    }
+
+    if (style.borderColor) {
+      element.style.borderColor = style.borderColor;
+    }
+
+    if (style.width !== undefined) {
+      element.style.width = typeof style.width === 'number' ? `${style.width}px` : style.width;
+    }
+
+    if (style.height !== undefined) {
+      element.style.height = typeof style.height === 'number' ? `${style.height}px` : style.height;
+    }
+
+    if (style.transition) {
+      element.style.transition = style.transition;
+    }
+
+    if (style.cursor) {
+      element.style.cursor = style.cursor;
+    }
+
+    if (style.pointerEvents) {
+      element.style.pointerEvents = style.pointerEvents;
+    }
+
+    if (style.display) {
+      element.style.display = style.display;
+    }
+
+    if (style.alignItems) {
+      element.style.alignItems = style.alignItems;
+    }
+
+    if (style.justifyContent) {
+      element.style.justifyContent = style.justifyContent;
+    }
+
+    if (style.opacity !== undefined) {
+      element.style.opacity = style.opacity.toString();
+    }
+
+    if (style.lineHeight) {
+      element.style.lineHeight = style.lineHeight;
+    }
+
+    if (style.fontSmooth) {
+      (element.style as any).fontSmooth = style.fontSmooth;
+    }
+
+    if (style.webkitFontSmoothing) {
+      (element.style as any).webkitFontSmoothing = style.webkitFontSmoothing;
+    }
   }
 
   /**
@@ -244,6 +567,10 @@ export class DOMTextRenderer {
     element.style.left = `${x}px`;
     element.style.top = `${y}px`;
     element.style.transform = 'translate(-50%, -50%)';
+    element.style.position = 'absolute';
+    element.style.display = 'block';
+    element.style.visibility = 'visible';
+    element.style.opacity = '1';
   }
 
   /**
@@ -373,5 +700,27 @@ export class DOMTextRenderer {
    */
   hasElement(id: string): boolean {
     return this.elements.has(id);
+  }
+
+  /**
+   * Force refresh all elements to ensure they're visible
+   */
+  forceRefresh(): void {
+    this.elements.forEach((element) => {
+      const el = element.element;
+      el.style.display = 'block';
+      el.style.visibility = 'visible';
+      el.style.opacity = '1';
+      el.style.position = 'absolute';
+      el.style.zIndex = '5001';
+    });
+    console.log('DOMTextRenderer: Force refreshed all elements');
+  }
+
+  /**
+   * Get container element for debugging
+   */
+  getContainer(): HTMLElement {
+    return this.container;
   }
 }

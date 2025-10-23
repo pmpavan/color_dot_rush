@@ -1,7 +1,12 @@
 /**
  * UIErrorLogger - Comprehensive error logging and debugging utility for UI system
  * Implements requirements: 5.4, 5.5 - detailed error logging for debugging
+ * Updated with Neon Pulse theme styling for error displays
  */
+
+import { Scene } from 'phaser';
+import { NeonTextEffects, NeonTextEffectType, NeonTextSize } from './NeonTextEffects';
+import { UIColor } from '../../../shared/types/game';
 
 export enum LogLevel {
   DEBUG = 'DEBUG',
@@ -437,6 +442,234 @@ export class UIErrorLogger {
       'System capabilities detected',
       capabilities
     );
+  }
+
+  /**
+   * Create neon-themed error display for critical errors
+   */
+  public createNeonErrorDisplay(scene: Scene, error: Error, context: string): Phaser.GameObjects.Container | null {
+    try {
+      const { width, height } = scene.scale;
+      
+      const container = scene.add.container(width / 2, height / 2);
+      container.setDepth(25000);
+      
+      // Dark background with transparency
+      const bg = scene.add.rectangle(0, 0, width * 0.8, height * 0.6, 0x000000, 0.95);
+      bg.setStrokeStyle(3, 0xFF0000, 0.8);
+      
+      // Glow effect
+      const glow = scene.add.rectangle(0, 0, width * 0.85, height * 0.65, 0xFF0000, 0.2);
+      glow.setBlendMode(Phaser.BlendModes.ADD);
+      
+      // Error title
+      const title = scene.add.text(0, -100, 'CRITICAL ERROR', {
+        fontSize: '32px',
+        color: '#FF0000',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      title.setStroke('#000000', 3);
+      title.setShadow(0, 0, 20, 0xFF0000, 1, true);
+      
+      // Context
+      const contextText = scene.add.text(0, -50, `Context: ${context}`, {
+        fontSize: '18px',
+        color: '#FFFFFF',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      contextText.setShadow(0, 0, 10, 0x00BFFF, 0.8, true);
+      
+      // Error message
+      const errorText = scene.add.text(0, 0, error.message, {
+        fontSize: '16px',
+        color: '#FFA500',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center',
+        wordWrap: { width: width * 0.7 }
+      }).setOrigin(0.5);
+      
+      errorText.setShadow(0, 0, 8, 0xFFA500, 0.6, true);
+      
+      // Error code
+      const errorCode = scene.add.text(0, 80, `Error Code: ${error.name}`, {
+        fontSize: '14px',
+        color: '#00FF00',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      errorCode.setShadow(0, 0, 6, 0x00FF00, 0.6, true);
+      
+      // Close button
+      const closeButton = scene.add.rectangle(0, 120, 120, 40, 0x1E1E1E, 0.8);
+      closeButton.setStrokeStyle(2, 0x00BFFF, 0.8);
+      closeButton.setInteractive();
+      
+      const closeText = scene.add.text(0, 120, 'CLOSE', {
+        fontSize: '16px',
+        color: '#00BFFF',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      closeText.setShadow(0, 0, 8, 0x00BFFF, 0.6, true);
+      
+      // Close button interaction
+      closeButton.on('pointerdown', () => {
+        this.hideNeonErrorDisplay(container);
+      });
+      
+      closeButton.on('pointerover', () => {
+        closeButton.setFillStyle(0x2E2E2E, 0.9);
+        closeButton.setStrokeStyle(2, 0x00BFFF, 1);
+      });
+      
+      closeButton.on('pointerout', () => {
+        closeButton.setFillStyle(0x1E1E1E, 0.8);
+        closeButton.setStrokeStyle(2, 0x00BFFF, 0.8);
+      });
+      
+      container.add([glow, bg, title, contextText, errorText, errorCode, closeButton, closeText]);
+      
+      // Entrance animation
+      container.setAlpha(0);
+      container.setScale(0.8);
+      
+      scene.tweens.add({
+        targets: container,
+        alpha: 1,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 500,
+        ease: 'Back.easeOut'
+      });
+      
+      this.log(LogLevel.CRITICAL, 'UIErrorLogger', 'createNeonErrorDisplay', `Created neon error display for: ${context}`, {
+        error: error.message,
+        context
+      }, error);
+      
+      return container;
+      
+    } catch (displayError) {
+      this.log(LogLevel.ERROR, 'UIErrorLogger', 'createNeonErrorDisplay', 'Failed to create neon error display', {
+        originalError: error.message,
+        context,
+        displayError: displayError instanceof Error ? displayError.message : 'Unknown error'
+      }, displayError instanceof Error ? displayError : undefined);
+      return null;
+    }
+  }
+
+  /**
+   * Hide neon error display
+   */
+  public hideNeonErrorDisplay(container: Phaser.GameObjects.Container): void {
+    if (!container || !container.active) return;
+    
+    const scene = container.scene;
+    scene.tweens.add({
+      targets: container,
+      alpha: 0,
+      scaleX: 0.8,
+      scaleY: 0.8,
+      duration: 300,
+      ease: 'Power2.easeIn',
+      onComplete: () => {
+        container.destroy();
+      }
+    });
+  }
+
+  /**
+   * Create neon-themed warning notification
+   */
+  public createNeonWarningNotification(scene: Scene, message: string, duration: number = 3000): Phaser.GameObjects.Container | null {
+    try {
+      const { width } = scene.scale;
+      
+      const container = scene.add.container(width - 200, 100);
+      container.setDepth(20000);
+      
+      // Background with glass morphism
+      const bg = scene.add.rectangle(0, 0, 350, 80, 0x1E1E1E, 0.95);
+      bg.setStrokeStyle(2, 0xFFA500, 0.8);
+      
+      // Glow effect
+      const glow = scene.add.rectangle(0, 0, 370, 100, 0xFFA500, 0.2);
+      glow.setBlendMode(Phaser.BlendModes.ADD);
+      
+      // Warning icon
+      const icon = scene.add.text(-120, 0, '⚠️', {
+        fontSize: '24px',
+        fontFamily: 'Arial, sans-serif'
+      }).setOrigin(0.5);
+      
+      // Warning text
+      const text = scene.add.text(0, 0, message, {
+        fontSize: '16px',
+        color: '#FFA500',
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        align: 'center',
+        wordWrap: { width: 250 }
+      }).setOrigin(0.5);
+      
+      text.setShadow(0, 0, 8, 0xFFA500, 0.6, true);
+      
+      container.add([glow, bg, icon, text]);
+      
+      // Entrance animation
+      container.setAlpha(0);
+      container.setX(width);
+      
+      scene.tweens.add({
+        targets: container,
+        alpha: 1,
+        x: width - 200,
+        duration: 400,
+        ease: 'Back.easeOut'
+      });
+      
+      // Auto-hide after duration
+      scene.time.delayedCall(duration, () => {
+        this.hideNeonWarningNotification(container);
+      });
+      
+      this.log(LogLevel.WARN, 'UIErrorLogger', 'createNeonWarningNotification', `Created warning notification: ${message}`);
+      return container;
+      
+    } catch (error) {
+      this.log(LogLevel.ERROR, 'UIErrorLogger', 'createNeonWarningNotification', 'Failed to create warning notification', {
+        message,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, error instanceof Error ? error : undefined);
+      return null;
+    }
+  }
+
+  /**
+   * Hide neon warning notification
+   */
+  public hideNeonWarningNotification(container: Phaser.GameObjects.Container): void {
+    if (!container || !container.active) return;
+    
+    const scene = container.scene;
+    const { width } = scene.scale;
+    
+    scene.tweens.add({
+      targets: container,
+      alpha: 0,
+      x: width,
+      duration: 300,
+      ease: 'Power2.easeIn',
+      onComplete: () => {
+        container.destroy();
+      }
+    });
   }
 
   /**

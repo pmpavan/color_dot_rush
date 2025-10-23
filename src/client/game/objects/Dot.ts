@@ -2,6 +2,7 @@
 
 import Phaser from 'phaser';
 import { GameColor } from '../../../shared/types/game';
+import { AccessibilityManager } from '../utils/AccessibilityManager';
 
 /**
  * Dot class represents the colored dots that players need to tap
@@ -14,6 +15,8 @@ export class Dot extends Phaser.GameObjects.Arc {
   private hitbox: Phaser.Geom.Rectangle;
   public override active: boolean = false;
   private lastCollisionTime: number = 0;
+  private accessibilityManager: AccessibilityManager | null = null;
+  private shapeOverlayId: string | null = null;
 
   constructor(scene: Phaser.Scene) {
     // Create as a circle instead of sprite - larger for visibility
@@ -27,6 +30,10 @@ export class Dot extends Phaser.GameObjects.Arc {
     
     // Add to scene
     scene.add.existing(this);
+    
+    // Start hidden until activated
+    this.setVisible(false);
+    this.active = false;
     
     // Debug logging removed
     
@@ -52,6 +59,19 @@ export class Dot extends Phaser.GameObjects.Arc {
     
     // Position the dot
     this.setPosition(x, y);
+    
+    // Initialize hitbox position
+    this.hitbox.setPosition(
+      x - this.hitbox.width / 2,
+      y - this.hitbox.height / 2
+    );
+    
+    // No glow effect - keep dots simple
+    
+    // Create shape overlay for accessibility if enabled
+    if (this.accessibilityManager && this.accessibilityManager.areShapeOverlaysEnabled()) {
+      this.createShapeOverlay();
+    }
   }
 
   /**
@@ -67,6 +87,8 @@ export class Dot extends Phaser.GameObjects.Arc {
     this.x += this.direction.x * this.speed * deltaSeconds;
     this.y += this.direction.y * this.speed * deltaSeconds;
     
+    // No glow effect to update
+    
     // Debug: Log movement occasionally
     if (Math.random() < 0.01) { // 1% chance to log
       console.log(`Dot moving: speed=${this.speed}, direction=(${this.direction.x.toFixed(2)}, ${this.direction.y.toFixed(2)}), delta=${delta}, from (${oldX.toFixed(1)}, ${oldY.toFixed(1)}) to (${this.x.toFixed(1)}, ${this.y.toFixed(1)})`);
@@ -77,6 +99,9 @@ export class Dot extends Phaser.GameObjects.Arc {
       this.x - this.hitbox.width / 2,
       this.y - this.hitbox.height / 2
     );
+    
+    // Update shape overlay position for accessibility
+    this.updateShapeOverlay();
 
     // Check if dot is off-screen and deactivate
     const bounds = this.scene.cameras.main;
@@ -217,31 +242,23 @@ export class Dot extends Phaser.GameObjects.Arc {
    * Create visual feedback when dot is tapped correctly
    */
   public createPopEffect(): void {
-    // Create celebratory pop effect with simple graphics
-    const color = parseInt(this.color.replace('#', '0x'));
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      const distance = 30 + Math.random() * 20;
-      const popDot = this.scene.add.circle(this.x, this.y, 4, color);
-      
-      this.scene.tweens.add({
-        targets: popDot,
-        x: this.x + Math.cos(angle) * distance,
-        y: this.y + Math.sin(angle) * distance,
-        alpha: 0,
-        duration: 300,
-        ease: 'Power2.easeOut',
-        onComplete: () => popDot.destroy()
-      });
-    }
+    // Create flash white burst animation
+    this.createWhiteBurstEffect();
+    
+    // Create enhanced luminous particle effects
+    this.createLuminousParticleEffect();
+    
+    // Create enhanced pop effect with multiple layers
+    this.createEnhancedPopEffect();
 
-    // Shrink dot to nothing
+    // Shrink dot to nothing with enhanced animation
     this.scene.tweens.add({
       targets: this,
       scaleX: 0,
       scaleY: 0,
-      duration: 300,
-      ease: 'Power2',
+      alpha: 0,
+      duration: 400,
+      ease: 'Back.easeIn',
       onComplete: () => {
         this.deactivate();
       }
@@ -249,23 +266,204 @@ export class Dot extends Phaser.GameObjects.Arc {
   }
 
   /**
+   * Create flash white burst effect on correct tap
+   */
+  private createWhiteBurstEffect(): void {
+    // Primary white burst - large and bright
+    const primaryBurst = this.scene.add.circle(this.x, this.y, 20, 0xFFFFFF, 0.9);
+    primaryBurst.setDepth(this.depth + 10);
+    
+    this.scene.tweens.add({
+      targets: primaryBurst,
+      radius: this.size * 1.5,
+      alpha: 0,
+      duration: 150,
+      ease: 'Power2.easeOut',
+      onComplete: () => primaryBurst.destroy()
+    });
+
+    // Secondary burst - smaller and faster
+    const secondaryBurst = this.scene.add.circle(this.x, this.y, 10, 0xFFFFFF, 1);
+    secondaryBurst.setDepth(this.depth + 11);
+    
+    this.scene.tweens.add({
+      targets: secondaryBurst,
+      radius: this.size * 0.8,
+      alpha: 0,
+      duration: 100,
+      ease: 'Power3.easeOut',
+      delay: 25,
+      onComplete: () => secondaryBurst.destroy()
+    });
+  }
+
+  /**
+   * Create luminous particle effects on tap
+   */
+  private createLuminousParticleEffect(): void {
+    const dotColor = parseInt(this.color.replace('#', '0x'));
+    const particleCount = 12;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2;
+      const distance = 40 + Math.random() * 30;
+      const size = 3 + Math.random() * 4;
+      
+      // Create luminous particle with glow
+      const particle = this.scene.add.circle(this.x, this.y, size, dotColor, 0.8);
+      particle.setDepth(this.depth + 5);
+      
+      // Add subtle glow effect to particle
+      const particleGlow = this.scene.add.circle(this.x, this.y, size * 2, dotColor, 0.3);
+      particleGlow.setDepth(this.depth + 4);
+      
+      // Animate particle movement
+      this.scene.tweens.add({
+        targets: particle,
+        x: this.x + Math.cos(angle) * distance,
+        y: this.y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 400 + Math.random() * 200,
+        ease: 'Power2.easeOut',
+        onComplete: () => particle.destroy()
+      });
+      
+      // Animate particle glow
+      this.scene.tweens.add({
+        targets: particleGlow,
+        x: this.x + Math.cos(angle) * distance,
+        y: this.y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 400 + Math.random() * 200,
+        ease: 'Power2.easeOut',
+        onComplete: () => particleGlow.destroy()
+      });
+    }
+  }
+
+  /**
+   * Create enhanced pop effect with multiple layers
+   */
+  private createEnhancedPopEffect(): void {
+    const dotColor = parseInt(this.color.replace('#', '0x'));
+    
+    // Create multiple layers of pop effects
+    for (let layer = 0; layer < 3; layer++) {
+      const layerCount = 6 + layer * 2;
+      const layerDistance = 25 + layer * 15;
+      const layerSize = 3 + layer;
+      const layerDelay = layer * 50;
+      
+      for (let i = 0; i < layerCount; i++) {
+        const angle = (i / layerCount) * Math.PI * 2;
+        const distance = layerDistance + Math.random() * 10;
+        
+        const popDot = this.scene.add.circle(this.x, this.y, layerSize, dotColor, 0.9);
+        popDot.setDepth(this.depth + 3 + layer);
+        
+        this.scene.tweens.add({
+          targets: popDot,
+          x: this.x + Math.cos(angle) * distance,
+          y: this.y + Math.sin(angle) * distance,
+          alpha: 0,
+          scale: 0,
+          duration: 350 + layer * 50,
+          ease: 'Power2.easeOut',
+          delay: layerDelay,
+          onComplete: () => popDot.destroy()
+        });
+      }
+    }
+  }
+
+  /**
    * Create ripple effect for any tap
    */
   public createRippleEffect(): void {
-    // Create expanding white ripple effect
-    const ripple = this.scene.add.circle(this.x, this.y, 10, 0xFFFFFF, 0.8);
+    // Create enhanced ripple effect with multiple layers
+    this.createEnhancedRippleEffect();
+  }
+
+  /**
+   * Create enhanced ripple effect with multiple luminous layers
+   */
+  private createEnhancedRippleEffect(): void {
+    const dotColor = parseInt(this.color.replace('#', '0x'));
+    
+    // Primary ripple - white and bright
+    const primaryRipple = this.scene.add.circle(this.x, this.y, 8, 0xFFFFFF, 0.9);
+    primaryRipple.setDepth(this.depth + 8);
     
     this.scene.tweens.add({
-      targets: ripple,
+      targets: primaryRipple,
+      radius: this.size * 2.5,
+      alpha: 0,
+      duration: 250,
+      ease: 'Power2.easeOut',
+      onComplete: () => primaryRipple.destroy()
+    });
+
+    // Secondary ripple - colored and luminous
+    const secondaryRipple = this.scene.add.circle(this.x, this.y, 12, dotColor, 0.7);
+    secondaryRipple.setDepth(this.depth + 7);
+    
+    this.scene.tweens.add({
+      targets: secondaryRipple,
       radius: this.size * 2,
       alpha: 0,
-      duration: 200,
-      ease: 'Power2',
+      duration: 300,
+      ease: 'Power2.easeOut',
+      delay: 50,
+      onComplete: () => secondaryRipple.destroy()
+    });
+
+    // Tertiary ripple - subtle glow
+    const tertiaryRipple = this.scene.add.circle(this.x, this.y, 15, dotColor, 0.4);
+    tertiaryRipple.setDepth(this.depth + 6);
+    
+    this.scene.tweens.add({
+      targets: tertiaryRipple,
+      radius: this.size * 1.8,
+      alpha: 0,
+      duration: 350,
+      ease: 'Sine.easeOut',
+      delay: 100,
+      onComplete: () => tertiaryRipple.destroy()
+    });
+  }
+
+  /**
+   * Create smooth color transition effect
+   */
+  public createColorTransitionEffect(newColor: GameColor): void {
+    const newColorValue = parseInt(newColor.replace('#', '0x'));
+    const oldColorValue = parseInt(this.color.replace('#', '0x'));
+    
+    // Create color transition tween
+    this.scene.tweens.add({
+      targets: this,
+      duration: 300,
+      ease: 'Power2.easeInOut',
+      onUpdate: (tween) => {
+        const progress = tween.progress;
+        const currentColor = Phaser.Display.Color.Interpolate.ColorWithColor(
+          Phaser.Display.Color.IntegerToColor(oldColorValue),
+          Phaser.Display.Color.IntegerToColor(newColorValue),
+          1,
+          progress
+        );
+        const colorInt = Phaser.Display.Color.GetColor(currentColor.r, currentColor.g, currentColor.b);
+        this.setFillStyle(colorInt);
+      },
       onComplete: () => {
-        ripple.destroy();
+        this.color = newColor;
+        // No glow effect to update
       }
     });
   }
+
 
   /**
    * Activate the dot
@@ -273,19 +471,78 @@ export class Dot extends Phaser.GameObjects.Arc {
   public activate(): void {
     this.active = true;
     this.setVisible(true);
-    this.setScale(1);
-    this.setAlpha(1);
-    // Debug logging removed
+    this.setScale(1.0);  // Full size for consistency
+    this.setAlpha(1.0);  // Full opacity for consistency
+    
+    // Create entrance animation
+    this.createEntranceEffect();
+    
+    // No glow effect - keep dots simple
   }
+
+  /**
+   * Create entrance animation when dot becomes active
+   */
+  private createEntranceEffect(): void {
+    // Start from smaller scale for entrance effect
+    this.setScale(0.5);
+    this.setAlpha(1.0); // Keep full alpha for visibility
+    
+    // Scale up animation to full size
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 1.0,
+      scaleY: 1.0,
+      duration: 200,
+      ease: 'Back.easeOut'
+    });
+
+    // Create entrance burst effect
+    const entranceBurst = this.scene.add.circle(this.x, this.y, 5, parseInt(this.color.replace('#', '0x')), 0.6);
+    entranceBurst.setDepth(this.depth + 2);
+    
+    this.scene.tweens.add({
+      targets: entranceBurst,
+      radius: this.size * 1.2,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2.easeOut',
+      onComplete: () => entranceBurst.destroy()
+    });
+  }
+
 
   /**
    * Deactivate the dot
    */
   public deactivate(): void {
     this.active = false;
-    this.setVisible(false);
-    // Clean up any ongoing tweens
+    
+    // Stop all tweens on this dot
     this.scene.tweens.killTweensOf(this);
+    
+    // Create exit animation
+    this.createExitEffect();
+    
+    // No glow effect to clean up
+  }
+
+  /**
+   * Create exit animation when dot is deactivated
+   */
+  private createExitEffect(): void {
+    // Fade out and scale down
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.5,
+      scaleY: 0.5,
+      alpha: 0,
+      duration: 150,
+      ease: 'Power2.easeIn',
+      onComplete: () => {
+        this.setVisible(false);
+      }
+    });
   }
 
   /**
@@ -300,5 +557,57 @@ export class Dot extends Phaser.GameObjects.Arc {
    */
   public isCorrectColor(targetColor: GameColor): boolean {
     return this.color === targetColor;
+  }
+
+  /**
+   * Set accessibility manager for shape overlays
+   */
+  public setAccessibilityManager(accessibilityManager: AccessibilityManager): void {
+    this.accessibilityManager = accessibilityManager;
+  }
+
+  /**
+   * Create shape overlay for accessibility
+   */
+  public createShapeOverlay(): void {
+    if (!this.accessibilityManager || !this.active) return;
+    
+    // Generate unique ID for this dot
+    this.shapeOverlayId = `dot-${this.x}-${this.y}-${Date.now()}`;
+    
+    // Convert GameColor to number for shape mapping
+    const colorNumber = parseInt(this.color.replace('#', '0x'));
+    
+    // Create shape overlay
+    this.accessibilityManager.createShapeOverlay(this.shapeOverlayId, this.x, this.y, colorNumber);
+  }
+
+  /**
+   * Update shape overlay position
+   */
+  public updateShapeOverlay(): void {
+    if (!this.accessibilityManager || !this.shapeOverlayId || !this.active) return;
+    
+    this.accessibilityManager.updateShapeOverlay(this.shapeOverlayId, this.x, this.y);
+  }
+
+  /**
+   * Remove shape overlay
+   */
+  public removeShapeOverlay(): void {
+    if (!this.accessibilityManager || !this.shapeOverlayId) return;
+    
+    this.accessibilityManager.removeShapeOverlay(this.shapeOverlayId);
+    this.shapeOverlayId = null;
+  }
+
+  /**
+   * Destroy the dot and clean up glow effects
+   */
+  public override destroy(fromScene?: boolean): void {
+    // Remove shape overlay if it exists
+    this.removeShapeOverlay();
+    
+    super.destroy(fromScene);
   }
 }

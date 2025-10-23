@@ -50,7 +50,7 @@ export interface LayoutConfig {
  */
 export class UIElementFactory {
   private scene: Scene;
-  private fontFamily: string = 'Poppins, Arial, sans-serif';
+  private fontFamily: string = 'Orbitron, Poppins, Arial, sans-serif';
   private fallbackMode: UIElementType = UIElementType.TEXT;
 
   constructor(scene: Scene) {
@@ -84,7 +84,7 @@ export class UIElementFactory {
           this.performFontCheck();
         }, 100);
       } else {
-        this.fontFamily = 'Arial, sans-serif';
+        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
         uiLogger.logFontStatus({
           poppinsAvailable: false,
           systemFontsAvailable: true,
@@ -131,7 +131,7 @@ export class UIElementFactory {
       uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'performFontCheck', 'Poppins font availability check completed', fontCheckResults);
       
       if (poppinsFullyAvailable) {
-        this.fontFamily = 'Poppins, Arial, sans-serif';
+        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
         uiLogger.logFontStatus({
           poppinsAvailable: true,
           fontApiSupported: true,
@@ -139,7 +139,7 @@ export class UIElementFactory {
         });
         uiLogger.log(LogLevel.INFO, 'UIElementFactory', 'performFontCheck', 'Poppins font fully available');
       } else if (poppins16Available || poppins24Available) {
-        this.fontFamily = 'Poppins, Arial, sans-serif';
+        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
         uiLogger.logFontStatus({
           poppinsAvailable: true,
           fontApiSupported: true,
@@ -149,7 +149,7 @@ export class UIElementFactory {
         });
         uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'performFontCheck', 'Poppins partially available, using with Arial fallback');
       } else {
-        this.fontFamily = 'Arial, sans-serif';
+        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
         uiLogger.logFontStatus({
           poppinsAvailable: false,
           systemFontsAvailable: true,
@@ -947,7 +947,7 @@ export class UIElementFactory {
         name: 'resetFontFamily',
         operation: () => {
           // Reset font family to safe default
-          this.fontFamily = 'Arial, sans-serif';
+          this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
           console.log('UIElementFactory: Font family reset to safe default');
         },
         required: true

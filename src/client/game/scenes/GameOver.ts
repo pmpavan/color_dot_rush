@@ -1,5 +1,10 @@
 import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
+import { NeonBackgroundSystem } from '../utils/NeonBackgroundSystem';
+import { NeonTextEffects, NeonTextEffectType, NeonTextSize } from '../utils/NeonTextEffects';
+import { NeonButtonSystem, NeonButtonVariant, NeonButtonSize } from '../utils/NeonButtonSystem';
+import { GlowEffects } from '../utils/GlowEffects';
+import { UIColor } from '../../../shared/types/game';
 
 interface GameOverData {
   finalScore: number;
@@ -17,6 +22,7 @@ export class GameOver extends Scene {
   private playAgainButton: Phaser.GameObjects.Container | null = null;
   private leaderboardButton: Phaser.GameObjects.Container | null = null;
   private mainMenuButton: Phaser.GameObjects.Container | null = null;
+  private neonBackground: NeonBackgroundSystem | null = null;
 
   constructor() {
     super('GameOver');
@@ -31,6 +37,12 @@ export class GameOver extends Scene {
       
       // Clean up container reference
       this.modalCard = null;
+      
+      // Clean up neon background system
+      if (this.neonBackground) {
+        this.neonBackground.destroy();
+        this.neonBackground = null;
+      }
       
       // Kill all tweens
       if (this.tweens) {
@@ -65,7 +77,7 @@ export class GameOver extends Scene {
     
     // Configure camera
     this.camera = this.cameras.main;
-    this.camera.setBackgroundColor(0x2C3E50); // Dark Slate background
+    this.camera.setBackgroundColor(0x080808); // Deep Space Black background
     
     // Fade in from black for smooth transition (with safety check for tests)
     if (this.cameras?.main?.fadeIn) {
@@ -74,8 +86,12 @@ export class GameOver extends Scene {
     
     console.log('GameOver scene camera configured');
 
+    // Initialize and create neon background system
+    this.neonBackground = new NeonBackgroundSystem(this);
+    this.neonBackground.createBackground();
+
     // Create frozen game state background (graphics-only)
-    this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x34495E, 0.3).setOrigin(0);
+    this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x080808, 0).setOrigin(0);
 
     // Create dimmed overlay for modal effect (overlaying frozen game state)
     this.dimmedOverlay = this.add.rectangle(
@@ -112,21 +128,51 @@ export class GameOver extends Scene {
     const modalWidth = Math.min(400, this.scale.width * 0.9);
     const modalHeight = Math.min(500, this.scale.height * 0.8);
 
-    // Modal background with rounded corners effect
-    const modalBg = this.add.rectangle(0, 0, modalWidth, modalHeight, 0x34495E, 0.98);
-    modalBg.setStrokeStyle(4, 0xECF0F1, 0.8);
+    // Modal background with dark semi-transparent frosted glass effect
+    const modalBg = this.add.rectangle(0, 0, modalWidth, modalHeight, 0x1E1E1E, 0.85);
+    modalBg.setStrokeStyle(2, 0xFFFFFF, 0.1); // Subtle glass border
     this.modalCard.add(modalBg);
 
-    // "GAME OVER" title (graphics-only representation)
+    // "GAME OVER" title with Warning Red glow
     const gameOverIcon = this.add.circle(0, -modalHeight * 0.35, 30, 0xFF0000, 1);
     gameOverIcon.setStrokeStyle(4, 0xFFFFFF, 1);
+    
+    // Add Warning Red glow effect
+    const gameOverGlow = GlowEffects.createGlowEffect(
+      this,
+      0, -modalHeight * 0.35,
+      {
+        color: UIColor.GLOW_RED,
+        intensity: 0.9,
+        radius: 35,
+        blur: 25,
+        alpha: 0.8
+      },
+      -1
+    );
+    this.modalCard.add(gameOverGlow);
     this.modalCard.add(gameOverIcon);
 
-    // Final score display (graphics-only - use colored circles to represent score level)
+    // Final score display with Electric Blue glow
     const scoreLevel = this.gameOverData.finalScore > 20 ? 3 : this.gameOverData.finalScore > 10 ? 2 : 1;
     const scoreColors = [0xFF0000, 0xFFD700, 0x2ECC71]; // Red, Gold, Green
     const scoreIndicator = this.add.circle(0, -modalHeight * 0.2, 25, scoreColors[scoreLevel - 1], 1);
     scoreIndicator.setStrokeStyle(3, 0xFFFFFF, 1);
+    
+    // Add Electric Blue glow effect for final score
+    const scoreGlow = GlowEffects.createGlowEffect(
+      this,
+      0, -modalHeight * 0.2,
+      {
+        color: UIColor.GLOW_BLUE,
+        intensity: 0.8,
+        radius: 30,
+        blur: 20,
+        alpha: 0.7
+      },
+      -1
+    );
+    this.modalCard.add(scoreGlow);
     this.modalCard.add(scoreIndicator);
 
     // Session time display (graphics-only - rotating clock hand)
@@ -144,13 +190,33 @@ export class GameOver extends Scene {
       this.modalCard.add(timeHand);
     }
 
-    // Best score display (graphics-only - trophy icon for new record)
+    // Best score display with trophy icon and white glow
     const isNewRecord = this.gameOverData.finalScore === this.gameOverData.bestScore && this.gameOverData.finalScore > 0;
     const bestScoreColor = isNewRecord ? 0xF1C40F : 0x95A5A6; // Gold for new record, grey otherwise
     
-    const bestScoreIcon = this.add.circle(0, modalHeight * 0.02, 18, bestScoreColor, 1);
-    bestScoreIcon.setStrokeStyle(3, 0xFFFFFF, 1);
-    this.modalCard.add(bestScoreIcon);
+    // Create trophy icon (cup shape)
+    const trophyBase = this.add.rectangle(0, modalHeight * 0.02 + 8, 16, 8, bestScoreColor, 1);
+    const trophyCup = this.add.rectangle(0, modalHeight * 0.02 - 2, 12, 12, bestScoreColor, 1);
+    const trophyHandles = this.add.ellipse(0, modalHeight * 0.02 - 2, 20, 8, bestScoreColor, 0.3);
+    
+    // Add white glow effect to trophy
+    const trophyGlow = GlowEffects.createGlowEffect(
+      this,
+      0, modalHeight * 0.02,
+      {
+        color: '#FFFFFF',
+        intensity: 0.8,
+        radius: 25,
+        blur: 20,
+        alpha: 0.6
+      },
+      -1
+    );
+    
+    this.modalCard.add(trophyGlow);
+    this.modalCard.add(trophyBase);
+    this.modalCard.add(trophyCup);
+    this.modalCard.add(trophyHandles);
     
     if (isNewRecord) {
       // Add crown effect for new record
@@ -166,31 +232,48 @@ export class GameOver extends Scene {
     // Create navigation buttons within the modal
     this.createModalButtons(modalHeight);
 
-    // Scale-up and fade-in animation (~250ms as per spec)
+    // Enhanced scale-up and fade-in animation with neon effects
     this.modalCard.setScale(0.1);
     this.modalCard.setAlpha(0);
 
+    // Create dramatic entrance animation
     this.tweens.add({
       targets: this.modalCard,
-      scaleX: 1,
-      scaleY: 1,
+      scaleX: 1.1,
+      scaleY: 1.1,
       alpha: 1,
-      duration: 250,
+      duration: 300,
       ease: 'Back.easeOut',
+      onUpdate: (tween) => {
+        // Add pulsing glow effect during animation
+        const progress = tween.progress;
+        const pulseIntensity = 0.5 + (Math.sin(progress * Math.PI * 4) * 0.3);
+        // This creates a pulsing effect during the scale animation
+      },
       onComplete: () => {
-        // Auto-focus the Play Again button after animation
-        if (this.playAgainButton) {
-          this.playAgainButton.setScale(1.05);
-          // Add subtle glow effect to indicate focus
-          this.tweens.add({
-            targets: this.playAgainButton,
-            alpha: 0.8,
-            duration: 800,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-          });
-        }
+        // Settle to final scale
+        this.tweens.add({
+          targets: this.modalCard,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 150,
+          ease: 'Power2.easeOut',
+          onComplete: () => {
+            // Auto-focus the Play Again button after animation
+            if (this.playAgainButton) {
+              this.playAgainButton.setScale(1.05);
+              // Add subtle pulsing glow effect to indicate focus
+              this.tweens.add({
+                targets: this.playAgainButton,
+                alpha: 0.8,
+                duration: 1000,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+              });
+            }
+          }
+        });
       }
     });
   }
@@ -215,15 +298,30 @@ export class GameOver extends Scene {
   }
 
   private createModalButtons(modalHeight: number): void {
-    // Play Again button (graphics-only - blue rectangle with play icon)
-    const playAgainBg = this.add.rectangle(0, modalHeight * 0.2, 200, 50, 0x3498DB, 1);
-    playAgainBg.setStrokeStyle(2, 0xFFFFFF, 0.8);
+    // Play Again button with Volt Green border glow
+    const playAgainBg = this.add.rectangle(0, modalHeight * 0.2, 200, 50, 0x1E1E1E, 0.7);
+    playAgainBg.setStrokeStyle(3, 0x00FF00, 0.8); // Volt Green border
+    
+    // Add Volt Green glow effect around button
+    const playAgainGlow = GlowEffects.createGlowEffect(
+      this,
+      0, modalHeight * 0.2,
+      {
+        color: UIColor.GLOW_GREEN,
+        intensity: 0.8,
+        radius: 110,
+        blur: 30,
+        alpha: 0.6
+      },
+      -1
+    );
     
     // Add play triangle icon
     const playIcon = this.add.triangle(0, modalHeight * 0.2, 0, 0, 0, 15, 12, 7.5, 0xFFFFFF);
     
     // Create container for button
     const playAgainContainer = this.add.container(0, 0);
+    playAgainContainer.add(playAgainGlow);
     playAgainContainer.add(playAgainBg);
     playAgainContainer.add(playIcon);
     
@@ -300,15 +398,30 @@ export class GameOver extends Scene {
       this.modalCard.add(this.playAgainButton);
     }
 
-    // View Leaderboard button (graphics-only - grey rectangle with trophy icon)
-    const leaderboardBg = this.add.rectangle(0, modalHeight * 0.32, 180, 40, 0x95A5A6, 1);
-    leaderboardBg.setStrokeStyle(2, 0xFFFFFF, 0.6);
+    // View Leaderboard button with Cyber Pink border glow
+    const leaderboardBg = this.add.rectangle(0, modalHeight * 0.32, 180, 40, 0x1E1E1E, 0.7);
+    leaderboardBg.setStrokeStyle(2, 0xFF69B4, 0.8); // Cyber Pink border
+    
+    // Add Cyber Pink glow effect around button
+    const leaderboardGlow = GlowEffects.createGlowEffect(
+      this,
+      0, modalHeight * 0.32,
+      {
+        color: UIColor.GLOW_PINK,
+        intensity: 0.6,
+        radius: 95,
+        blur: 25,
+        alpha: 0.5
+      },
+      -1
+    );
     
     // Add trophy icon
     const trophyIcon = this.add.circle(0, modalHeight * 0.32, 8, 0xF1C40F);
     trophyIcon.setStrokeStyle(2, 0xFFFFFF, 1);
     
     const leaderboardContainer = this.add.container(0, 0);
+    leaderboardContainer.add(leaderboardGlow);
     leaderboardContainer.add(leaderboardBg);
     leaderboardContainer.add(trophyIcon);
     
@@ -359,15 +472,30 @@ export class GameOver extends Scene {
       }
     }
 
-    // Main Menu button (graphics-only - dark rectangle with home icon)
-    const mainMenuBg = this.add.rectangle(0, modalHeight * 0.42, 160, 35, 0x34495E, 1);
-    mainMenuBg.setStrokeStyle(2, 0xFFFFFF, 0.4);
+    // Main Menu button with Electric Blue border glow
+    const mainMenuBg = this.add.rectangle(0, modalHeight * 0.42, 160, 35, 0x1E1E1E, 0.7);
+    mainMenuBg.setStrokeStyle(2, 0x00BFFF, 0.8); // Electric Blue border
+    
+    // Add Electric Blue glow effect around button
+    const mainMenuGlow = GlowEffects.createGlowEffect(
+      this,
+      0, modalHeight * 0.42,
+      {
+        color: UIColor.GLOW_BLUE,
+        intensity: 0.5,
+        radius: 85,
+        blur: 20,
+        alpha: 0.4
+      },
+      -1
+    );
     
     // Add home icon (simple house shape)
     const homeIcon = this.add.rectangle(0, modalHeight * 0.42, 12, 8, 0xFFFFFF);
     const homeRoof = this.add.triangle(0, modalHeight * 0.42 - 6, 0, 0, -6, 8, 6, 8, 0xFFFFFF);
     
     const mainMenuContainer = this.add.container(0, 0);
+    mainMenuContainer.add(mainMenuGlow);
     mainMenuContainer.add(mainMenuBg);
     mainMenuContainer.add(homeIcon);
     mainMenuContainer.add(homeRoof);
@@ -439,6 +567,11 @@ export class GameOver extends Scene {
     if (this.dimmedOverlay) {
       this.dimmedOverlay.setPosition(width / 2, height / 2);
       this.dimmedOverlay.setDisplaySize(width, height);
+    }
+    
+    // Update neon background system
+    if (this.neonBackground) {
+      this.neonBackground.updateDimensions(width, height);
     }
 
     // Reposition modal card to center

@@ -10,8 +10,10 @@ import {
  * Button types for layout positioning
  */
 export enum ButtonType {
-  PRIMARY = 'primary',
-  SECONDARY = 'secondary'
+  PRIMARY = 'primary',      // Start Game - Electric Blue
+  SECONDARY = 'secondary',  // How to Play - Cyber Pink
+  TERTIARY = 'tertiary',    // View Leaderboard - White
+  QUATERNARY = 'quaternary' // Additional buttons
 }
 
 /**
@@ -36,8 +38,12 @@ export interface Dimensions {
 export interface SplashLayoutConfig {
   title: Position;
   subtitle: Position;
+  highScore: Position;
   primaryButton: Position;
   secondaryButton: Position;
+  tertiaryButton: Position;
+  settingsIcon: Position;
+  shopIcon: Position;
 }
 
 /**
@@ -48,8 +54,11 @@ export interface IResponsiveLayoutManager {
   getCurrentDimensions(): Dimensions;
   getTitlePosition(): Position;
   getSubtitlePosition(): Position;
+  getHighScorePosition(): Position;
   getButtonPosition(buttonType: ButtonType): Position;
   getButtonBounds(buttonType: ButtonType): Phaser.Geom.Rectangle;
+  getSettingsIconPosition(): Position;
+  getShopIconPosition(): Position;
   getLayoutConfig(): SplashLayoutConfig;
   getResponsiveFontSize(baseSize: number): string;
   onResize(callback: (width: number, height: number) => void): void;
@@ -483,19 +492,55 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    */
   getButtonPosition(buttonType: ButtonType): Position {
     const { width, height } = this.currentDimensions;
-    const buttonY = height * 0.7; // 70% from top
+    const centerX = width / 2;
+    const buttonSpacing = 70; // Spacing between buttons
+    const startY = height * 0.6; // Start buttons at 60% from top
 
-    if (buttonType === ButtonType.PRIMARY) {
-      return {
-        x: width / 2,
-        y: buttonY
-      };
-    } else { // SECONDARY
-      return {
-        x: width / 2,
-        y: buttonY + 80 // 80px below primary button
-      };
+    switch (buttonType) {
+      case ButtonType.PRIMARY:
+        return { x: centerX, y: startY };
+      case ButtonType.SECONDARY:
+        return { x: centerX, y: startY + buttonSpacing };
+      case ButtonType.TERTIARY:
+        return { x: centerX, y: startY + (buttonSpacing * 2) };
+      case ButtonType.QUATERNARY:
+        return { x: centerX, y: startY + (buttonSpacing * 3) };
+      default:
+        return { x: centerX, y: startY };
     }
+  }
+
+  /**
+   * Get high score position
+   */
+  getHighScorePosition(): Position {
+    const { width, height } = this.currentDimensions;
+    return {
+      x: width / 2,
+      y: height * 0.45 // Between subtitle and buttons
+    };
+  }
+
+  /**
+   * Get settings icon position (top left)
+   */
+  getSettingsIconPosition(): Position {
+    const { width, height } = this.currentDimensions;
+    return {
+      x: 50, // 50px from left edge
+      y: 50  // 50px from top edge
+    };
+  }
+
+  /**
+   * Get shop icon position (bottom right)
+   */
+  getShopIconPosition(): Position {
+    const { width, height } = this.currentDimensions;
+    return {
+      x: width - 50,  // 50px from right edge
+      y: height - 50  // 50px from bottom edge
+    };
   }
 
   /**
@@ -521,8 +566,12 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
     return {
       title: this.getTitlePosition(),
       subtitle: this.getSubtitlePosition(),
+      highScore: this.getHighScorePosition(),
       primaryButton: this.getButtonPosition(ButtonType.PRIMARY),
-      secondaryButton: this.getButtonPosition(ButtonType.SECONDARY)
+      secondaryButton: this.getButtonPosition(ButtonType.SECONDARY),
+      tertiaryButton: this.getButtonPosition(ButtonType.TERTIARY),
+      settingsIcon: this.getSettingsIconPosition(),
+      shopIcon: this.getShopIconPosition()
     };
   }
 

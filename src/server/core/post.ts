@@ -10,12 +10,12 @@ export const createPost = async () => {
     splash: {
       // Splash screen customization for Color Dot Rush - Reddit Community Games 2025
       appDisplayName: 'Color Dot Rush',
-      backgroundUri: 'logo.png',
+      backgroundUri: 'default-splash.png', // Use the splash background image
       buttonLabel: 'Play Color Dot Rush',
       description:
-        'Test your reflexes! Tap the correct colored dots while avoiding bombs and wrong colors.',
-      heading: 'Color Dot Rush - Reddit Community Games 2025',
-      appIconUri: 'logo.png',
+        'Tap into chaos! Tap the correct colored dots while avoiding bombs and wrong colors.',
+      heading: 'Color Dot Rush',
+      appIconUri: 'default-icon.png', // Use the app icon image
     },
     postData: {
       gameState: 'initial',

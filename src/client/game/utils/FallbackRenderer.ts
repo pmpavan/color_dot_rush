@@ -166,7 +166,7 @@ export class FallbackRenderer {
     
     // Test font rendering capability first
     const testText = this.scene.add.text(0, 0, 'Test', {
-      fontFamily: 'Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
       fontSize: '16px',
       color: '#FFFFFF'
     });
@@ -355,7 +355,7 @@ export class FallbackRenderer {
     container.setDepth(101);
 
     const scoreText = this.scene.add.text(0, 0, 'Score: 0 | Best: 0', {
-      fontFamily: 'Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
       fontSize: '24px',
       color: '#FFFFFF'
     }).setOrigin(0, 0.5);
@@ -382,7 +382,7 @@ export class FallbackRenderer {
     container.setDepth(101);
 
     const timeText = this.scene.add.text(0, 0, 'Time: 0:00', {
-      fontFamily: 'Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
       fontSize: '24px',
       color: '#FFFFFF'
     }).setOrigin(0.5, 0.5);
@@ -461,7 +461,7 @@ export class FallbackRenderer {
 
     // TAP text
     const tapText = this.scene.add.text(-50, 0, 'TAP', {
-      fontFamily: 'Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
       fontSize: '32px',
       fontStyle: 'bold',
       color: '#FFFFFF'
@@ -937,7 +937,7 @@ export class FallbackRenderer {
 
       // Test creating text with system fonts
       const testElement = document.createElement('div');
-      testElement.style.fontFamily = 'Arial, sans-serif';
+      testElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
       testElement.style.fontSize = '16px';
       testElement.textContent = 'Test';
       testElement.style.position = 'absolute';

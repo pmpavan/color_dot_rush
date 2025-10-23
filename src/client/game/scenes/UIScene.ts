@@ -5,6 +5,7 @@ import { ResponsiveLayoutManager, UIElementMap } from '../utils/ResponsiveLayout
 import { UpdateHandler } from '../utils/UpdateHandler';
 import { UIErrorRecovery } from '../utils/UIErrorRecovery';
 import { uiLogger, LogLevel } from '../utils/UIErrorLogger';
+import { GlowEffects } from '../utils/GlowEffects';
 
 export class UIScene extends Scene {
   // New factory-based UI system
@@ -20,6 +21,8 @@ export class UIScene extends Scene {
   private targetColorText: Phaser.GameObjects.Text | null = null;
   private targetColorBg: Phaser.GameObjects.Rectangle | null = null;
   private headerBg: Phaser.GameObjects.Rectangle | null = null;
+  private targetColorGlow: Phaser.GameObjects.Graphics | null = null;
+  private targetColorGlowTween: Phaser.Tweens.Tween | null = null;
   // slowMoCharges removed - simplified slow mo logic
   private slowMoClockIcons: Phaser.GameObjects.Line[] = [];
 
@@ -192,6 +195,16 @@ export class UIScene extends Scene {
     this.targetColorText = null;
     this.targetColorBg = null;
     this.headerBg = null;
+    
+    // Clean up glow effects
+    if (this.targetColorGlow) {
+      this.targetColorGlow.destroy();
+      this.targetColorGlow = null;
+    }
+    if (this.targetColorGlowTween) {
+      this.targetColorGlowTween.remove();
+      this.targetColorGlowTween = null;
+    }
     
     // Clear arrays
     // slowMoCharges reset removed - simplified logic
@@ -668,10 +681,12 @@ export class UIScene extends Scene {
       console.log('UIScene: Score container created at:', this.scoreContainer.x, this.scoreContainer.y);
 
       const scoreText = this.add.text(0, 0, `Score: ${this.score} | Best: ${this.bestScore}`, {
-        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins first, fallback to Arial
+        fontFamily: 'Orbitron, Poppins, Arial, sans-serif', // Use Orbitron first, fallback to Poppins
         fontSize: '24px',
         fontStyle: 'normal',
-        color: '#FFFFFF'
+        color: '#FFFFFF',
+        stroke: '#00BFFF',
+        strokeThickness: 1
       }).setOrigin(0, 0.5);
       scoreText.setDepth(102);
       console.log('UIScene: Score text created:', scoreText.text);
@@ -686,10 +701,12 @@ export class UIScene extends Scene {
       console.log('UIScene: Time container created at:', this.timeContainer.x, this.timeContainer.y);
 
       const timeText = this.add.text(0, 0, 'Time: 0:00', {
-        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins first, fallback to Arial
+        fontFamily: 'Orbitron, Poppins, Arial, sans-serif', // Use Orbitron first, fallback to Poppins
         fontSize: '24px',
         fontStyle: 'normal',
-        color: '#FFFFFF'
+        color: '#FFFFFF',
+        stroke: '#00BFFF',
+        strokeThickness: 1
       }).setOrigin(0.5, 0.5);
       timeText.setDepth(102);
       console.log('UIScene: Time text created:', timeText.text);
@@ -716,15 +733,20 @@ export class UIScene extends Scene {
       const colorName = this.getColorName(this.targetColor);
       console.log('UIScene: Creating target color text with color:', this.targetColor, 'name:', colorName);
       const targetText = this.add.text(width / 2, targetY, `TAP: ${colorName}`, {
-        fontFamily: 'Poppins, Arial, sans-serif', // Use Poppins first, fallback to Arial
+        fontFamily: 'Orbitron, Poppins, Arial, sans-serif', // Use Orbitron first, fallback to Poppins
         fontSize: '32px',
         fontStyle: 'bold',
-        color: this.targetColor
+        color: this.targetColor,
+        stroke: '#FFFFFF',
+        strokeThickness: 2
       }).setOrigin(0.5, 0.5);
       targetText.setDepth(104);
       console.log('UIScene: Target color text created:', targetText.text);
 
       this.targetColorText = targetText;
+
+      // Create glow effect for target color
+      this.createTargetColorGlow();
 
       // Add subtle pulsing animation
       this.tweens.add({
@@ -825,6 +847,7 @@ export class UIScene extends Scene {
     const margin = Math.max(20, width * 0.03);
     const headerY = 30;
     const chargeSpacing = 35;
+    const chargeStartX = width - margin;
 
     // Update score container position
     if (this.scoreContainer) {
@@ -999,6 +1022,33 @@ export class UIScene extends Scene {
     if (this.targetColorBg) {
       this.targetColorBg.setStrokeStyle(3, parseInt(color.replace('#', '0x')), 0.9);
     }
+
+    // Update glow effect to match new color
+    this.createTargetColorGlow();
+  }
+
+  /**
+   * Create glow effect for target color indicator
+   */
+  private createTargetColorGlow(): void {
+    if (this.targetColorGlow) {
+      this.targetColorGlow.destroy();
+    }
+    if (this.targetColorGlowTween) {
+      this.targetColorGlowTween.remove();
+    }
+    
+    const glowConfig = GlowEffects.getGlowConfig(this.targetColor);
+    const { glow, tween } = GlowEffects.createPulsingGlow(
+      this,
+      this.targetColorText?.x || 0,
+      this.targetColorText?.y || 0,
+      glowConfig,
+      (this.targetColorText?.depth || 100) - 1
+    );
+    
+    this.targetColorGlow = glow;
+    this.targetColorGlowTween = tween;
   }
 
   // updateSlowMoCharges method removed - simplified slow mo logic

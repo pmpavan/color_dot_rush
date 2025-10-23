@@ -53,6 +53,15 @@ export function generateFontCSS(): string {
 }
 
 /**
+ * Generate CSS for Google Fonts (Orbitron) for Neon Pulse theme
+ */
+export function generateGoogleFontsCSS(): string {
+  return `
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+  `;
+}
+
+/**
  * Inject font CSS into the document
  */
 export function injectFontCSS(): void {
@@ -85,6 +94,38 @@ export function injectFontCSS(): void {
 }
 
 /**
+ * Inject Google Fonts CSS for Neon Pulse theme
+ */
+export function injectGoogleFontsCSS(): void {
+  console.log('FontAssets: Injecting Google Fonts CSS for Neon Pulse theme');
+  
+  try {
+    if (typeof document === 'undefined') {
+      console.warn('FontAssets: Document not available, cannot inject Google Fonts CSS');
+      return;
+    }
+
+    // Check if Google Fonts CSS is already injected
+    const existingStyle = document.getElementById('google-fonts-css');
+    if (existingStyle) {
+      console.log('FontAssets: Google Fonts CSS already injected');
+      return;
+    }
+
+    // Create and inject Google Fonts CSS
+    const style = document.createElement('style');
+    style.id = 'google-fonts-css';
+    style.textContent = generateGoogleFontsCSS();
+    
+    document.head.appendChild(style);
+    console.log('FontAssets: Google Fonts CSS injected successfully');
+    
+  } catch (error) {
+    console.error('FontAssets: Error injecting Google Fonts CSS:', error);
+  }
+}
+
+/**
  * Preload fonts using WOFF2 format only
  */
 export async function preloadFonts(): Promise<boolean> {
@@ -96,19 +137,30 @@ export async function preloadFonts(): Promise<boolean> {
       return false;
     }
 
-    // Inject WOFF2-only CSS
+    // Inject both local and Google Fonts CSS
     injectFontCSS();
+    injectGoogleFontsCSS();
 
     // Wait a bit for CSS to be processed
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     // Load fonts using the Font Loading API
     const fontPromises = [
+      // Poppins fonts (local)
       document.fonts.load('16px Poppins'),
       document.fonts.load('24px Poppins'),
       document.fonts.load('32px Poppins'),
       document.fonts.load('500 16px Poppins'),
-      document.fonts.load('700 16px Poppins')
+      document.fonts.load('700 16px Poppins'),
+      // Orbitron fonts (Google Fonts) for Neon Pulse theme
+      document.fonts.load('16px Orbitron'),
+      document.fonts.load('24px Orbitron'),
+      document.fonts.load('32px Orbitron'),
+      document.fonts.load('48px Orbitron'),
+      document.fonts.load('72px Orbitron'),
+      document.fonts.load('500 16px Orbitron'),
+      document.fonts.load('700 16px Orbitron'),
+      document.fonts.load('900 16px Orbitron')
     ];
 
     const results = await Promise.allSettled(fontPromises);

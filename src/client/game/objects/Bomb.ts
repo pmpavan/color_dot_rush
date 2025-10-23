@@ -1,6 +1,7 @@
 // Bomb game object implementation for Color Dot Rush
 
 import Phaser from 'phaser';
+import { GlowEffects } from '../utils/GlowEffects';
 
 /**
  * Bomb class represents dangerous objects that end the game when tapped
@@ -15,6 +16,8 @@ export class Bomb extends Phaser.GameObjects.Container {
   private fuseGraphics: Phaser.GameObjects.Graphics;
   private sparkGraphics: Phaser.GameObjects.Graphics;
   private sparkTween: Phaser.Tweens.Tween | null = null;
+  private glowEffect: Phaser.GameObjects.Graphics | null = null;
+  private glowTween: Phaser.Tweens.Tween | null = null;
   public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
@@ -60,6 +63,9 @@ export class Bomb extends Phaser.GameObjects.Container {
     
     // Draw the bomb shape
     this.drawBombShape();
+    
+    // Create glow effect
+    this.createGlowEffect();
   }
 
   /**
@@ -72,6 +78,11 @@ export class Bomb extends Phaser.GameObjects.Container {
     const deltaSeconds = delta / 1000;
     this.x += this.direction.x * this.speed * deltaSeconds;
     this.y += this.direction.y * this.speed * deltaSeconds;
+
+    // Update glow effect position
+    if (this.glowEffect) {
+      this.glowEffect.setPosition(this.x, this.y);
+    }
 
     // Update hitbox position
     this.hitbox.setPosition(
@@ -124,8 +135,8 @@ export class Bomb extends Phaser.GameObjects.Container {
   public explode(): void {
     if (!this.active) return;
 
-    // Create explosion effect with enhanced graphics
-    const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700, 0xFFFFFF]; // Red, OrangeRed, DarkOrange, Gold, White
+    // Create explosion effect with enhanced neon graphics
+    const explosionColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700, 0xFFFFFF, 0xFF6666]; // Warning Red, OrangeRed, DarkOrange, Gold, White, Bright Red
     
     for (let i = 0; i < 25; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -180,6 +191,77 @@ export class Bomb extends Phaser.GameObjects.Container {
   }
 
   /**
+   * Create electric arc visual effects on collision
+   */
+  public createElectricArcEffect(): void {
+    // Create multiple electric arcs around the bomb
+    const arcCount = 8;
+    const arcLength = this.size * 0.8;
+    
+    for (let i = 0; i < arcCount; i++) {
+      const angle = (i / arcCount) * Math.PI * 2;
+      const startX = this.x + Math.cos(angle) * (this.size / 2);
+      const startY = this.y + Math.sin(angle) * (this.size / 2);
+      const endX = this.x + Math.cos(angle) * arcLength;
+      const endY = this.y + Math.sin(angle) * arcLength;
+      
+      // Create electric arc line
+      const arc = this.scene.add.line(startX, startY, 0, 0, endX - startX, endY - startY, 0x00BFFF, 1);
+      arc.setLineWidth(3);
+      arc.setDepth(this.depth + 5);
+      
+      // Animate the arc
+      this.scene.tweens.add({
+        targets: arc,
+        alpha: 0,
+        scaleX: 1.5,
+        scaleY: 1.5,
+        duration: 150,
+        ease: 'Power2.easeOut',
+        onComplete: () => {
+          arc.destroy();
+        }
+      });
+    }
+    
+    // Create central electric burst
+    const centralBurst = this.scene.add.circle(this.x, this.y, 15, 0x00BFFF, 0.8);
+    centralBurst.setDepth(this.depth + 6);
+    
+    this.scene.tweens.add({
+      targets: centralBurst,
+      radius: this.size * 0.6,
+      alpha: 0,
+      duration: 200,
+      ease: 'Power2.easeOut',
+      onComplete: () => {
+        centralBurst.destroy();
+      }
+    });
+  }
+
+  /**
+   * Create glow effect for the bomb
+   */
+  private createGlowEffect(): void {
+    if (this.glowEffect) {
+      this.glowEffect.destroy();
+    }
+    
+    const glowConfig = GlowEffects.getBombGlowConfig();
+    const { glow, tween } = GlowEffects.createFlickeringGlow(
+      this.scene,
+      this.x,
+      this.y,
+      glowConfig,
+      this.depth - 1
+    );
+    
+    this.glowEffect = glow;
+    this.glowTween = tween;
+  }
+
+  /**
    * Activate the bomb
    */
   public activate(): void {
@@ -196,6 +278,11 @@ export class Bomb extends Phaser.GameObjects.Container {
     this.sparkGraphics.setVisible(true);
     this.sparkGraphics.setActive(true);
     
+    // Show glow effect
+    if (this.glowEffect) {
+      this.glowEffect.setVisible(true);
+    }
+    
     // Start spark animation when bomb is activated
     this.startSparkAnimation();
   }
@@ -209,6 +296,15 @@ export class Bomb extends Phaser.GameObjects.Container {
     this.bombGraphics.setVisible(false);
     this.fuseGraphics.setVisible(false);
     this.sparkGraphics.setVisible(false);
+    
+    // Hide and clean up glow effect
+    if (this.glowEffect) {
+      this.glowEffect.setVisible(false);
+    }
+    if (this.glowTween) {
+      this.glowTween.remove();
+      this.glowTween = null;
+    }
     
     // Stop spark animation
     if (this.sparkTween) {
@@ -228,6 +324,16 @@ export class Bomb extends Phaser.GameObjects.Container {
     if (this.sparkTween) {
       this.sparkTween.remove();
       this.sparkTween = null;
+    }
+    
+    // Clean up glow effect
+    if (this.glowEffect) {
+      this.glowEffect.destroy();
+      this.glowEffect = null;
+    }
+    if (this.glowTween) {
+      this.glowTween.remove();
+      this.glowTween = null;
     }
     
     if (this.bombGraphics) {
@@ -263,18 +369,22 @@ export class Bomb extends Phaser.GameObjects.Container {
     this.fuseGraphics.clear();
     this.sparkGraphics.clear();
     
-    // Draw bomb body (dark metallic sphere)
-    this.bombGraphics.fillStyle(0x2C3E50, 1.0); // Dark slate blue
-    this.bombGraphics.lineStyle(2, 0x34495E, 1.0); // Slightly lighter outline
+    // Draw bomb body (Warning Red with neon glow)
+    this.bombGraphics.fillStyle(0xFF0000, 1.0); // Warning Red (#FF0000)
+    this.bombGraphics.lineStyle(3, 0xFF4444, 1.0); // Brighter red outline for neon effect
     this.bombGraphics.fillCircle(0, 0, radius);
     this.bombGraphics.strokeCircle(0, 0, radius);
     
-    // Add metallic highlight
-    this.bombGraphics.fillStyle(0x5D6D7E, 0.6); // Lighter metallic highlight
+    // Add neon highlight with electric glow
+    this.bombGraphics.fillStyle(0xFF6666, 0.8); // Brighter red highlight
     this.bombGraphics.fillCircle(-radius * 0.3, -radius * 0.3, radius * 0.4);
     
+    // Add inner glow effect
+    this.bombGraphics.fillStyle(0xFFAAAA, 0.4); // Light red inner glow
+    this.bombGraphics.fillCircle(0, 0, radius * 0.7);
+    
     // Draw bent fuse (curved red wick) - using simple line segments
-    this.fuseGraphics.lineStyle(4, 0xFF0000, 1.0); // Bright red, thick line
+    this.fuseGraphics.lineStyle(5, 0xFF0000, 1.0); // Warning Red, thicker line for neon effect
     
     // Create a bent fuse using simple line segments
     const fuseStartX = -2;
@@ -291,18 +401,53 @@ export class Bomb extends Phaser.GameObjects.Container {
     this.fuseGraphics.lineTo(fuseEndX, fuseEndY);
     this.fuseGraphics.strokePath();
     
-    // Add fuse tip (smaller orange circle)
+    // Add fuse tip (smaller orange circle with neon glow)
     this.fuseGraphics.fillStyle(0xFF4500, 1.0); // Orange-red tip
-    this.fuseGraphics.fillCircle(fuseEndX, fuseEndY, 3);
+    this.fuseGraphics.lineStyle(2, 0xFF6600, 1.0); // Brighter orange outline
+    this.fuseGraphics.fillCircle(fuseEndX, fuseEndY, 4);
+    this.fuseGraphics.strokeCircle(fuseEndX, fuseEndY, 4);
     
-    // Add some bomb details (small circles for rivets)
-    this.bombGraphics.fillStyle(0x1B2631, 1.0); // Dark rivets
-    this.bombGraphics.fillCircle(-radius * 0.4, radius * 0.2, 2);
-    this.bombGraphics.fillCircle(radius * 0.3, -radius * 0.1, 2);
-    this.bombGraphics.fillCircle(radius * 0.1, radius * 0.4, 2);
+    // Add some bomb details (neon rivets with glow)
+    this.bombGraphics.fillStyle(0xFF3333, 1.0); // Bright red rivets
+    this.bombGraphics.lineStyle(1, 0xFF6666, 1.0); // Glowing outline
+    this.bombGraphics.fillCircle(-radius * 0.4, radius * 0.2, 3);
+    this.bombGraphics.strokeCircle(-radius * 0.4, radius * 0.2, 3);
+    this.bombGraphics.fillCircle(radius * 0.3, -radius * 0.1, 3);
+    this.bombGraphics.strokeCircle(radius * 0.3, -radius * 0.1, 3);
+    this.bombGraphics.fillCircle(radius * 0.1, radius * 0.4, 3);
+    this.bombGraphics.strokeCircle(radius * 0.1, radius * 0.4, 3);
     
     // Start spark animation
     this.startSparkAnimation();
+    
+    // Start subtle flicker effect
+    this.startFlickerEffect();
+  }
+
+  /**
+   * Start subtle flicker effect for the bomb
+   */
+  private startFlickerEffect(): void {
+    // Create subtle alpha flicker for the bomb graphics
+    this.scene.tweens.add({
+      targets: this.bombGraphics,
+      alpha: 0.85,
+      duration: 200,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    
+    // Create subtle scale flicker for the fuse
+    this.scene.tweens.add({
+      targets: this.fuseGraphics,
+      scaleX: 1.05,
+      scaleY: 1.05,
+      duration: 300,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
   }
 
   /**
@@ -350,7 +495,7 @@ export class Bomb extends Phaser.GameObjects.Container {
 
     // Create 4-6 small sparks around the fuse tip
     const sparkCount = 4 + Math.floor(Math.random() * 3);
-    const sparkColors = [0xFFD700, 0xFFA500, 0xFF4500, 0xFFFFFF]; // Gold, Orange, Red-Orange, White
+    const sparkColors = [0xFFD700, 0xFFA500, 0xFF4500, 0xFFFFFF, 0xFF0000]; // Gold, Orange, Red-Orange, White, Warning Red
 
     for (let i = 0; i < sparkCount; i++) {
       const angle = Math.random() * Math.PI * 2;

@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import { GameColor } from '../../../shared/types/game';
-import { DOMTextRenderer, DOMTextStyle } from '../utils/DOMTextRenderer';
+import { DOMTextRenderer } from '../utils/DOMTextRenderer';
+import { NeonTextConfig, NeonTextEffectType, NeonTextSize } from '../utils/NeonTextEffects';
 
 /**
  * Simplified UI Scene - Clean, minimal HUD using DOMTextRenderer for better performance
@@ -60,7 +61,7 @@ export class SimpleUIScene extends Scene {
   }
 
   /**
-   * Create simple, clean HUD elements using DOMTextRenderer
+   * Create neon-styled HUD elements according to specification mockup
    */
   private createSimpleHUD(): void {
     if (!this.domTextRenderer) {
@@ -68,98 +69,168 @@ export class SimpleUIScene extends Scene {
       return;
     }
 
-    const { width, height } = this.scale;
-    const margin = Math.max(20, width * 0.06); // 6% of screen width, minimum 20px for better spacing
-    const headerY = 25; // Adjust for better vertical centering in header bar
+    const { width } = this.scale;
+    const margin = Math.max(20, width * 0.06);
+    const headerY = 30;
 
-    // Header background (still using Phaser for the background)
-    const headerBg = this.add.rectangle(0, 0, width, 60, 0x000000, 0.5).setOrigin(0, 0);
-    headerBg.setDepth(100);
+    // Create top bar elements according to specification
+    this.createTopBar(margin, headerY, width);
 
-    // Define responsive text style
-    const baseFontSize = Math.max(16, Math.min(24, width * 0.05)); // 5% of screen width, between 16-24px
-    const textStyle: DOMTextStyle = {
-      fontFamily: 'Poppins, Arial, sans-serif',
-      fontSize: `${baseFontSize}px`,
-      fontWeight: '500',
-      color: '#FFFFFF',
-      textAlign: 'left',
-      textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+    // Create target color prompt zone (center of screen)
+    this.createTargetColorPrompt();
+
+
+    console.log('SimpleUIScene: Neon HUD created successfully');
+  }
+
+  /**
+   * Create top bar with scores and time
+   */
+  private createTopBar(margin: number, headerY: number, width: number): void {
+    if (!this.domTextRenderer) {
+      console.error('SimpleUIScene: DOMTextRenderer not available in createTopBar');
+      return;
+    }
+
+
+    // Create BEST score (white text)
+    const bestScoreConfig: NeonTextConfig = {
+      effectType: NeonTextEffectType.GLOW_WHITE,
+      size: NeonTextSize.MEDIUM,
+      intensity: 0.6,
+      animation: false,
+      performance: 'high'
     };
 
-    // slowMoCharges variables removed - simplified logic
-
-    // Best score display (left side) - using DOMTextRenderer
-    const bestScoreStyle: DOMTextStyle = {
-      ...textStyle,
-      textAlign: 'left'
-    };
-    this.domTextRenderer.createText(
-      'bestScore',
-      `Best: ${this.bestScore}`,
-      margin + 10, // Add extra padding to prevent cutoff
+    this.domTextRenderer.createNeonText(
+      'best-score',
+      `BEST: ${this.bestScore.toLocaleString()}`,
+      width * 0.3,
       headerY,
-      bestScoreStyle
+      bestScoreConfig
     );
 
-    // Score display (center) - using DOMTextRenderer
-    const scoreStyle: DOMTextStyle = {
-      ...textStyle,
-      textAlign: 'center'
+    // Create SCORE (Plasma Orange glow)
+    const scoreConfig: NeonTextConfig = {
+      effectType: NeonTextEffectType.GLOW_ORANGE,
+      size: NeonTextSize.MEDIUM,
+      intensity: 0.8,
+      animation: false,
+      performance: 'high'
     };
-    this.domTextRenderer.createText(
+
+    this.domTextRenderer.createNeonText(
       'score',
-      `Score: ${this.score}`,
-      width / 2,
+      `SCORE: ${this.score.toLocaleString()}`,
+      width * 0.6,
       headerY,
-      scoreStyle
+      scoreConfig
     );
 
-    // Time display (right side) - using DOMTextRenderer
-    const timeStyle: DOMTextStyle = {
-      ...textStyle,
-      textAlign: 'right'
+    // Create time display (white text)
+    const timeConfig: NeonTextConfig = {
+      effectType: NeonTextEffectType.GLOW_WHITE,
+      size: NeonTextSize.MEDIUM,
+      intensity: 0.6,
+      animation: false,
+      performance: 'high'
     };
-    this.domTextRenderer.createText(
+
+    this.domTextRenderer.createNeonText(
       'time',
       '0:00',
-      width - margin - 10, // Adjust for text centering with new margin
+      width - margin,
       headerY,
-      timeStyle
+      timeConfig
     );
-    
-    // slowMoCharges creation removed - simplified logic
+  }
 
-    // Target color display (below header) - responsive sizing
-    const targetY = Math.max(80, height * 0.12); // 12% of screen height, minimum 80px
-    const targetWidth = Math.max(200, Math.min(300, width * 0.6)); // 60% of screen width, between 200-300px
-    const targetHeight = Math.max(40, Math.min(60, height * 0.08)); // 8% of screen height, between 40-60px
-    
-    this.targetColorBg = this.add.rectangle(width / 2, targetY, targetWidth, targetHeight, 0x000000, 0.8);
-    this.targetColorBg.setStrokeStyle(2, 0xFFFFFF, 0.8);
-    this.targetColorBg.setDepth(102);
+  /**
+   * Create target color prompt zone with instant color changes
+   */
+  private createTargetColorPrompt(): void {
+    if (!this.domTextRenderer) {
+      console.error('SimpleUIScene: DOMTextRenderer not available in createTargetColorPrompt');
+      return;
+    }
 
-    // Target color text - using DOMTextRenderer with responsive font size
-    const targetFontSize = Math.max(18, Math.min(28, width * 0.06)); // 6% of screen width, between 18-28px
-    const targetColorStyle: DOMTextStyle = {
-      fontFamily: 'Poppins, Arial, sans-serif',
-      fontSize: `${targetFontSize}px`,
-      fontWeight: 'bold',
-      color: this.getColorHex(this.targetColor),
-      textAlign: 'center',
-      textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
+    const { width, height } = this.scale;
+    const targetY = height * 0.15; // 15% from top
+
+    // Create target color text with instant color changes
+    const targetColorConfig: NeonTextConfig = {
+      effectType: NeonTextEffectType.GLOW_WHITE, // Will be overridden by color
+      size: NeonTextSize.TITLE,
+      intensity: 0.9,
+      animation: false,
+      performance: 'high'
     };
-    this.domTextRenderer.createText(
-      'targetColor',
+
+    this.domTextRenderer.createNeonText(
+      'target-color',
       `TAP: ${this.getColorName(this.targetColor)}`,
       width / 2,
       targetY,
-      targetColorStyle
+      targetColorConfig
     );
 
-    // No continuous animation - only animate when values change
+    // Update the color immediately
+    this.updateTargetColorDisplay();
+  }
 
-    console.log('SimpleUIScene: DOMTextRenderer-based HUD created successfully');
+
+
+  /**
+   * Update target color display with instant color changes
+   */
+  private updateTargetColorDisplay(): void {
+    if (!this.domTextRenderer) return;
+
+    // Get the color-specific glow effect
+    const colorGlowEffect = this.getColorGlowEffect(this.targetColor);
+    
+    // Update the text content and color
+    this.domTextRenderer.updateText('target-color', `TAP: ${this.getColorName(this.targetColor)}`);
+    
+    // Update the glow effect by recreating the element with new color
+    const { width, height } = this.scale;
+    const targetY = height * 0.15;
+    
+    const targetColorConfig: NeonTextConfig = {
+      effectType: colorGlowEffect,
+      size: NeonTextSize.TITLE,
+      intensity: 0.9,
+      animation: false,
+      performance: 'high'
+    };
+
+    this.domTextRenderer.createNeonText(
+      'target-color',
+      `TAP: ${this.getColorName(this.targetColor)}`,
+      width / 2,
+      targetY,
+      targetColorConfig
+    );
+  }
+
+  /**
+   * Get the appropriate glow effect for a game color
+   */
+  private getColorGlowEffect(color: GameColor): NeonTextEffectType {
+    switch (color) {
+      case GameColor.RED:
+        return NeonTextEffectType.GLOW_RED;
+      case GameColor.GREEN:
+        return NeonTextEffectType.GLOW_GREEN;
+      case GameColor.BLUE:
+        return NeonTextEffectType.GLOW_BLUE;
+      case GameColor.YELLOW:
+        return NeonTextEffectType.GLOW_ORANGE;
+      case GameColor.PURPLE:
+        return NeonTextEffectType.GLOW_PINK;
+      default:
+        return NeonTextEffectType.GLOW_WHITE;
+    }
   }
 
   /**
@@ -222,7 +293,7 @@ export class SimpleUIScene extends Scene {
   }
 
   /**
-   * Update score display
+   * Update score display with neon styling
    */
   private updateScore(score: number): void {
     this.score = score;
@@ -234,17 +305,17 @@ export class SimpleUIScene extends Scene {
     }
 
     if (this.domTextRenderer) {
-      this.domTextRenderer.updateText('score', `Score: ${this.score}`);
-      this.domTextRenderer.updateText('bestScore', `Best: ${this.bestScore}`);
+      // Update score with Plasma Orange glow
+      this.domTextRenderer.updateText('score', `SCORE: ${this.score.toLocaleString()}`);
+      
+      // Update best score with white glow
+      this.domTextRenderer.updateText('best-score', `BEST: ${this.bestScore.toLocaleString()}`);
       
       // Only animate if score actually changed
       if (scoreChanged) {
-        // Color feedback based on score
-        const color = this.score > 10 ? '#FFD700' : this.score > 5 ? '#2ECC71' : '#FFFFFF';
+        // Flash effect for score update
         const scoreElement = this.domTextRenderer.getElement('score');
         if (scoreElement) {
-          scoreElement.element.style.color = color;
-          
           // Flash effect using CSS animation only when score changes
           scoreElement.element.style.animation = 'none';
           setTimeout(() => {
@@ -273,37 +344,18 @@ export class SimpleUIScene extends Scene {
   }
 
   /**
-   * Update target color display
+   * Update target color display with instant color changes
    */
   private updateTargetColor(color: GameColor): void {
     this.targetColor = color;
     const colorChanged = this.targetColor !== this.previousTargetColor;
 
-    if (this.domTextRenderer) {
-      this.domTextRenderer.updateText('targetColor', `TAP: ${this.getColorName(color)}`);
-      
-      // Only animate if color actually changed
-      if (colorChanged) {
-        // Update color and add flash effect
-        const targetColorElement = this.domTextRenderer.getElement('targetColor');
-        if (targetColorElement) {
-          targetColorElement.element.style.color = this.getColorHex(color);
-          
-          // Flash effect when color changes using CSS animation
-          targetColorElement.element.style.animation = 'none';
-          setTimeout(() => {
-            targetColorElement.element.style.animation = 'colorFlash 0.4s ease-in-out';
-          }, 10);
-        }
-      }
-    }
-
-    // Update background border color
-    if (this.targetColorBg) {
-      this.targetColorBg.setStrokeStyle(2, parseInt(this.getColorHex(color).replace('#', '0x')), 0.8);
+    if (colorChanged) {
+      // Update the target color display with new neon glow
+      this.updateTargetColorDisplay();
     }
     
-    // Update previous color
+    // Update previous target color
     this.previousTargetColor = this.targetColor;
   }
 
@@ -323,19 +375,6 @@ export class SimpleUIScene extends Scene {
     }
   }
 
-  /**
-   * Get color hex value for display
-   */
-  private getColorHex(color: GameColor): string {
-    switch (color) {
-      case GameColor.RED: return '#E74C3C';
-      case GameColor.GREEN: return '#2ECC71';
-      case GameColor.BLUE: return '#3498DB';
-      case GameColor.YELLOW: return '#F1C40F';
-      case GameColor.PURPLE: return '#9B59B6';
-      default: return '#E74C3C';
-    }
-  }
 
 
   /**

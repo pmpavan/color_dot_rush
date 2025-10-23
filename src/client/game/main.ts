@@ -15,7 +15,7 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'game-container',
   width: '100%',
   height: '100%',
-  backgroundColor: 0x2c3e50,
+  backgroundColor: 0x080808, // Deep Space Black from Neon Pulse theme
   scale: {
     mode: Phaser.Scale.RESIZE, // Resize to fill container completely
     autoCenter: Phaser.Scale.NO_CENTER, // No centering, fill container

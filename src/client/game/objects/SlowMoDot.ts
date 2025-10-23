@@ -1,10 +1,12 @@
 // SlowMoDot power-up implementation for Color Dot Rush
 
 import Phaser from 'phaser';
+import { GlowEffects } from '../utils/GlowEffects';
 
 /**
  * SlowMoDot class represents the slow-motion power-up
- * Appears as shimmering white with blue clock icon
+ * Appears as a single Laser Grid Green ball with white clock icon
+ * Uses a distinct color that's not used by regular game dots
  */
 export class SlowMoDot extends Phaser.GameObjects.Arc {
   public static readonly DURATION = 10000; // 10 seconds
@@ -18,22 +20,24 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   private clockHand: Phaser.GameObjects.Line;
   private shimmerTween: Phaser.Tweens.Tween | null = null;
   private lastCollisionTime: number = 0;
+  private glowEffect: Phaser.GameObjects.Graphics | null = null;
+  private glowTween: Phaser.Tweens.Tween | null = null;
   public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
-    // Create as a blue circle instead of sprite
-    super(scene, 0, 0, 40, 0, 360, false, 0x3498DB);
+    // Create as a single Laser Grid Green circle with clock icon (distinct from regular dot colors)
+    super(scene, 0, 0, 40, 0, 360, false, 0x32CD32);
     
     this.speed = 100; // Default speed
     this.size = 80; // Default size
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
-    // Create clock icon as graphics
+    // Create clock icon as graphics with white outline
     this.clockIcon = scene.add.circle(0, 0, 15, 0xFFFFFF, 0);
     this.clockIcon.setStrokeStyle(3, 0xFFFFFF, 1);
     
-    // Create clock hand
+    // Create clock hand with white color
     this.clockHand = scene.add.line(0, 0, 0, 0, 0, -8, 0xFFFFFF, 1);
     this.clockHand.setLineWidth(2);
     
@@ -63,6 +67,15 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.clockIcon.setPosition(x, y);
     this.clockHand.setPosition(x, y);
     
+    // Initialize hitbox position
+    this.hitbox.setPosition(
+      x - this.hitbox.width / 2,
+      y - this.hitbox.height / 2
+    );
+    
+    // Create glow effect
+    this.createGlowEffect();
+    
     // Start shimmering effect
     this.startShimmerEffect();
   }
@@ -81,6 +94,11 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     // Update clock icon position
     this.clockIcon.setPosition(this.x, this.y);
     this.clockHand.setPosition(this.x, this.y);
+
+    // Update glow effect position
+    if (this.glowEffect) {
+      this.glowEffect.setPosition(this.x, this.y);
+    }
 
     // Update hitbox position
     this.hitbox.setPosition(
@@ -427,6 +445,27 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   }
 
   /**
+   * Create glow effect for the slow-mo dot
+   */
+  private createGlowEffect(): void {
+    if (this.glowEffect) {
+      this.glowEffect.destroy();
+    }
+    
+    const glowConfig = GlowEffects.getSlowMoGlowConfig();
+    const { glow, tween } = GlowEffects.createPulsingGlow(
+      this.scene,
+      this.x,
+      this.y,
+      glowConfig,
+      this.depth - 1
+    );
+    
+    this.glowEffect = glow;
+    this.glowTween = tween;
+  }
+
+  /**
    * Start shimmering effect for the slow-mo dot
    */
   private startShimmerEffect(): void {
@@ -452,6 +491,12 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.clockHand.setVisible(true);
     this.setScale(1);
     this.setAlpha(1);
+    
+    // Show glow effect
+    if (this.glowEffect) {
+      this.glowEffect.setVisible(true);
+    }
+    
     this.startShimmerEffect();
   }
 
@@ -463,6 +508,15 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.setVisible(false);
     this.clockIcon.setVisible(false);
     this.clockHand.setVisible(false);
+    
+    // Hide and clean up glow effect
+    if (this.glowEffect) {
+      this.glowEffect.setVisible(false);
+    }
+    if (this.glowTween) {
+      this.glowTween.remove();
+      this.glowTween = null;
+    }
     
     // Stop shimmer effect
     if (this.shimmerTween) {
@@ -486,6 +540,14 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     }
     if (this.clockHand) {
       this.clockHand.destroy();
+    }
+    if (this.glowEffect) {
+      this.glowEffect.destroy();
+      this.glowEffect = null;
+    }
+    if (this.glowTween) {
+      this.glowTween.remove();
+      this.glowTween = null;
     }
     if (this.shimmerTween) {
       this.shimmerTween.stop();

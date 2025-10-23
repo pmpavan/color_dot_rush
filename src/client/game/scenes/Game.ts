@@ -8,6 +8,9 @@ import { IDebugService } from '../../../shared/types/debug';
 import { ObjectPoolManager, ObjectSpawner, Dot, Bomb, SlowMoDot } from '../objects';
 import { GameColor } from '../../../shared/types/game';
 import { gameLimitsManager } from '../../../shared/config/GameLimits';
+import { NeonBackgroundSystem } from '../utils/NeonBackgroundSystem';
+import { NeonMotionEffects } from '../utils/NeonMotionEffects';
+import { AccessibilityManager } from '../utils/AccessibilityManager';
 
 // Game state finite state machine
 enum GameState {
@@ -19,6 +22,9 @@ enum GameState {
 export class Game extends Scene {
   private camera: Phaser.Cameras.Scene2D.Camera;
   private background: Phaser.GameObjects.Rectangle | null = null;
+  private neonBackground: NeonBackgroundSystem | null = null;
+  private motionEffects: NeonMotionEffects | null = null;
+  private accessibilityManager: AccessibilityManager | null = null;
   private currentState: GameState = GameState.READY;
   private uiScene: SimpleUIScene | null = null;
 
@@ -97,6 +103,12 @@ export class Game extends Scene {
     
     // Reset shutdown flag
     this.isShuttingDown = false;
+    
+    // Initialize neon background system
+    this.neonBackground = new NeonBackgroundSystem(this);
+    
+    // Initialize motion effects system
+    this.motionEffects = new NeonMotionEffects(this);
   }
 
   create(): void {
@@ -119,8 +131,13 @@ export class Game extends Scene {
         this.cameras.main.fadeIn(250, 0, 0, 0);
       }
 
-      // Background - subtle overlay for game area
-      this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x34495E, 0.3).setOrigin(0);
+      // Create neon background system with starfield and nebula effects
+      if (this.neonBackground) {
+        this.neonBackground.createBackground();
+      }
+      
+      // Keep legacy background for compatibility (hidden)
+      this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x080808, 0).setOrigin(0);
 
       // Ensure UIScene is properly started and get reference
       this.initializeUIScene();
@@ -134,6 +151,10 @@ export class Game extends Scene {
       
       // Set up slow motion charge checker for ObjectSpawner
       // setSlowMoChargeChecker removed - simplified logic
+
+      // Initialize accessibility manager
+      this.accessibilityManager = new AccessibilityManager(this);
+      console.log('Game: Accessibility manager initialized');
 
       console.log('Game: Core systems initialized');
     } catch (error) {
@@ -297,7 +318,9 @@ export class Game extends Scene {
     // Check slow-mo dots (power-ups have priority over bombs)
     const activeSlowMoDots = this.objectPool.getActiveSlowMoDots();
     for (const slowMoDot of activeSlowMoDots) {
-      if (this.isPointInBounds(x, y, slowMoDot.getBounds())) {
+      const bounds = slowMoDot.getBounds();
+      if (this.isPointInBounds(x, y, bounds)) {
+        console.log(`[COLLISION] SlowMoDot hit at (${x}, ${y}), bounds: (${bounds.x}, ${bounds.y}, ${bounds.width}, ${bounds.height})`);
         return slowMoDot;
       }
     }
@@ -331,6 +354,12 @@ export class Game extends Scene {
       // Create celebratory pop effect with particle burst
       this.createCorrectTapEffect(dot);
 
+      // Add success motion effects
+      if (this.motionEffects) {
+        this.motionEffects.createInteractionFeedback(dot, 'success');
+        this.motionEffects.createScreenShake(3, 150);
+      }
+
       // Deactivate the dot after successful tap
       dot.deactivate();
 
@@ -347,6 +376,12 @@ export class Game extends Scene {
       // Wrong color - immediate game over (no delay, immediate termination)
       console.log(`Wrong color tapped! Expected: ${this.targetColor}, Got: ${dot.getColor()}`);
       this.createWrongTapEffect(dot);
+
+      // Add error motion effects
+      if (this.motionEffects) {
+        this.motionEffects.createInteractionFeedback(dot, 'error');
+        this.motionEffects.createScreenShake(5, 200);
+      }
 
       // Deactivate the wrong dot immediately to prevent further interaction
       dot.deactivate();
@@ -467,6 +502,12 @@ export class Game extends Scene {
     // Create explosion effect with screen shake and particles
     this.createBombExplosionEffect(bomb);
 
+    // Add intense error motion effects for bomb explosion
+    if (this.motionEffects) {
+      this.motionEffects.createInteractionFeedback(bomb, 'error');
+      this.motionEffects.createScreenShake(8, 300);
+    }
+
     // Immediate game termination - no delays, instant state change
     this.changeState(GameState.GAME_OVER);
   }
@@ -538,6 +579,12 @@ export class Game extends Scene {
 
     // Create radial blue glow and visual feedback
     this.createSlowMoActivationEffect(slowMoDot);
+
+    // Add power-up motion effects
+    if (this.motionEffects) {
+      this.motionEffects.createInteractionFeedback(slowMoDot, 'success');
+      this.motionEffects.createScreenShake(4, 200);
+    }
 
     // Activate slow-motion effect with smooth transitions
     this.activateSlowMotion();
@@ -758,6 +805,12 @@ export class Game extends Scene {
         microRipple.destroy();
       }
     });
+
+    // Add motion effects for enhanced feedback
+    if (this.motionEffects) {
+      this.motionEffects.createInteractionFeedback(ripple, 'tap');
+      this.motionEffects.createScreenShake(2, 100);
+    }
   }
 
   private activateSlowMotion(): void {
@@ -962,6 +1015,11 @@ export class Game extends Scene {
     // Stretch background to fill entire screen
     if (this.background) {
       this.background.setDisplaySize(width, height);
+    }
+    
+    // Update neon background system
+    if (this.neonBackground) {
+      this.neonBackground.updateDimensions(width, height);
     }
   }
 
@@ -1498,7 +1556,7 @@ export class Game extends Scene {
     titleElement.style.transform = 'translate(-50%, -50%)';
     titleElement.style.fontSize = '28px';
     titleElement.style.color = '#E74C3C';
-    titleElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    titleElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     titleElement.style.fontWeight = 'bold';
     titleElement.style.textAlign = 'center';
     titleElement.style.pointerEvents = 'none';
@@ -1516,7 +1574,7 @@ export class Game extends Scene {
     scoreElement.style.transform = 'translate(-50%, -50%)';
     scoreElement.style.fontSize = '20px';
     scoreElement.style.color = '#FFFFFF';
-    scoreElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    scoreElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     scoreElement.style.fontWeight = '500';
     scoreElement.style.textAlign = 'center';
     scoreElement.style.pointerEvents = 'none';
@@ -1535,7 +1593,7 @@ export class Game extends Scene {
     bestScoreElement.style.transform = 'translate(-50%, -50%)';
     bestScoreElement.style.fontSize = isNewRecord ? '18px' : '16px';
     bestScoreElement.style.color = isNewRecord ? '#F1C40F' : '#BDC3C7';
-    bestScoreElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    bestScoreElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     bestScoreElement.style.fontWeight = isNewRecord ? 'bold' : '400';
     bestScoreElement.style.textAlign = 'center';
     bestScoreElement.style.pointerEvents = 'none';
@@ -1551,7 +1609,7 @@ export class Game extends Scene {
     playAgainTextElement.style.transform = 'translate(-50%, -50%)';
     playAgainTextElement.style.fontSize = '18px';
     playAgainTextElement.style.color = '#FFFFFF';
-    playAgainTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    playAgainTextElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     playAgainTextElement.style.fontWeight = 'bold';
     playAgainTextElement.style.textAlign = 'center';
     playAgainTextElement.style.pointerEvents = 'none';
@@ -1567,7 +1625,7 @@ export class Game extends Scene {
     leaderboardTextElement.style.transform = 'translate(-50%, -50%)';
     leaderboardTextElement.style.fontSize = '16px';
     leaderboardTextElement.style.color = '#FFFFFF';
-    leaderboardTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    leaderboardTextElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     leaderboardTextElement.style.fontWeight = 'bold';
     leaderboardTextElement.style.textAlign = 'center';
     leaderboardTextElement.style.pointerEvents = 'none';
@@ -1583,7 +1641,7 @@ export class Game extends Scene {
     mainMenuTextElement.style.transform = 'translate(-50%, -50%)';
     mainMenuTextElement.style.fontSize = '14px';
     mainMenuTextElement.style.color = '#FFFFFF';
-    mainMenuTextElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    mainMenuTextElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     mainMenuTextElement.style.fontWeight = 'bold';
     mainMenuTextElement.style.textAlign = 'center';
     mainMenuTextElement.style.pointerEvents = 'none';
@@ -1649,7 +1707,7 @@ export class Game extends Scene {
     congratulationsElement.style.transform = 'translate(-50%, -50%)';
     congratulationsElement.style.fontSize = '22px';
     congratulationsElement.style.color = '#F1C40F';
-    congratulationsElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    congratulationsElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     congratulationsElement.style.fontWeight = 'bold';
     congratulationsElement.style.textAlign = 'center';
     congratulationsElement.style.pointerEvents = 'none';
@@ -1670,7 +1728,7 @@ export class Game extends Scene {
     rankElement.style.transform = 'translate(-50%, -50%)';
     rankElement.style.fontSize = '18px';
     rankElement.style.color = '#E74C3C';
-    rankElement.style.fontFamily = 'Poppins, Arial, sans-serif';
+    rankElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
     rankElement.style.fontWeight = 'bold';
     rankElement.style.textAlign = 'center';
     rankElement.style.pointerEvents = 'none';
@@ -2334,6 +2392,24 @@ export class Game extends Scene {
       this.objectPool = null;
       this.gameTimer = null;
       this.background = null;
+      
+      // Clean up neon background system
+      if (this.neonBackground) {
+        this.neonBackground.destroy();
+        this.neonBackground = null;
+      }
+
+      // Clean up motion effects system
+      if (this.motionEffects) {
+        this.motionEffects.destroy();
+        this.motionEffects = null;
+      }
+
+      // Clean up accessibility manager
+      if (this.accessibilityManager) {
+        this.accessibilityManager.destroy();
+        this.accessibilityManager = null;
+      }
 
       console.log('Game: Scene shutdown completed');
     } catch (error) {
