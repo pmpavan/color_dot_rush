@@ -240,7 +240,7 @@ export class Leaderboard extends Scene {
     // Use basic system fonts to avoid font loading issues
     try {
       this.loadingText = this.add.text(width / 2, height / 2, 'Loading leaderboard...', {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '24px',
         color: '#00BFFF',
         align: 'center',
@@ -385,7 +385,7 @@ export class Leaderboard extends Scene {
     // Use DOM text for user rank
     if (this.domTextRenderer) {
       const userRankStyle: DOMTextStyle = {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '22px',
         fontWeight: 'bold',
         color: '#F1C40F',
@@ -412,7 +412,7 @@ export class Leaderboard extends Scene {
     // Show total players using DOM text at the bottom
     if (this.domTextRenderer) {
       const totalPlayersStyle: DOMTextStyle = {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '18px',
         fontWeight: 'normal',
         color: '#95A5A6',
@@ -490,7 +490,7 @@ export class Leaderboard extends Scene {
     // Use DOM text for empty state
     if (this.domTextRenderer) {
       const emptyStyle: DOMTextStyle = {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '24px',
         fontWeight: 'normal',
         color: '#95A5A6',
@@ -650,7 +650,7 @@ export class Leaderboard extends Scene {
     // Add page header text using DOM with Electric Blue glow
     if (this.domTextRenderer) {
       const titleStyle: DOMTextStyle = {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '24px',
         fontWeight: 'bold',
         color: '#FFFFFF',
@@ -693,7 +693,7 @@ export class Leaderboard extends Scene {
     // Add champion text using DOM with neon effects
     if (this.domTextRenderer) {
       const championNameStyle: DOMTextStyle = {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '20px',
         fontWeight: 'bold',
         color: '#FFFFFF',
@@ -707,7 +707,7 @@ export class Leaderboard extends Scene {
       };
 
       const championScoreStyle: DOMTextStyle = {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '28px',
         fontWeight: 'bold',
         color: '#F1C40F',
@@ -758,7 +758,7 @@ export class Leaderboard extends Scene {
       // Add username using DOM text
       if (this.domTextRenderer) {
         const usernameStyle: DOMTextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '16px',
           fontWeight: 'normal',
           color: '#FFFFFF',
@@ -781,7 +781,7 @@ export class Leaderboard extends Scene {
       // Add score using DOM text with Volt Green glow
       if (this.domTextRenderer) {
         const scoreStyle: DOMTextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '18px',
           fontWeight: 'bold',
           color: '#00FF00',
@@ -833,7 +833,7 @@ export class Leaderboard extends Scene {
         else if (displayRank === 3) rankText = '🥉';
 
         const rankStyle: DOMTextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '18px',
           fontWeight: isUserEntry ? 'bold' : 'normal',
           color: isUserEntry ? '#F1C40F' : '#FFFFFF',
@@ -862,7 +862,7 @@ export class Leaderboard extends Scene {
           entry.username.substring(0, 12) + '...' : entry.username;
 
         const usernameStyle: DOMTextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '16px',
           fontWeight: isUserEntry ? 'bold' : 'normal',
           color: isUserEntry ? '#F1C40F' : '#FFFFFF',
@@ -889,7 +889,7 @@ export class Leaderboard extends Scene {
       // Add score using DOM text with Volt Green glow
       if (this.domTextRenderer) {
         const scoreStyle: DOMTextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '18px',
           fontWeight: 'bold',
           color: isUserEntry ? '#F1C40F' : '#00FF00',
@@ -922,7 +922,7 @@ export class Leaderboard extends Scene {
       // Add "YOU" indicator for user's entry with distinct background glow
       if (isUserEntry) {
         const youStyle: DOMTextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '14px',
           fontWeight: 'bold',
           color: '#FFFFFF',
@@ -992,7 +992,7 @@ export class Leaderboard extends Scene {
     // Add invisible DOM element to ensure content extends beyond viewport
     if (this.domTextRenderer) {
       const spacerStyle: DOMTextStyle = {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+        fontFamily: 'Orbitron, Arial, sans-serif',
         fontSize: '1px',
         fontWeight: 'normal',
         color: 'transparent',

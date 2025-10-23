@@ -25,7 +25,7 @@ export class FontPreloader {
   private loadedFonts: Set<string> = new Set();
   private loadingPromises: Map<string, Promise<boolean>> = new Map();
   private lastLoadResult: FontLoadResult | null = null;
-  private currentFontFamily: string = 'Orbitron, Poppins, Arial, sans-serif';
+  private currentFontFamily: string = 'Orbitron, Arial, sans-serif';
 
   private constructor() {}
 
@@ -55,15 +55,15 @@ export class FontPreloader {
       
       if (success) {
         results.success = true;
-        results.fontsLoaded = ['Poppins Regular', 'Poppins Medium', 'Poppins Bold', 'Orbitron Regular', 'Orbitron Medium', 'Orbitron Bold', 'Orbitron Black'];
-        this.currentFontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+        results.fontsLoaded = ['Orbitron Regular', 'Orbitron Medium', 'Orbitron Bold', 'Orbitron Black'];
+        this.currentFontFamily = 'Orbitron, Arial, sans-serif';
         this.loadedFonts.add('poppins-loaded');
         this.loadedFonts.add('orbitron-loaded');
       } else {
         results.fallbackUsed = true;
         results.success = false;
-        results.fontsFailed = ['Poppins Regular', 'Poppins Medium', 'Poppins Bold', 'Orbitron Regular', 'Orbitron Medium', 'Orbitron Bold', 'Orbitron Black'];
-        this.currentFontFamily = 'Poppins, Arial, sans-serif';
+        results.fontsFailed = ['Orbitron Regular', 'Orbitron Medium', 'Orbitron Bold', 'Orbitron Black'];
+        this.currentFontFamily = 'Orbitron, Arial, sans-serif';
       }
 
       // Store the result for status queries
@@ -83,8 +83,8 @@ export class FontPreloader {
       console.error('FontPreloader: Error during font preload:', error);
       results.fallbackUsed = true;
       results.success = false;
-      results.fontsFailed = ['Poppins Regular', 'Poppins Medium', 'Poppins Bold', 'Orbitron Regular', 'Orbitron Medium', 'Orbitron Bold', 'Orbitron Black'];
-      this.currentFontFamily = 'Poppins, Arial, sans-serif';
+      results.fontsFailed = ['Orbitron Regular', 'Orbitron Medium', 'Orbitron Bold', 'Orbitron Black'];
+      this.currentFontFamily = 'Orbitron, Arial, sans-serif';
       this.lastLoadResult = results;
       return results;
     }

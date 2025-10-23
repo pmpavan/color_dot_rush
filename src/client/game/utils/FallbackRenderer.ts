@@ -55,7 +55,7 @@ export class FallbackRenderer {
     try {
       // Check font availability
       if (typeof document !== 'undefined' && document.fonts) {
-        this.fontAvailable = document.fonts.check('16px Poppins') || document.fonts.check('16px Arial');
+        this.fontAvailable = document.fonts.check('16px Orbitron') || document.fonts.check('16px Arial');
         uiLogger.log(LogLevel.DEBUG, 'FallbackRenderer', 'detectCapabilities', 'Font availability detected', { fontAvailable: this.fontAvailable });
       } else {
         this.fontAvailable = false;
@@ -166,7 +166,7 @@ export class FallbackRenderer {
     
     // Test font rendering capability first
     const testText = this.scene.add.text(0, 0, 'Test', {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: '16px',
       color: '#FFFFFF'
     });
@@ -355,7 +355,7 @@ export class FallbackRenderer {
     container.setDepth(101);
 
     const scoreText = this.scene.add.text(0, 0, 'Score: 0 | Best: 0', {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: '24px',
       color: '#FFFFFF'
     }).setOrigin(0, 0.5);
@@ -382,7 +382,7 @@ export class FallbackRenderer {
     container.setDepth(101);
 
     const timeText = this.scene.add.text(0, 0, 'Time: 0:00', {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: '24px',
       color: '#FFFFFF'
     }).setOrigin(0.5, 0.5);
@@ -461,7 +461,7 @@ export class FallbackRenderer {
 
     // TAP text
     const tapText = this.scene.add.text(-50, 0, 'TAP', {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: '32px',
       fontStyle: 'bold',
       color: '#FFFFFF'
@@ -852,60 +852,56 @@ export class FallbackRenderer {
         return false;
       }
 
-      console.log('FallbackRenderer: Font API available, checking Poppins font availability');
+      console.log('FallbackRenderer: Font API available, checking Orbitron font availability');
 
-      // Check if Poppins is already loaded
-      const poppinsAlreadyLoaded = document.fonts.check('16px Poppins');
-      if (poppinsAlreadyLoaded) {
-        console.log('FallbackRenderer: Poppins font already loaded and available');
+      // Check if Orbitron is already loaded
+      const orbitronAlreadyLoaded = document.fonts.check('16px Orbitron');
+      if (orbitronAlreadyLoaded) {
+        console.log('FallbackRenderer: Orbitron font already loaded and available');
         this.fontAvailable = true;
         return true;
       }
 
-      // Attempt to load Poppins with timeout
-      console.log('FallbackRenderer: Attempting to load Poppins font with 2-second timeout');
+      // Attempt to load Orbitron with timeout
+      console.log('FallbackRenderer: Attempting to load Orbitron font with 1-second timeout');
       
       const fontLoadPromise = Promise.race([
-        document.fonts.load('16px Poppins'),
-        document.fonts.load('24px Poppins'), // Load multiple sizes
-        document.fonts.load('32px Poppins'),
+        document.fonts.load('16px Orbitron'), // Only load essential size
         new Promise<FontFace[]>((_, reject) => 
-          setTimeout(() => reject(new Error('Font loading timeout after 2 seconds')), 2000)
+          setTimeout(() => reject(new Error('Font loading timeout after 1 second')), 1000) // Reduced timeout
         )
       ]);
 
       await fontLoadPromise;
 
-      // Verify Poppins is now available
-      const poppinsAvailable = document.fonts.check('16px Poppins') && 
-                              document.fonts.check('24px Poppins') && 
-                              document.fonts.check('32px Poppins');
+      // Verify Orbitron is now available
+      const orbitronAvailable = document.fonts.check('16px Orbitron');
       
-      console.log('FallbackRenderer: Poppins font loading result:', poppinsAvailable);
+      console.log('FallbackRenderer: Orbitron font loading result:', orbitronAvailable);
       
-      if (poppinsAvailable) {
-        console.log('FallbackRenderer: Poppins font successfully loaded and verified');
+      if (orbitronAvailable) {
+        console.log('FallbackRenderer: Orbitron font successfully loaded and verified');
         this.fontAvailable = true;
         return true;
       } else {
-        console.warn('FallbackRenderer: Poppins font loaded but verification failed');
-        this.handlePoppinsFontFailure();
+        console.warn('FallbackRenderer: Orbitron font loaded but verification failed');
+        this.handleOrbitronFontFailure();
         return false;
       }
 
     } catch (error) {
       console.error('FallbackRenderer: Font loading failed with error:', error);
-      this.handlePoppinsFontFailure();
+      this.handleOrbitronFontFailure();
       return false;
     }
   }
 
   /**
-   * Handle Poppins font failure and switch to system font fallback
-   * Implements requirement 5.2: automatic fallback to system fonts when Poppins fails to load
+   * Handle Orbitron font failure and switch to system font fallback
+   * Implements requirement 5.2: automatic fallback to system fonts when Orbitron fails to load
    */
-  private handlePoppinsFontFailure(): void {
-    console.warn('FallbackRenderer: Poppins font failed to load, implementing system font fallback');
+  private handleOrbitronFontFailure(): void {
+    console.warn('FallbackRenderer: Orbitron font failed to load, implementing system font fallback');
     this.fontAvailable = false;
     this.switchToSystemFontFallback();
   }
@@ -937,7 +933,7 @@ export class FallbackRenderer {
 
       // Test creating text with system fonts
       const testElement = document.createElement('div');
-      testElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+      testElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
       testElement.style.fontSize = '16px';
       testElement.textContent = 'Test';
       testElement.style.position = 'absolute';
@@ -961,7 +957,7 @@ export class FallbackRenderer {
    */
   public getFontFamily(): string {
     if (this.fontAvailable) {
-      return 'Poppins, Arial, sans-serif';
+      return 'Orbitron, Arial, sans-serif';
     } else {
       console.log('FallbackRenderer: Using system font fallback');
       return 'Arial, sans-serif';
@@ -982,7 +978,7 @@ export class FallbackRenderer {
         console.log('FallbackRenderer: Font loading failed, but continuing with system font fallback');
         console.log('FallbackRenderer: UI creation will proceed with graceful degradation');
       } else {
-        console.log('FallbackRenderer: Font loading successful, UI creation can proceed with Poppins');
+        console.log('FallbackRenderer: Font loading successful, UI creation can proceed with Orbitron');
       }
 
       // Additional font readiness check

@@ -197,7 +197,7 @@ describe('SplashScreen Scene', () => {
         538, // height * 0.7 (rounded)
         'Start Game',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '20px',
           fontStyle: 'bold',
           color: '#ffffff',
@@ -215,7 +215,7 @@ describe('SplashScreen Scene', () => {
         614, // height * 0.8 (rounded)
         'How to Play',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '20px',
           fontStyle: 'normal',
           color: '#ffffff',
@@ -395,7 +395,7 @@ describe('SplashScreen Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, 0, 'Color Rush',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '72px',
           fontStyle: 'bold',
           color: '#ffffff',
@@ -472,20 +472,20 @@ describe('SplashScreen Scene', () => {
       );
     });
 
-    it('should use Poppins font family throughout', () => {
+    it('should use Orbitron font family throughout', () => {
       (splashScreen as any).refreshLayout();
       (splashScreen as any).createButtons();
 
-      // Check title uses Poppins Bold
+      // Check title uses Orbitron Bold
       expect(mockAdd.text).toHaveBeenCalledWith(
         expect.any(Number), expect.any(Number), 'Color Rush',
-        expect.objectContaining({ fontFamily: 'Orbitron, Poppins, Arial, sans-serif', fontStyle: 'bold' })
+        expect.objectContaining({ fontFamily: 'Orbitron, Arial, sans-serif', fontStyle: 'bold' })
       );
 
-      // Check buttons use Poppins
+      // Check buttons use Orbitron
       expect(mockAdd.text).toHaveBeenCalledWith(
         expect.any(Number), expect.any(Number), 'Start Game',
-        expect.objectContaining({ fontFamily: 'Orbitron, Poppins, Arial, sans-serif' })
+        expect.objectContaining({ fontFamily: 'Orbitron, Arial, sans-serif' })
       );
     });
 

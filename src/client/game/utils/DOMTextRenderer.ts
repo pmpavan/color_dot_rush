@@ -451,7 +451,7 @@ export class DOMTextRenderer {
    */
   private applyStyles(element: HTMLElement, style: DOMTextStyle): void {
     // Use default font family if none provided
-    const fontFamily = style.fontFamily || 'Orbitron, Poppins, Arial, sans-serif';
+    const fontFamily = style.fontFamily || 'Orbitron, Arial, sans-serif';
     
     element.style.cssText += `
       font-family: ${fontFamily};

@@ -681,7 +681,7 @@ export class UIScene extends Scene {
       console.log('UIScene: Score container created at:', this.scoreContainer.x, this.scoreContainer.y);
 
       const scoreText = this.add.text(0, 0, `Score: ${this.score} | Best: ${this.bestScore}`, {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif', // Use Orbitron first, fallback to Poppins
+        fontFamily: 'Orbitron, Arial, sans-serif', // Use Orbitron first, fallback to Arial
         fontSize: '24px',
         fontStyle: 'normal',
         color: '#FFFFFF',
@@ -701,7 +701,7 @@ export class UIScene extends Scene {
       console.log('UIScene: Time container created at:', this.timeContainer.x, this.timeContainer.y);
 
       const timeText = this.add.text(0, 0, 'Time: 0:00', {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif', // Use Orbitron first, fallback to Poppins
+        fontFamily: 'Orbitron, Arial, sans-serif', // Use Orbitron first, fallback to Arial
         fontSize: '24px',
         fontStyle: 'normal',
         color: '#FFFFFF',
@@ -733,7 +733,7 @@ export class UIScene extends Scene {
       const colorName = this.getColorName(this.targetColor);
       console.log('UIScene: Creating target color text with color:', this.targetColor, 'name:', colorName);
       const targetText = this.add.text(width / 2, targetY, `TAP: ${colorName}`, {
-        fontFamily: 'Orbitron, Poppins, Arial, sans-serif', // Use Orbitron first, fallback to Poppins
+        fontFamily: 'Orbitron, Arial, sans-serif', // Use Orbitron first, fallback to Arial
         fontSize: '32px',
         fontStyle: 'bold',
         color: this.targetColor,

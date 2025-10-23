@@ -150,7 +150,7 @@ export class NeonButtonSystem {
 
     // Create the base style
     const style: DOMTextStyle = {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: sizeConfig.fontSize,
       fontWeight: '500',
       color: textColor,

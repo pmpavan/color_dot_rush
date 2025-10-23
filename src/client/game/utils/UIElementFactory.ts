@@ -50,7 +50,7 @@ export interface LayoutConfig {
  */
 export class UIElementFactory {
   private scene: Scene;
-  private fontFamily: string = 'Orbitron, Poppins, Arial, sans-serif';
+  private fontFamily: string = 'Orbitron, Arial, sans-serif';
   private fallbackMode: UIElementType = UIElementType.TEXT;
 
   constructor(scene: Scene) {
@@ -77,14 +77,14 @@ export class UIElementFactory {
     
     try {
       if (typeof document !== 'undefined' && document.fonts) {
-        uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'detectFontAvailability', 'Font API available, checking Poppins availability');
+        uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'detectFontAvailability', 'Font API available, checking Orbitron availability');
         
         // Wait a bit for fonts to potentially load, then check
         setTimeout(() => {
           this.performFontCheck();
         }, 100);
       } else {
-        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+        this.fontFamily = 'Orbitron, Arial, sans-serif';
         uiLogger.logFontStatus({
           poppinsAvailable: false,
           systemFontsAvailable: true,
@@ -114,51 +114,51 @@ export class UIElementFactory {
 
   private performFontCheck(): void {
     try {
-      // Check if Poppins is available in multiple sizes
-      const poppins16Available = document.fonts.check('16px Poppins');
-      const poppins24Available = document.fonts.check('24px Poppins');
-      const poppins32Available = document.fonts.check('32px Poppins');
+      // Check if Orbitron is available in multiple sizes
+      const orbitron16Available = document.fonts.check('16px Orbitron');
+      const orbitron24Available = document.fonts.check('24px Orbitron');
+      const orbitron32Available = document.fonts.check('32px Orbitron');
       
-      const poppinsFullyAvailable = poppins16Available && poppins24Available && poppins32Available;
+      const orbitronFullyAvailable = orbitron16Available && orbitron24Available && orbitron32Available;
       
       const fontCheckResults = {
-        '16px': poppins16Available,
-        '24px': poppins24Available,
-        '32px': poppins32Available,
-        'fully_available': poppinsFullyAvailable
+        '16px': orbitron16Available,
+        '24px': orbitron24Available,
+        '32px': orbitron32Available,
+        'fully_available': orbitronFullyAvailable
       };
       
-      uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'performFontCheck', 'Poppins font availability check completed', fontCheckResults);
+      uiLogger.log(LogLevel.DEBUG, 'UIElementFactory', 'performFontCheck', 'Orbitron font availability check completed', fontCheckResults);
       
-      if (poppinsFullyAvailable) {
-        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+      if (orbitronFullyAvailable) {
+        this.fontFamily = 'Orbitron, Arial, sans-serif';
         uiLogger.logFontStatus({
-          poppinsAvailable: true,
+          orbitronAvailable: true,
           fontApiSupported: true,
           currentFontFamily: this.fontFamily
         });
-        uiLogger.log(LogLevel.INFO, 'UIElementFactory', 'performFontCheck', 'Poppins font fully available');
-      } else if (poppins16Available || poppins24Available) {
-        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+        uiLogger.log(LogLevel.INFO, 'UIElementFactory', 'performFontCheck', 'Orbitron font fully available');
+      } else if (orbitron16Available || orbitron24Available) {
+        this.fontFamily = 'Orbitron, Arial, sans-serif';
         uiLogger.logFontStatus({
-          poppinsAvailable: true,
+          orbitronAvailable: true,
           fontApiSupported: true,
           currentFontFamily: this.fontFamily,
           fallbackActivated: true,
-          lastError: 'Poppins partially available'
+          lastError: 'Orbitron partially available'
         });
-        uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'performFontCheck', 'Poppins partially available, using with Arial fallback');
+        uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'performFontCheck', 'Orbitron partially available, using with Arial fallback');
       } else {
-        this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+        this.fontFamily = 'Orbitron, Arial, sans-serif';
         uiLogger.logFontStatus({
-          poppinsAvailable: false,
+          orbitronAvailable: false,
           systemFontsAvailable: true,
           fontApiSupported: true,
           currentFontFamily: this.fontFamily,
           fallbackActivated: true,
-          lastError: 'Poppins not available'
+          lastError: 'Orbitron not available'
         });
-        uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'performFontCheck', 'Poppins font not available, using Arial fallback');
+        uiLogger.log(LogLevel.WARN, 'UIElementFactory', 'performFontCheck', 'Orbitron font not available, using Arial fallback');
       }
       
       // Test the selected font family
@@ -947,7 +947,7 @@ export class UIElementFactory {
         name: 'resetFontFamily',
         operation: () => {
           // Reset font family to safe default
-          this.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+          this.fontFamily = 'Orbitron, Arial, sans-serif';
           console.log('UIElementFactory: Font family reset to safe default');
         },
         required: true

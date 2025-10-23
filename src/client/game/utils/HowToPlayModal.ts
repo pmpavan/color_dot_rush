@@ -503,7 +503,7 @@ export class HowToPlayModal implements IHowToPlayModal {
         align-items: center;
         padding: 20px;
         box-sizing: border-box;
-        font-family: 'Orbitron', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       `;
 
       // Create modal content container
@@ -659,7 +659,7 @@ export class HowToPlayModal implements IHowToPlayModal {
       margin: 0;
       padding: 0;
       line-height: 1.2;
-      font-family: 'Orbitron', 'Poppins', sans-serif;
+      font-family: 'Orbitron', sans-serif;
       text-shadow: ${NeonTextEffects.createTextShadow({
         effectType: NeonTextEffectType.GLOW_PINK,
         size: NeonTextSize.TITLE,
@@ -679,7 +679,7 @@ export class HowToPlayModal implements IHowToPlayModal {
       margin: 8px 0 0 0;
       padding: 0;
       font-weight: 400;
-      font-family: 'Orbitron', 'Poppins', sans-serif;
+      font-family: 'Orbitron', sans-serif;
       text-shadow: ${NeonTextEffects.createTextShadow({
         effectType: NeonTextEffectType.GLOW_WHITE,
         size: NeonTextSize.MEDIUM,
@@ -763,7 +763,7 @@ export class HowToPlayModal implements IHowToPlayModal {
       margin: 0 0 ${this.modalLayout.spacing.paragraphs * 0.5}px 0;
       padding: 0;
       line-height: 1.3;
-      font-family: 'Orbitron', 'Poppins', sans-serif;
+      font-family: 'Orbitron', sans-serif;
       text-shadow: ${NeonTextEffects.createTextShadow({
         effectType: NeonTextEffectType.GLOW_WHITE,
         size: NeonTextSize.LARGE,
@@ -791,7 +791,7 @@ export class HowToPlayModal implements IHowToPlayModal {
       padding: 0;
       line-height: 1.5;
       font-weight: 400;
-      font-family: 'Orbitron', 'Poppins', sans-serif;
+      font-family: 'Orbitron', sans-serif;
       text-shadow: ${NeonTextEffects.createTextShadow({
         effectType: NeonTextEffectType.GLOW_WHITE,
         size: NeonTextSize.MEDIUM,
@@ -908,7 +908,7 @@ export class HowToPlayModal implements IHowToPlayModal {
     loadingText.style.cssText = `
       color: ${this.modalConfig.textColor};
       font-size: ${this.modalLayout.fontSize.body}px;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Orbitron', sans-serif;
     `;
 
     loadingOverlay.appendChild(loadingText);

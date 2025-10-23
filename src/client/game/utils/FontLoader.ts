@@ -55,13 +55,12 @@ export class FontLoader {
     try {
       // Try to load fonts using the Font Loading API
       if (typeof document !== 'undefined' && document.fonts) {
-        // Load fonts with fallback to system fonts
+        // Load fonts with fallback to system fonts (optimized - only essential sizes)
         const fontPromises = [
-          document.fonts.load('16px Poppins'),
-          document.fonts.load('24px Poppins'),
-          document.fonts.load('32px Poppins'),
-          document.fonts.load('500 16px Poppins'),
-          document.fonts.load('700 16px Poppins')
+          document.fonts.load('16px Orbitron'),
+          document.fonts.load('500 16px Orbitron'),
+          document.fonts.load('700 16px Orbitron'),
+          document.fonts.load('900 16px Orbitron')
         ];
 
         const results = await Promise.allSettled(fontPromises);
@@ -107,21 +106,21 @@ export class FontLoader {
       style.id = 'font-loader-fallback-css';
       style.textContent = `
         @font-face {
-          font-family: 'Poppins';
+          font-family: 'Orbitron';
           font-style: normal;
           font-weight: 400;
           src: local('Arial'), local('Helvetica'), local('sans-serif');
           font-display: swap;
         }
         @font-face {
-          font-family: 'Poppins';
+          font-family: 'Orbitron';
           font-style: normal;
           font-weight: 500;
           src: local('Arial'), local('Helvetica'), local('sans-serif');
           font-display: swap;
         }
         @font-face {
-          font-family: 'Poppins';
+          font-family: 'Orbitron';
           font-style: normal;
           font-weight: 700;
           src: local('Arial Bold'), local('Helvetica Bold'), local('sans-serif');
@@ -148,7 +147,7 @@ export class FontLoader {
    * Get current font family
    */
   public getFontFamily(): string {
-    return this.areFontsLoaded() ? 'Poppins, Arial, sans-serif' : 'Arial, sans-serif';
+    return this.areFontsLoaded() ? 'Orbitron, Arial, sans-serif' : 'Arial, sans-serif';
   }
 
   /**

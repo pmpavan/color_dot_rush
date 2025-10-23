@@ -166,7 +166,7 @@ export class NeonTextEffects {
     const textShadow = this.createTextShadow(config);
 
     return {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: sizeConfig.fontSize,
       fontWeight: '500',
       color: textColor,
@@ -205,7 +205,7 @@ export class NeonTextEffects {
     const intensity = config.intensity || 0.8;
 
     return {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: sizeConfig.fontSize,
       fontStyle: 'bold',
       color: textColor,
@@ -391,7 +391,7 @@ export class NeonTextEffects {
     const sizeConfig = this.getSizeConfig(config.size);
 
     return {
-      fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontSize: sizeConfig.fontSize,
       fontWeight: 'bold', // Use bold for better visibility without glow
       color: textColor,

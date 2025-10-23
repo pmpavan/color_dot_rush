@@ -10,7 +10,7 @@ export const createPost = async () => {
     splash: {
       // Splash screen customization for Color Dot Rush - Reddit Community Games 2025
       appDisplayName: 'Color Dot Rush',
-      backgroundUri: 'default-splash.png', // Use the splash background image
+      backgroundUri: 'neon-pulse-background.png', // Use the neon pulse background image
       buttonLabel: 'Play Color Dot Rush',
       description:
         'Tap into chaos! Tap the correct colored dots while avoiding bombs and wrong colors.',
@@ -22,6 +22,6 @@ export const createPost = async () => {
       score: 0,
     },
     subredditName: subredditName,
-    title: 'Color Dot Rush - Test Your Reflexes!',
+    title: 'Color Dot Rush - Tap into chaos!',
   });
 };

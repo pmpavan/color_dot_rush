@@ -309,7 +309,7 @@ export class SplashScreen extends Scene {
 
     } catch (error) {
       console.error('SplashScreen: Font loading failed:', error);
-      this.fontErrorHandler.handleUnknownError('Poppins', error);
+      this.fontErrorHandler.handleUnknownError('Orbitron', error);
 
       // No loading indicator to clean up
 
@@ -843,6 +843,7 @@ export class SplashScreen extends Scene {
       this.domTextRenderer.setVisible('start-button', false);
       this.domTextRenderer.setVisible('how-to-play-button', false);
       this.domTextRenderer.setVisible('leaderboard-button', false);
+      this.domTextRenderer.setVisible('accessibility-button', false);
 
       // Show loading state
       this.showLoadingState();
@@ -1413,6 +1414,8 @@ Good luck!
     if (this.domTextRenderer) {
       this.domTextRenderer.setVisible('start-button', true);
       this.domTextRenderer.setVisible('how-to-play-button', true);
+      this.domTextRenderer.setVisible('leaderboard-button', true);
+      this.domTextRenderer.setVisible('accessibility-button', true);
     }
 
     // Show error indicator
@@ -1482,7 +1485,7 @@ Good luck!
       // Create loading text using DOM
       if (this.domTextRenderer) {
         const loadingStyle: DOMTextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: this.layoutManager.getResponsiveFontSize(18),
           fontWeight: '500',
           color: '#FFFFFF',

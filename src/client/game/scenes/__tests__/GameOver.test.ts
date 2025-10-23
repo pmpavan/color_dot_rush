@@ -271,7 +271,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), 'GAME OVER',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '48px',
           fontStyle: 'bold',
           color: '#ffffff',
@@ -286,7 +286,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), 'Final Score: 250',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '28px',
           fontStyle: 'bold',
           color: '#3498DB',
@@ -301,7 +301,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), 'Session Time: 2:00',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '22px',
           color: '#ECF0F1',
           align: 'center',
@@ -323,7 +323,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), '🏆 NEW BEST: 300',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '20px',
           fontStyle: 'bold',
           color: '#F1C40F', // Gold color for new record
@@ -338,7 +338,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), 'Best Score: 200',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '20px',
           fontStyle: 'normal',
           color: '#95A5A6', // Grey color for existing record
@@ -421,7 +421,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), 'Play Again',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '24px',
           fontStyle: 'bold',
           color: '#ffffff',
@@ -435,7 +435,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), 'View Leaderboard',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '20px',
           color: '#ffffff',
           backgroundColor: '#95A5A6',
@@ -448,7 +448,7 @@ describe('GameOver Scene', () => {
       expect(mockAdd.text).toHaveBeenCalledWith(
         0, expect.any(Number), 'Main Menu',
         expect.objectContaining({
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: '18px',
           color: '#ffffff',
           backgroundColor: '#34495E',
@@ -733,11 +733,11 @@ describe('GameOver Scene', () => {
       );
     });
 
-    it('should use Poppins font family throughout', () => {
-      // All text elements should use Poppins
+    it('should use Orbitron font family throughout', () => {
+      // All text elements should use Orbitron
       const textCalls = mockAdd.text.mock.calls;
       textCalls.forEach(call => {
-        expect(call[3]).toHaveProperty('fontFamily', 'Orbitron, Poppins, Arial, sans-serif');
+        expect(call[3]).toHaveProperty('fontFamily', 'Orbitron, Arial, sans-serif');
       });
     });
 

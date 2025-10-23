@@ -1,4 +1,4 @@
-/* Poppins font family - fonts will be injected dynamically via FontAssets */
+/* Orbitron font family - fonts will be injected dynamically via FontAssets */
 /* This ensures proper bundling for Devvit app deployment */
 
 /* Neon Pulse Theme Color Palette */
@@ -28,8 +28,8 @@
   --neon-glow-white: 0 0 15px rgba(255, 255, 255, 0.8);
   
   /* Typography Scale - Neon Pulse Theme */
-  --neon-font-primary: 'Orbitron', 'Poppins', Arial, sans-serif;
-  --neon-font-fallback: 'Poppins', Arial, sans-serif;
+  --neon-font-primary: 'Orbitron', Arial, sans-serif;
+  --neon-font-fallback: Arial, sans-serif;
   
   /* Font Sizes */
   --neon-h1-size: 72px;

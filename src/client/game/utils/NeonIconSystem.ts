@@ -129,7 +129,7 @@ export class NeonIconSystem {
     const sizeConfig = this.getSizeConfig(config.size);
 
     return {
-      fontFamily: 'Poppins, Arial, sans-serif',
+      fontFamily: 'Orbitron, Arial, sans-serif',
       fontWeight: '600',
       width: `${sizeConfig.width}px`,
       height: `${sizeConfig.height}px`,

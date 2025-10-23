@@ -1136,6 +1136,9 @@ export class Game extends Scene {
   private endGame(): void {
     console.log('endGame() method called');
 
+    // Set game state to GAME_OVER immediately
+    this.changeState(GameState.GAME_OVER);
+
     // Stop object spawning immediately
     try {
       if (this.objectSpawner) {
@@ -1340,6 +1343,12 @@ export class Game extends Scene {
   }
 
   private updateUI(): void {
+    // Don't update UI if game is over
+    if (this.currentState === GameState.GAME_OVER) {
+      console.log('Game: updateUI called but game is over - skipping UI update');
+      return;
+    }
+    
     console.log('Game: updateUI called - uiScene exists:', !!this.uiScene);
     if (this.uiScene) {
       console.log('Game: Updating UI with - score:', this.score, 'time:', this.elapsedTime, 'target:', this.targetColor);
@@ -1556,7 +1565,7 @@ export class Game extends Scene {
     titleElement.style.transform = 'translate(-50%, -50%)';
     titleElement.style.fontSize = '28px';
     titleElement.style.color = '#E74C3C';
-    titleElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    titleElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     titleElement.style.fontWeight = 'bold';
     titleElement.style.textAlign = 'center';
     titleElement.style.pointerEvents = 'none';
@@ -1574,7 +1583,7 @@ export class Game extends Scene {
     scoreElement.style.transform = 'translate(-50%, -50%)';
     scoreElement.style.fontSize = '20px';
     scoreElement.style.color = '#FFFFFF';
-    scoreElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    scoreElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     scoreElement.style.fontWeight = '500';
     scoreElement.style.textAlign = 'center';
     scoreElement.style.pointerEvents = 'none';
@@ -1593,7 +1602,7 @@ export class Game extends Scene {
     bestScoreElement.style.transform = 'translate(-50%, -50%)';
     bestScoreElement.style.fontSize = isNewRecord ? '18px' : '16px';
     bestScoreElement.style.color = isNewRecord ? '#F1C40F' : '#BDC3C7';
-    bestScoreElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    bestScoreElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     bestScoreElement.style.fontWeight = isNewRecord ? 'bold' : '400';
     bestScoreElement.style.textAlign = 'center';
     bestScoreElement.style.pointerEvents = 'none';
@@ -1609,7 +1618,7 @@ export class Game extends Scene {
     playAgainTextElement.style.transform = 'translate(-50%, -50%)';
     playAgainTextElement.style.fontSize = '18px';
     playAgainTextElement.style.color = '#FFFFFF';
-    playAgainTextElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    playAgainTextElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     playAgainTextElement.style.fontWeight = 'bold';
     playAgainTextElement.style.textAlign = 'center';
     playAgainTextElement.style.pointerEvents = 'none';
@@ -1625,7 +1634,7 @@ export class Game extends Scene {
     leaderboardTextElement.style.transform = 'translate(-50%, -50%)';
     leaderboardTextElement.style.fontSize = '16px';
     leaderboardTextElement.style.color = '#FFFFFF';
-    leaderboardTextElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    leaderboardTextElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     leaderboardTextElement.style.fontWeight = 'bold';
     leaderboardTextElement.style.textAlign = 'center';
     leaderboardTextElement.style.pointerEvents = 'none';
@@ -1641,7 +1650,7 @@ export class Game extends Scene {
     mainMenuTextElement.style.transform = 'translate(-50%, -50%)';
     mainMenuTextElement.style.fontSize = '14px';
     mainMenuTextElement.style.color = '#FFFFFF';
-    mainMenuTextElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    mainMenuTextElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     mainMenuTextElement.style.fontWeight = 'bold';
     mainMenuTextElement.style.textAlign = 'center';
     mainMenuTextElement.style.pointerEvents = 'none';
@@ -1707,7 +1716,7 @@ export class Game extends Scene {
     congratulationsElement.style.transform = 'translate(-50%, -50%)';
     congratulationsElement.style.fontSize = '22px';
     congratulationsElement.style.color = '#F1C40F';
-    congratulationsElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    congratulationsElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     congratulationsElement.style.fontWeight = 'bold';
     congratulationsElement.style.textAlign = 'center';
     congratulationsElement.style.pointerEvents = 'none';
@@ -1728,7 +1737,7 @@ export class Game extends Scene {
     rankElement.style.transform = 'translate(-50%, -50%)';
     rankElement.style.fontSize = '18px';
     rankElement.style.color = '#E74C3C';
-    rankElement.style.fontFamily = 'Orbitron, Poppins, Arial, sans-serif';
+    rankElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
     rankElement.style.fontWeight = 'bold';
     rankElement.style.textAlign = 'center';
     rankElement.style.pointerEvents = 'none';

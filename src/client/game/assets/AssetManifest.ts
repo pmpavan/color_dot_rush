@@ -81,22 +81,28 @@ export const GAME_ASSETS: AssetDefinition[] = [
 
   // Fonts
   {
-    key: 'poppins-regular',
+    key: 'orbitron-regular',
     type: 'font',
-    path: 'fonts/poppins-regular.woff2',
-    description: 'Poppins Regular font',
+    path: 'fonts/orbitron-regular.woff2',
+    description: 'Orbitron Regular font',
   },
   {
-    key: 'poppins-medium',
+    key: 'orbitron-medium',
     type: 'font',
-    path: 'fonts/poppins-medium.woff2',
-    description: 'Poppins Medium font',
+    path: 'fonts/orbitron-medium.woff2',
+    description: 'Orbitron Medium font',
   },
   {
-    key: 'poppins-bold',
+    key: 'orbitron-bold',
     type: 'font',
-    path: 'fonts/poppins-bold.woff2',
-    description: 'Poppins Bold font',
+    path: 'fonts/orbitron-bold.woff2',
+    description: 'Orbitron Bold font',
+  },
+  {
+    key: 'orbitron-black',
+    type: 'font',
+    path: 'fonts/orbitron-black.woff2',
+    description: 'Orbitron Black font',
   },
 ];
 

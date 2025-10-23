@@ -88,7 +88,7 @@ export class PhaserTextRenderer implements ITextRenderer {
       // Fallback: create text with minimal safe styling
       try {
         const fallbackStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: style.fontSize,
           color: style.color,
           align: 'center'
@@ -142,7 +142,7 @@ export class PhaserTextRenderer implements ITextRenderer {
       // Fallback: create text with minimal safe styling
       try {
         const fallbackStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-          fontFamily: 'Orbitron, Poppins, Arial, sans-serif',
+          fontFamily: 'Orbitron, Arial, sans-serif',
           fontSize: style.fontSize,
           color: style.color,
           align: 'center'

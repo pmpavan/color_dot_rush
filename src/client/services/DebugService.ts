@@ -133,7 +133,7 @@ export class DebugService implements IDebugService {
       color: white;
       padding: 15px;
       border-radius: 8px;
-      font-family: 'Poppins', Arial, sans-serif;
+      font-family: 'Orbitron', Arial, sans-serif;
       font-size: 12px;
       z-index: 10000;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -584,7 +584,7 @@ export class DebugService implements IDebugService {
       justify-content: center;
       align-items: center;
       z-index: 20000;
-      font-family: 'Poppins', Arial, sans-serif;
+      font-family: 'Orbitron', Arial, sans-serif;
     `;
 
     const content = document.createElement('div');

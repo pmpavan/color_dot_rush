@@ -369,22 +369,26 @@ export class Bomb extends Phaser.GameObjects.Container {
     this.fuseGraphics.clear();
     this.sparkGraphics.clear();
     
-    // Draw bomb body (Warning Red with neon glow)
-    this.bombGraphics.fillStyle(0xFF0000, 1.0); // Warning Red (#FF0000)
-    this.bombGraphics.lineStyle(3, 0xFF4444, 1.0); // Brighter red outline for neon effect
+    // Draw bomb body (Black circle like a traditional bomb)
+    this.bombGraphics.fillStyle(0x000000, 1.0); // Black (#000000)
+    this.bombGraphics.lineStyle(2, 0x333333, 1.0); // Dark gray outline
     this.bombGraphics.fillCircle(0, 0, radius);
     this.bombGraphics.strokeCircle(0, 0, radius);
     
-    // Add neon highlight with electric glow
-    this.bombGraphics.fillStyle(0xFF6666, 0.8); // Brighter red highlight
-    this.bombGraphics.fillCircle(-radius * 0.3, -radius * 0.3, radius * 0.4);
+    // Add glowing red neon border for the bomb (optimized single stroke)
+    this.bombGraphics.lineStyle(3, 0xFF0000, 0.7); // Red neon glow - single optimized stroke
+    this.bombGraphics.strokeCircle(0, 0, radius + 1);
     
-    // Add inner glow effect
-    this.bombGraphics.fillStyle(0xFFAAAA, 0.4); // Light red inner glow
+    // Add subtle highlight for depth
+    this.bombGraphics.fillStyle(0x222222, 0.6); // Dark gray highlight
+    this.bombGraphics.fillCircle(-radius * 0.3, -radius * 0.3, radius * 0.3);
+    
+    // Add inner shadow effect
+    this.bombGraphics.fillStyle(0x111111, 0.4); // Very dark inner shadow
     this.bombGraphics.fillCircle(0, 0, radius * 0.7);
     
-    // Draw bent fuse (curved red wick) - using simple line segments
-    this.fuseGraphics.lineStyle(5, 0xFF0000, 1.0); // Warning Red, thicker line for neon effect
+    // Draw bent fuse (curved yellow wick) - using simple line segments
+    this.fuseGraphics.lineStyle(4, 0xFFFF00, 1.0); // Yellow fuse, optimized line width
     
     // Create a bent fuse using simple line segments
     const fuseStartX = -2;
@@ -401,21 +405,15 @@ export class Bomb extends Phaser.GameObjects.Container {
     this.fuseGraphics.lineTo(fuseEndX, fuseEndY);
     this.fuseGraphics.strokePath();
     
-    // Add fuse tip (smaller orange circle with neon glow)
-    this.fuseGraphics.fillStyle(0xFF4500, 1.0); // Orange-red tip
-    this.fuseGraphics.lineStyle(2, 0xFF6600, 1.0); // Brighter orange outline
-    this.fuseGraphics.fillCircle(fuseEndX, fuseEndY, 4);
-    this.fuseGraphics.strokeCircle(fuseEndX, fuseEndY, 4);
+    // Add fuse tip (smaller yellow circle - optimized)
+    this.fuseGraphics.fillStyle(0xFFFF00, 1.0); // Yellow tip
+    this.fuseGraphics.fillCircle(fuseEndX, fuseEndY, 3); // Reduced size for better performance
     
-    // Add some bomb details (neon rivets with glow)
-    this.bombGraphics.fillStyle(0xFF3333, 1.0); // Bright red rivets
-    this.bombGraphics.lineStyle(1, 0xFF6666, 1.0); // Glowing outline
-    this.bombGraphics.fillCircle(-radius * 0.4, radius * 0.2, 3);
-    this.bombGraphics.strokeCircle(-radius * 0.4, radius * 0.2, 3);
-    this.bombGraphics.fillCircle(radius * 0.3, -radius * 0.1, 3);
-    this.bombGraphics.strokeCircle(radius * 0.3, -radius * 0.1, 3);
-    this.bombGraphics.fillCircle(radius * 0.1, radius * 0.4, 3);
-    this.bombGraphics.strokeCircle(radius * 0.1, radius * 0.4, 3);
+    // Add some bomb details (metallic rivets - optimized)
+    this.bombGraphics.fillStyle(0x444444, 1.0); // Dark gray rivets
+    this.bombGraphics.fillCircle(-radius * 0.4, radius * 0.2, 2); // Reduced size and removed stroke
+    this.bombGraphics.fillCircle(radius * 0.3, -radius * 0.1, 2);
+    this.bombGraphics.fillCircle(radius * 0.1, radius * 0.4, 2);
     
     // Start spark animation
     this.startSparkAnimation();
