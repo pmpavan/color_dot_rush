@@ -278,7 +278,7 @@ describe('SplashScreen Scene', () => {
         pointerDownCallback();
         
         expect(mockScene.start).toHaveBeenCalledWith('Game');
-        expect(mockScene.launch).toHaveBeenCalledWith('UI');
+        expect(mockScene.launch).toHaveBeenCalledWith('SimpleUI');
       });
     });
 
@@ -565,7 +565,7 @@ describe('SplashScreen Scene', () => {
       pointerDownCallback();
 
       expect(mockScene.start).toHaveBeenCalledWith('Game');
-      expect(mockScene.launch).toHaveBeenCalledWith('UI');
+      expect(mockScene.launch).toHaveBeenCalledWith('SimpleUI');
     });
 
     it('should maintain concurrent UI scene architecture', () => {
@@ -575,8 +575,8 @@ describe('SplashScreen Scene', () => {
       pointerDownCallback();
 
       // Verify UI scene is launched (not started) to run concurrently
-      expect(mockScene.launch).toHaveBeenCalledWith('UI');
-      expect(mockScene.start).not.toHaveBeenCalledWith('UI');
+      expect(mockScene.launch).toHaveBeenCalledWith('SimpleUI');
+      expect(mockScene.start).not.toHaveBeenCalledWith('SimpleUI');
     });
   });
 
@@ -825,7 +825,7 @@ describe('SplashScreen Scene', () => {
 
       // Should transition to Game scene and launch UI scene concurrently
       expect(mockScene.start).toHaveBeenCalledWith('Game');
-      expect(mockScene.launch).toHaveBeenCalledWith('UI');
+      expect(mockScene.launch).toHaveBeenCalledWith('SimpleUI');
     });
   });
 });

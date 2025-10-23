@@ -552,11 +552,11 @@ export class Leaderboard extends Scene {
       this.cameras.main.fadeOut(250, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('Game');
-        this.scene.launch('UI');
+        this.scene.launch('SimpleUI');
       });
     } else {
       this.scene.start('Game');
-      this.scene.launch('UI');
+      this.scene.launch('SimpleUI');
     }
   }
 

@@ -517,7 +517,8 @@ export class SimpleUIScene extends Scene {
     if (this.domTextRenderer) {
       this.domTextRenderer.setVisible('score', visible);
       this.domTextRenderer.setVisible('time', visible);
-      this.domTextRenderer.setVisible('targetColor', visible);
+      this.domTextRenderer.setVisible('target-color', visible);
+      this.domTextRenderer.setVisible('best-score', visible);
     }
     
     if (this.targetColorBg) this.targetColorBg.setVisible(visible);

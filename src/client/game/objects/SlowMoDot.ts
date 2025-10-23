@@ -22,6 +22,8 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   private lastCollisionTime: number = 0;
   private glowEffect: Phaser.GameObjects.Graphics | null = null;
   private glowTween: Phaser.Tweens.Tween | null = null;
+  private activationGlows: Phaser.GameObjects.Arc[] = [];
+  private activationTweens: Phaser.Tweens.Tween[] = [];
   public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
@@ -388,26 +390,42 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
    * Create enhanced radial glow effect with multiple layers
    */
   private createRadialGlowEffect(): void {
+    // Clean up any existing activation glows first
+    this.cleanupActivationGlows();
+    
     // Primary glow - large and dramatic
     const primaryGlow = this.scene.add.circle(this.x, this.y, 30, 0x3498DB, 0.8);
     primaryGlow.setDepth(998);
+    this.activationGlows.push(primaryGlow);
     
-    this.scene.tweens.add({
+    const tween1 = this.scene.tweens.add({
       targets: primaryGlow,
       radius: 300,
       alpha: 0,
       duration: 600,
       ease: 'Power2.easeOut',
       onComplete: () => {
-        primaryGlow.destroy();
+        const index = this.activationGlows.indexOf(primaryGlow);
+        if (index > -1) {
+          this.activationGlows.splice(index, 1);
+        }
+        const tweenIndex = this.activationTweens.indexOf(tween1);
+        if (tweenIndex > -1) {
+          this.activationTweens.splice(tweenIndex, 1);
+        }
+        if (primaryGlow.scene) {
+          primaryGlow.destroy();
+        }
       }
     });
+    this.activationTweens.push(tween1);
 
     // Secondary glow - faster and brighter
     const secondaryGlow = this.scene.add.circle(this.x, this.y, 15, 0x5DADE2, 0.9);
     secondaryGlow.setDepth(999);
+    this.activationGlows.push(secondaryGlow);
     
-    this.scene.tweens.add({
+    const tween2 = this.scene.tweens.add({
       targets: secondaryGlow,
       radius: 150,
       alpha: 0,
@@ -415,15 +433,27 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       ease: 'Power3.easeOut',
       delay: 50,
       onComplete: () => {
-        secondaryGlow.destroy();
+        const index = this.activationGlows.indexOf(secondaryGlow);
+        if (index > -1) {
+          this.activationGlows.splice(index, 1);
+        }
+        const tweenIndex = this.activationTweens.indexOf(tween2);
+        if (tweenIndex > -1) {
+          this.activationTweens.splice(tweenIndex, 1);
+        }
+        if (secondaryGlow.scene) {
+          secondaryGlow.destroy();
+        }
       }
     });
+    this.activationTweens.push(tween2);
 
     // Tertiary glow - subtle and long-lasting
     const tertiaryGlow = this.scene.add.circle(this.x, this.y, 40, 0x85C1E9, 0.4);
     tertiaryGlow.setDepth(997);
+    this.activationGlows.push(tertiaryGlow);
     
-    this.scene.tweens.add({
+    const tween3 = this.scene.tweens.add({
       targets: tertiaryGlow,
       radius: 400,
       alpha: 0,
@@ -431,9 +461,20 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       ease: 'Sine.easeOut',
       delay: 100,
       onComplete: () => {
-        tertiaryGlow.destroy();
+        const index = this.activationGlows.indexOf(tertiaryGlow);
+        if (index > -1) {
+          this.activationGlows.splice(index, 1);
+        }
+        const tweenIndex = this.activationTweens.indexOf(tween3);
+        if (tweenIndex > -1) {
+          this.activationTweens.splice(tweenIndex, 1);
+        }
+        if (tertiaryGlow.scene) {
+          tertiaryGlow.destroy();
+        }
       }
     });
+    this.activationTweens.push(tween3);
   }
 
   /**
@@ -444,24 +485,37 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     const primaryRipple = this.scene.add.circle(this.x, this.y, 15, 0x3498DB, 0.9);
     primaryRipple.setStrokeStyle(4, 0x5DADE2, 0.8);
     primaryRipple.setDepth(999);
+    this.activationGlows.push(primaryRipple);
     
-    this.scene.tweens.add({
+    const rippleTween1 = this.scene.tweens.add({
       targets: primaryRipple,
       radius: this.size * 3,
       alpha: 0,
       duration: 300,
       ease: 'Power2.easeOut',
       onComplete: () => {
-        primaryRipple.destroy();
+        const index = this.activationGlows.indexOf(primaryRipple);
+        if (index > -1) {
+          this.activationGlows.splice(index, 1);
+        }
+        const tweenIndex = this.activationTweens.indexOf(rippleTween1);
+        if (tweenIndex > -1) {
+          this.activationTweens.splice(tweenIndex, 1);
+        }
+        if (primaryRipple.scene) {
+          primaryRipple.destroy();
+        }
       }
     });
+    this.activationTweens.push(rippleTween1);
 
     // Secondary ripple for extra impact
     const secondaryRipple = this.scene.add.circle(this.x, this.y, 8, 0x85C1E9, 0.7);
     secondaryRipple.setStrokeStyle(2, 0x3498DB, 0.6);
     secondaryRipple.setDepth(998);
+    this.activationGlows.push(secondaryRipple);
     
-    this.scene.tweens.add({
+    const rippleTween2 = this.scene.tweens.add({
       targets: secondaryRipple,
       radius: this.size * 2,
       alpha: 0,
@@ -469,9 +523,20 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       ease: 'Power2.easeOut',
       delay: 75,
       onComplete: () => {
-        secondaryRipple.destroy();
+        const index = this.activationGlows.indexOf(secondaryRipple);
+        if (index > -1) {
+          this.activationGlows.splice(index, 1);
+        }
+        const tweenIndex = this.activationTweens.indexOf(rippleTween2);
+        if (tweenIndex > -1) {
+          this.activationTweens.splice(tweenIndex, 1);
+        }
+        if (secondaryRipple.scene) {
+          secondaryRipple.destroy();
+        }
       }
     });
+    this.activationTweens.push(rippleTween2);
   }
 
   /**
@@ -532,6 +597,37 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   }
 
   /**
+   * Clean up activation glow effects
+   */
+  private cleanupActivationGlows(): void {
+    // Kill tweens and destroy all activation glow objects
+    for (const glow of this.activationGlows) {
+      // Always try to kill tweens first, even if object might be invalid
+      try {
+        if (this.scene && this.scene.tweens) {
+          this.scene.tweens.killTweensOf(glow);
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+      
+      // Then try to destroy the object if it still exists
+      try {
+        if (glow && !glow.scene) {
+          // Object is already destroyed, skip
+          continue;
+        }
+        if (glow) {
+          glow.destroy();
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+    }
+    this.activationGlows = [];
+  }
+
+  /**
    * Deactivate the slow-mo dot
    */
   public deactivate(): void {
@@ -561,12 +657,18 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.scene.tweens.killTweensOf(this);
     this.scene.tweens.killTweensOf(this.clockIcon);
     this.scene.tweens.killTweensOf(this.clockHand);
+    
+    // Clean up activation glows
+    this.cleanupActivationGlows();
   }
 
   /**
    * Destroy the slow-mo dot and its clock icon
    */
   public override destroy(fromScene?: boolean): void {
+    // Clean up activation glows first
+    this.cleanupActivationGlows();
+    
     if (this.clockIcon) {
       this.clockIcon.destroy();
     }

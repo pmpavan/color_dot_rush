@@ -516,7 +516,7 @@ describe('GameOver Scene', () => {
       exitAnimation.onComplete();
 
       expect(mockScene.start).toHaveBeenCalledWith('Game');
-      expect(mockScene.launch).toHaveBeenCalledWith('UI');
+      expect(mockScene.launch).toHaveBeenCalledWith('SimpleUI');
     });
 
     it('should transition to SplashScreen when Main Menu is clicked', () => {

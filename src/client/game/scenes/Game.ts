@@ -56,6 +56,7 @@ export class Game extends Scene {
 
   // Track temporary objects for proper cleanup
   private temporaryObjects: Phaser.GameObjects.GameObject[] = [];
+  private temporaryTweens: Phaser.Tweens.Tween[] = [];
   
   // Shutdown flag to prevent updates during destruction
   private isShuttingDown: boolean = false;
@@ -100,6 +101,7 @@ export class Game extends Scene {
 
     // Reset temporary objects tracking
     this.temporaryObjects = [];
+    this.temporaryTweens = [];
     
     // Reset shutdown flag
     this.isShuttingDown = false;
@@ -470,49 +472,77 @@ export class Game extends Scene {
   private createWrongTapEffect(dot: Dot): void {
     // Create red warning ripple effect
     const ripple = this.add.circle(dot.x, dot.y, 10, 0xFF0000, 0.8);
+    this.temporaryObjects.push(ripple);
     
     // Set a short TTL (time to live) as a failsafe
     this.time.delayedCall(500, () => {
-      if (ripple && ripple.active) {
+      if (ripple && ripple.scene) {
         ripple.destroy();
+        const index = this.temporaryObjects.indexOf(ripple);
+        if (index > -1) {
+          this.temporaryObjects.splice(index, 1);
+        }
       }
     });
 
-    this.tweens.add({
+    const rippleTween = this.tweens.add({
       targets: ripple,
       radius: dot.size * 3,
       alpha: 0,
       duration: 400,
       ease: 'Power2',
       onComplete: () => {
-        if (ripple && ripple.active) {
+        if (ripple && ripple.scene) {
           ripple.destroy();
+        }
+        const index = this.temporaryObjects.indexOf(ripple);
+        if (index > -1) {
+          this.temporaryObjects.splice(index, 1);
+        }
+        const tweenIndex = this.temporaryTweens.indexOf(rippleTween);
+        if (tweenIndex > -1) {
+          this.temporaryTweens.splice(tweenIndex, 1);
         }
       }
     });
+    this.temporaryTweens.push(rippleTween);
 
     // Create red flash overlay on the dot
     const flashOverlay = this.add.circle(dot.x, dot.y, dot.size / 2, 0xFF0000, 0.8);
     flashOverlay.setDepth(dot.depth + 1);
+    this.temporaryObjects.push(flashOverlay);
     
     // Set a short TTL (time to live) as a failsafe
     this.time.delayedCall(300, () => {
-      if (flashOverlay && flashOverlay.active) {
+      if (flashOverlay && flashOverlay.scene) {
         flashOverlay.destroy();
+        const index = this.temporaryObjects.indexOf(flashOverlay);
+        if (index > -1) {
+          this.temporaryObjects.splice(index, 1);
+        }
       }
     });
 
-    this.tweens.add({
+    const flashTween = this.tweens.add({
       targets: flashOverlay,
       alpha: 0,
       duration: 200,
       ease: 'Power2.easeOut',
       onComplete: () => {
-        if (flashOverlay && flashOverlay.active) {
+        if (flashOverlay && flashOverlay.scene) {
           flashOverlay.destroy();
+        }
+        const index = this.temporaryObjects.indexOf(flashOverlay);
+        if (index > -1) {
+          this.temporaryObjects.splice(index, 1);
+        }
+        const tweenIndex = this.temporaryTweens.indexOf(flashTween);
+        if (tweenIndex > -1) {
+          this.temporaryTweens.splice(tweenIndex, 1);
         }
       }
     });
+    this.temporaryTweens.push(flashTween);
   }
 
   private handleBombTap(bomb: Bomb): void {
@@ -716,10 +746,25 @@ export class Game extends Scene {
    * Clean up all temporary objects
    */
   private cleanupAllTemporaryObjects(): void {
+    // Kill tracked tweens first to prevent them from accessing destroyed objects
+    for (const tween of this.temporaryTweens) {
+      try {
+        if (tween) {
+          tween.remove();
+        }
+      } catch (error) {
+        // Ignore errors during cleanup
+      }
+    }
+    this.temporaryTweens = [];
+    
+    // Then destroy tracked objects
     for (const obj of this.temporaryObjects) {
       if (obj && typeof obj.destroy === 'function') {
         try {
-          obj.destroy();
+          if (obj.scene) {
+            obj.destroy();
+          }
         } catch (error) {
           // Ignore errors during cleanup
           console.warn('Error cleaning up temporary object:', error);
@@ -734,6 +779,9 @@ export class Game extends Scene {
    */
   private cleanupVisualEffects(): void {
     try {
+      // First, clean up tracked temporary objects and their tweens
+      this.cleanupAllTemporaryObjects();
+      
       // Kill all tweens to prevent visual effects from continuing
       this.tweens.killAll();
       
@@ -1245,6 +1293,16 @@ export class Game extends Scene {
       console.warn('Error hiding game objects:', error);
     }
 
+    // Hide UI elements (best score and tap text) when game over overlay is shown
+    try {
+      if (this.uiScene) {
+        this.uiScene.setVisible(false);
+        console.log('Game: UI elements hidden for game over overlay');
+      }
+    } catch (error) {
+      console.warn('Error hiding UI elements:', error);
+    }
+
     // Calculate final session time in seconds and milliseconds
     const sessionTimeSeconds = Math.floor(this.elapsedTime / 1000);
     const sessionTimeMs = Math.floor(this.elapsedTime);
@@ -1285,9 +1343,9 @@ export class Game extends Scene {
 
         console.log('Starting GameOver scene...');
 
-        // Create a simple game over overlay instead of scene transition
-        this.createSimpleGameOverOverlay(gameOverData);
-        console.log('Simple GameOver overlay created');
+        // Start the GameOver scene
+        this.scene.start('GameOver', gameOverData);
+        console.log('GameOver scene started');
       } catch (error) {
         console.error('Error during scene transition to GameOver:', error);
       }
@@ -1311,9 +1369,10 @@ export class Game extends Scene {
           console.log(`Current leaderboard rank: ${result.rank}`);
           
           // Update Game Over overlay if it exists and user is in top 5
-          if (result.rank <= 5) {
-            this.updateGameOverWithRank(result.rank);
-          }
+          // NOTE: Game over UI is now handled by GameOver scene, not here
+          // if (result.rank <= 5) {
+          //   this.updateGameOverWithRank(result.rank);
+          // }
         }
       } else {
         console.warn('Score submission failed:', result.message);
@@ -1450,393 +1509,101 @@ export class Game extends Scene {
   }
 
   /**
-   * Create a polished game over overlay with DOM text
-   */
-  private createSimpleGameOverOverlay(gameOverData: any): void {
-    // Create dark overlay
-    this.add.rectangle(
-      this.scale.width / 2,
-      this.scale.height / 2,
-      this.scale.width,
-      this.scale.height,
-      0x000000,
-      0.8
-    ).setDepth(3000);
-
-    // Create modal background - make it larger to accommodate congratulations and buttons
-    const modalHeight = gameOverData.userRank && gameOverData.userRank <= 5 ? 450 : 400;
-    const modalBg = this.add.rectangle(
-      this.scale.width / 2,
-      this.scale.height / 2,
-      360,
-      modalHeight,
-      0x34495E,
-      0.95
-    ).setDepth(3001);
-    modalBg.setStrokeStyle(2, 0xFFFFFF, 0.3);
-
-    // Create Play Again button
-    const playAgainButton = this.add.rectangle(
-      this.scale.width / 2,
-      this.scale.height / 2 + 60,
-      200,
-      50,
-      0x3498DB,
-      1
-    ).setDepth(3002).setInteractive();
-    playAgainButton.setStrokeStyle(2, 0xFFFFFF, 0.8);
-
-    // Create View Leaderboard button
-    const leaderboardButton = this.add.rectangle(
-      this.scale.width / 2,
-      this.scale.height / 2 + 120,
-      200,
-      45,
-      0x95A5A6,
-      1
-    ).setDepth(3002).setInteractive();
-    leaderboardButton.setStrokeStyle(2, 0xFFFFFF, 0.6);
-
-    // Create Main Menu button
-    const mainMenuButton = this.add.rectangle(
-      this.scale.width / 2,
-      this.scale.height / 2 + 180,
-      160,
-      40,
-      0x34495E,
-      1
-    ).setDepth(3002).setInteractive();
-    mainMenuButton.setStrokeStyle(2, 0xFFFFFF, 0.4);
-
-    // Add DOM text elements
-    this.createGameOverText(gameOverData);
-
-    // Play Again button interactions
-    playAgainButton.on('pointerover', () => {
-      playAgainButton.setScale(1.05);
-    });
-    playAgainButton.on('pointerout', () => {
-      playAgainButton.setScale(1.0);
-    });
-    playAgainButton.on('pointerdown', () => {
-      playAgainButton.setScale(0.95);
-      // Clean up DOM elements before restarting
-      this.cleanupGameOverText();
-      
-      // Add a small delay to ensure all current operations complete
-      this.time.delayedCall(100, () => {
-        try {
-          // Force cleanup before restart
-          this.forceCleanupBeforeRestart();
-          
-          // Try to restart the scene with error handling
-          try {
-            this.scene.restart();
-          } catch (restartError) {
-            console.warn('Scene restart failed, trying alternative approach:', restartError);
-            // Alternative: stop and start a new scene
-            this.game.scene.stop('Game');
-            this.game.scene.start('Game');
-          }
-        } catch (error) {
-          console.error('Error during scene restart process:', error);
-          // Final fallback: reload the page
-          window.location.reload();
-        }
-      });
-    });
-
-    // View Leaderboard button interactions
-    leaderboardButton.on('pointerover', () => {
-      leaderboardButton.setScale(1.05);
-    });
-    leaderboardButton.on('pointerout', () => {
-      leaderboardButton.setScale(1.0);
-    });
-    leaderboardButton.on('pointerdown', () => {
-      leaderboardButton.setScale(0.95);
-      // Clean up DOM elements before transitioning
-      this.cleanupGameOverText();
-      
-      // Add a small delay to ensure all current operations complete
-      this.time.delayedCall(100, () => {
-        try {
-          // Force cleanup before transitioning
-          this.forceCleanupBeforeRestart();
-          
-          // Transition to leaderboard scene
-          this.scene.start('Leaderboard');
-        } catch (error) {
-          console.error('Error transitioning to leaderboard:', error);
-        }
-      });
-    });
-
-    // Main Menu button interactions
-    mainMenuButton.on('pointerover', () => {
-      mainMenuButton.setScale(1.05);
-    });
-    mainMenuButton.on('pointerout', () => {
-      mainMenuButton.setScale(1.0);
-    });
-    mainMenuButton.on('pointerdown', () => {
-      mainMenuButton.setScale(0.95);
-      // Clean up DOM elements before transitioning
-      this.cleanupGameOverText();
-      
-      // Add a small delay to ensure all current operations complete
-      this.time.delayedCall(100, () => {
-        try {
-          // Force cleanup before transitioning
-          this.forceCleanupBeforeRestart();
-          
-          // Transition to splash screen
-          this.scene.start('SplashScreen');
-        } catch (error) {
-          console.error('Error transitioning to main menu:', error);
-        }
-      });
-    });
-
-    console.log('Game over overlay created with score:', gameOverData.finalScore);
-  }
-
-  /**
-   * Create DOM text elements for game over screen
-   */
-  private createGameOverText(gameOverData: any): void {
-    const gameContainer = document.getElementById('game-container');
-    if (!gameContainer) return;
-
-    // Check if user is in top 5 for positioning adjustments
-    const isTop5 = gameOverData.userRank && gameOverData.userRank <= 5;
-    
-    // Game Over title - hide when congratulations are shown
-    const titleElement = document.createElement('div');
-    titleElement.innerHTML = 'GAME OVER';
-    titleElement.style.position = 'absolute';
-    titleElement.style.left = '50%';
-    titleElement.style.top = '35%';
-    titleElement.style.transform = 'translate(-50%, -50%)';
-    titleElement.style.fontSize = '28px';
-    titleElement.style.color = '#E74C3C';
-    titleElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    titleElement.style.fontWeight = 'bold';
-    titleElement.style.textAlign = 'center';
-    titleElement.style.pointerEvents = 'none';
-    titleElement.style.zIndex = '3003';
-    titleElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
-    titleElement.style.display = isTop5 ? 'none' : 'block'; // Hide when congratulations are shown
-    titleElement.id = 'gameover-title';
-
-    // Score display
-    const scoreElement = document.createElement('div');
-    scoreElement.innerHTML = `Score: ${gameOverData.finalScore}`;
-    scoreElement.style.position = 'absolute';
-    scoreElement.style.left = '50%';
-    scoreElement.style.top = isTop5 ? '40%' : '42%';
-    scoreElement.style.transform = 'translate(-50%, -50%)';
-    scoreElement.style.fontSize = '20px';
-    scoreElement.style.color = '#FFFFFF';
-    scoreElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    scoreElement.style.fontWeight = '500';
-    scoreElement.style.textAlign = 'center';
-    scoreElement.style.pointerEvents = 'none';
-    scoreElement.style.zIndex = '3003';
-    scoreElement.id = 'gameover-score';
-
-    // Best score display with new record indication
-    const isNewRecord = gameOverData.finalScore === gameOverData.bestScore && gameOverData.finalScore > 0;
-    const bestScoreElement = document.createElement('div');
-    bestScoreElement.innerHTML = isNewRecord 
-      ? `🏆 PERSONAL BEST: ${gameOverData.bestScore}` 
-      : `Best: ${gameOverData.bestScore}`;
-    bestScoreElement.style.position = 'absolute';
-    bestScoreElement.style.left = '50%';
-    bestScoreElement.style.top = isTop5 ? '46%' : '48%';
-    bestScoreElement.style.transform = 'translate(-50%, -50%)';
-    bestScoreElement.style.fontSize = isNewRecord ? '18px' : '16px';
-    bestScoreElement.style.color = isNewRecord ? '#F1C40F' : '#BDC3C7';
-    bestScoreElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    bestScoreElement.style.fontWeight = isNewRecord ? 'bold' : '400';
-    bestScoreElement.style.textAlign = 'center';
-    bestScoreElement.style.pointerEvents = 'none';
-    bestScoreElement.style.zIndex = '3003';
-    bestScoreElement.id = 'gameover-best';
-
-    // Play Again button text
-    const playAgainTextElement = document.createElement('div');
-    playAgainTextElement.innerHTML = 'PLAY AGAIN';
-    playAgainTextElement.style.position = 'absolute';
-    playAgainTextElement.style.left = '50%';
-    playAgainTextElement.style.top = isTop5 ? '56%' : '58%';
-    playAgainTextElement.style.transform = 'translate(-50%, -50%)';
-    playAgainTextElement.style.fontSize = '18px';
-    playAgainTextElement.style.color = '#FFFFFF';
-    playAgainTextElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    playAgainTextElement.style.fontWeight = 'bold';
-    playAgainTextElement.style.textAlign = 'center';
-    playAgainTextElement.style.pointerEvents = 'none';
-    playAgainTextElement.style.zIndex = '3003';
-    playAgainTextElement.id = 'gameover-play-again-text';
-
-    // View Leaderboard button text
-    const leaderboardTextElement = document.createElement('div');
-    leaderboardTextElement.innerHTML = '🏆 VIEW LEADERBOARD';
-    leaderboardTextElement.style.position = 'absolute';
-    leaderboardTextElement.style.left = '50%';
-    leaderboardTextElement.style.top = isTop5 ? '66%' : '68%';
-    leaderboardTextElement.style.transform = 'translate(-50%, -50%)';
-    leaderboardTextElement.style.fontSize = '16px';
-    leaderboardTextElement.style.color = '#FFFFFF';
-    leaderboardTextElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    leaderboardTextElement.style.fontWeight = 'bold';
-    leaderboardTextElement.style.textAlign = 'center';
-    leaderboardTextElement.style.pointerEvents = 'none';
-    leaderboardTextElement.style.zIndex = '3003';
-    leaderboardTextElement.id = 'gameover-leaderboard-text';
-
-    // Main Menu button text
-    const mainMenuTextElement = document.createElement('div');
-    mainMenuTextElement.innerHTML = '🏠 MAIN MENU';
-    mainMenuTextElement.style.position = 'absolute';
-    mainMenuTextElement.style.left = '50%';
-    mainMenuTextElement.style.top = isTop5 ? '76%' : '78%';
-    mainMenuTextElement.style.transform = 'translate(-50%, -50%)';
-    mainMenuTextElement.style.fontSize = '14px';
-    mainMenuTextElement.style.color = '#FFFFFF';
-    mainMenuTextElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    mainMenuTextElement.style.fontWeight = 'bold';
-    mainMenuTextElement.style.textAlign = 'center';
-    mainMenuTextElement.style.pointerEvents = 'none';
-    mainMenuTextElement.style.zIndex = '3003';
-    mainMenuTextElement.id = 'gameover-main-menu-text';
-
-    // Add all elements to container
-    gameContainer.appendChild(titleElement);
-    gameContainer.appendChild(scoreElement);
-    gameContainer.appendChild(bestScoreElement);
-    gameContainer.appendChild(playAgainTextElement);
-    gameContainer.appendChild(leaderboardTextElement);
-    gameContainer.appendChild(mainMenuTextElement);
-  }
-
-  /**
-   * Clean up game over DOM text elements
-   */
-  private cleanupGameOverText(): void {
-    const elementsToRemove = [
-      'gameover-title', 
-      'gameover-score', 
-      'gameover-best', 
-      'gameover-play-again-text',
-      'gameover-leaderboard-text',
-      'gameover-main-menu-text',
-      'gameover-congratulations',
-      'gameover-rank'
-    ];
-    elementsToRemove.forEach(id => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.remove();
-      }
-    });
-  }
-
-  /**
    * Update Game Over overlay with rank information for top 5 players
+   * NOTE: This is now handled by the GameOver scene, keeping for reference
    */
-  private updateGameOverWithRank(rank: number): void {
-    const gameContainer = document.getElementById('game-container');
-    if (!gameContainer) return;
+  // private updateGameOverWithRank(rank: number): void {
+  //   const gameContainer = document.getElementById('game-container');
+  //   if (!gameContainer) return;
 
-    // Hide the GAME OVER title when congratulations are shown
-    const gameOverTitle = document.getElementById('gameover-title');
-    if (gameOverTitle) {
-      gameOverTitle.style.display = 'none';
-    }
+  //   // Hide the GAME OVER title when congratulations are shown
+  //   const gameOverTitle = document.getElementById('gameover-title');
+  //   if (gameOverTitle) {
+  //     gameOverTitle.style.display = 'none';
+  //   }
 
-    // Remove existing congratulations if any
-    const existingCongrats = document.getElementById('gameover-congratulations');
-    const existingRank = document.getElementById('gameover-rank');
-    if (existingCongrats) existingCongrats.remove();
-    if (existingRank) existingRank.remove();
+  //   // Remove existing congratulations if any
+  //   const existingCongrats = document.getElementById('gameover-congratulations');
+  //   const existingRank = document.getElementById('gameover-rank');
+  //   if (existingCongrats) existingCongrats.remove();
+  //   if (existingRank) existingRank.remove();
 
-    // Create congratulations message
-    const congratulationsElement = document.createElement('div');
-    congratulationsElement.innerHTML = `🎉 CONGRATULATIONS! 🎉`;
-    congratulationsElement.style.position = 'absolute';
-    congratulationsElement.style.left = '50%';
-    congratulationsElement.style.top = '25%';
-    congratulationsElement.style.transform = 'translate(-50%, -50%)';
-    congratulationsElement.style.fontSize = '22px';
-    congratulationsElement.style.color = '#F1C40F';
-    congratulationsElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    congratulationsElement.style.fontWeight = 'bold';
-    congratulationsElement.style.textAlign = 'center';
-    congratulationsElement.style.pointerEvents = 'none';
-    congratulationsElement.style.zIndex = '3003';
-    congratulationsElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
-    congratulationsElement.id = 'gameover-congratulations';
+  //   // Create congratulations message
+  //   const congratulationsElement = document.createElement('div');
+  //   congratulationsElement.innerHTML = `🎉 CONGRATULATIONS! 🎉`;
+  //   congratulationsElement.style.position = 'absolute';
+  //   congratulationsElement.style.left = '50%';
+  //   congratulationsElement.style.top = '25%';
+  //   congratulationsElement.style.transform = 'translate(-50%, -50%)';
+  //   congratulationsElement.style.fontSize = '22px';
+  //   congratulationsElement.style.color = '#F1C40F';
+  //   congratulationsElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
+  //   congratulationsElement.style.fontWeight = 'bold';
+  //   congratulationsElement.style.textAlign = 'center';
+  //   congratulationsElement.style.pointerEvents = 'none';
+  //   congratulationsElement.style.zIndex = '3003';
+  //   congratulationsElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+  //   congratulationsElement.id = 'gameover-congratulations';
 
-    // Create rank display
-    const rankElement = document.createElement('div');
-    const rankText = rank === 1 ? '🥇 1ST PLACE!' : 
-                     rank === 2 ? '🥈 2ND PLACE!' : 
-                     rank === 3 ? '🥉 3RD PLACE!' : 
-                     `🏆 RANK: ${rank}`;
-    rankElement.innerHTML = rankText;
-    rankElement.style.position = 'absolute';
-    rankElement.style.left = '50%';
-    rankElement.style.top = '32%';
-    rankElement.style.transform = 'translate(-50%, -50%)';
-    rankElement.style.fontSize = '18px';
-    rankElement.style.color = '#E74C3C';
-    rankElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
-    rankElement.style.fontWeight = 'bold';
-    rankElement.style.textAlign = 'center';
-    rankElement.style.pointerEvents = 'none';
-    rankElement.style.zIndex = '3003';
-    rankElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
-    rankElement.id = 'gameover-rank';
+  //   // Create rank display
+  //   const rankElement = document.createElement('div');
+  //   const rankText = rank === 1 ? '🥇 1ST PLACE!' : 
+  //                    rank === 2 ? '🥈 2ND PLACE!' : 
+  //                    rank === 3 ? '🥉 3RD PLACE!' : 
+  //                    `🏆 RANK: ${rank}`;
+  //   rankElement.innerHTML = rankText;
+  //   rankElement.style.position = 'absolute';
+  //   rankElement.style.left = '50%';
+  //   rankElement.style.top = '32%';
+  //   rankElement.style.transform = 'translate(-50%, -50%)';
+  //   rankElement.style.fontSize = '18px';
+  //   rankElement.style.color = '#E74C3C';
+  //   rankElement.style.fontFamily = 'Orbitron, Arial, sans-serif';
+  //   rankElement.style.fontWeight = 'bold';
+  //   rankElement.style.textAlign = 'center';
+  //   rankElement.style.pointerEvents = 'none';
+  //   rankElement.style.zIndex = '3003';
+  //   rankElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+  //   rankElement.id = 'gameover-rank';
 
-    // Add elements to container
-    gameContainer.appendChild(congratulationsElement);
-    gameContainer.appendChild(rankElement);
+  //   // Add elements to container
+  //   gameContainer.appendChild(congratulationsElement);
+  //   gameContainer.appendChild(rankElement);
 
-    // Add celebration animation
-    this.createRankCelebrationAnimation();
-  }
+  //   // Add celebration animation
+  //   this.createRankCelebrationAnimation();
+  // }
 
   /**
    * Create celebration animation for top 5 rank achievement
+   * NOTE: This is now handled by the GameOver scene
    */
-  private createRankCelebrationAnimation(): void {
-    // Create sparkle effects around the congratulations
-    for (let i = 0; i < 8; i++) {
-      const sparkle = this.add.circle(
-        this.scale.width / 2 + (Math.random() - 0.5) * 200,
-        this.scale.height / 2 + (Math.random() - 0.5) * 100,
-        4 + Math.random() * 3,
-        0xF1C40F,
-        1
-      ).setDepth(3004);
-      
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 100 + Math.random() * 50;
-      
-      this.tweens.add({
-        targets: sparkle,
-        x: this.scale.width / 2 + Math.cos(angle) * distance,
-        y: this.scale.height / 2 + Math.sin(angle) * distance,
-        alpha: 0,
-        scale: 0,
-        duration: 2000,
-        ease: 'Power2.easeOut',
-        onComplete: () => sparkle.destroy()
-      });
-    }
-  }
+  // private createRankCelebrationAnimation(): void {
+  //   // Create sparkle effects around the congratulations
+  //   for (let i = 0; i < 8; i++) {
+  //     const sparkle = this.add.circle(
+  //       this.scale.width / 2 + (Math.random() - 0.5) * 200,
+  //       this.scale.height / 2 + (Math.random() - 0.5) * 100,
+  //       4 + Math.random() * 3,
+  //       0xF1C40F,
+  //       1
+  //     ).setDepth(3004);
+  //     
+  //     const angle = Math.random() * Math.PI * 2;
+  //     const distance = 100 + Math.random() * 50;
+  //     
+  //     this.tweens.add({
+  //       targets: sparkle,
+  //       x: this.scale.width / 2 + Math.cos(angle) * distance,
+  //       y: this.scale.height / 2 + Math.sin(angle) * distance,
+  //       alpha: 0,
+  //       scale: 0,
+  //       duration: 2000,
+  //       ease: 'Power2.easeOut',
+  //       onComplete: () => sparkle.destroy()
+  //     });
+  //   }
+  // }
 
   /**
    * Hide all game objects to prevent them from showing behind the Game Over modal
@@ -1893,50 +1660,51 @@ export class Game extends Scene {
 
   /**
    * Force cleanup before scene restart to prevent destroy errors
+   * NOTE: Currently unused, keeping for reference
    */
-  private forceCleanupBeforeRestart(): void {
-    console.log('Game: Force cleanup before restart');
-    
-    try {
-      // Set shutdown flag to prevent updates during cleanup
-      this.isShuttingDown = true;
-      
-      // Stop all tweens first
-      if (this.tweens) {
-        this.tweens.killAll();
-      }
-      
-      // Stop object spawner
-      if (this.objectSpawner) {
-        this.objectSpawner.pause();
-      }
-      
-      // Clear and destroy object pool
-      if (this.objectPool) {
-        this.objectPool.clearAll();
-        this.objectPool.destroy();
-        this.objectPool = null;
-      }
-      
-      // Force deactivate slow motion
-      if (this.isSlowMoActive) {
-        this.forceDeactivateSlowMotion();
-      }
-      
-      // Stop game timer
-      if (this.gameTimer) {
-        this.gameTimer.destroy();
-        this.gameTimer = null;
-      }
-      
-      // Clean up temporary objects
-      this.cleanupAllTemporaryObjects();
-      
-      console.log('Game: Force cleanup completed');
-    } catch (error) {
-      console.warn('Game: Error during force cleanup:', error);
-    }
-  }
+  // private forceCleanupBeforeRestart(): void {
+  //   console.log('Game: Force cleanup before restart');
+  //   
+  //   try {
+  //     // Set shutdown flag to prevent updates during cleanup
+  //     this.isShuttingDown = true;
+  //     
+  //     // Stop all tweens first
+  //     if (this.tweens) {
+  //       this.tweens.killAll();
+  //     }
+  //     
+  //     // Stop object spawner
+  //     if (this.objectSpawner) {
+  //       this.objectSpawner.pause();
+  //     }
+  //     
+  //     // Clear and destroy object pool
+  //     if (this.objectPool) {
+  //       this.objectPool.clearAll();
+  //       this.objectPool.destroy();
+  //       this.objectPool = null;
+  //     }
+  //     
+  //     // Force deactivate slow motion
+  //     if (this.isSlowMoActive) {
+  //       this.forceDeactivateSlowMotion();
+  //     }
+  //     
+  //     // Stop game timer
+  //     if (this.gameTimer) {
+  //       this.gameTimer.destroy();
+  //       this.gameTimer = null;
+  //     }
+  //     
+  //     // Clean up temporary objects
+  //     this.cleanupAllTemporaryObjects();
+  //     
+  //     console.log('Game: Force cleanup completed');
+  //   } catch (error) {
+  //     console.warn('Game: Error during force cleanup:', error);
+  //   }
+  // }
 
 
   /**
@@ -2055,6 +1823,12 @@ export class Game extends Scene {
       console.log('Game: UIScene key:', this.uiScene.scene.key);
       console.log('Game: UIScene active:', this.uiScene.scene.isActive());
       console.log('Game: UIScene visible:', this.uiScene.scene.isVisible());
+      
+      // Explicitly show the SimpleUI scene if it's hidden
+      if (this.uiScene.scene.isActive() && !this.uiScene.scene.isVisible()) {
+        console.log('Game: UIScene is active but hidden, showing it now');
+        this.scene.setVisible(true, 'SimpleUI');
+      }
     } else {
       console.warn('Game: UIScene.scene is not available');
     }
@@ -2062,6 +1836,12 @@ export class Game extends Scene {
     // Ensure UIScene is visible and properly initialized
     if (this.uiScene.forceShowUI) {
       this.uiScene.forceShowUI();
+    }
+
+    // Explicitly show UI elements (best score and tap text) when game restarts
+    if (this.uiScene.setVisible) {
+      this.uiScene.setVisible(true);
+      console.log('Game: UI elements shown after restart');
     }
 
     // Setup event listeners for scene communication

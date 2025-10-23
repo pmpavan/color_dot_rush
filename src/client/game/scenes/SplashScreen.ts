@@ -1393,8 +1393,8 @@ Good luck!
       
       // Launch UI scene with a small delay to ensure Game scene is ready
       this.time.delayedCall(50, () => {
-        this.scene.launch('UI');
-        console.log('SplashScreen: UI scene launched (delayed)');
+        this.scene.launch('SimpleUI');
+        console.log('SplashScreen: SimpleUI scene launched (delayed)');
       });
     } catch (sceneError) {
       console.error('SplashScreen: Error launching scenes:', sceneError);

@@ -17,6 +17,8 @@ export class Dot extends Phaser.GameObjects.Arc {
   private lastCollisionTime: number = 0;
   private accessibilityManager: AccessibilityManager | null = null;
   private shapeOverlayId: string | null = null;
+  private effectObjects: Phaser.GameObjects.Arc[] = [];
+  private effectTweens: Phaser.Tweens.Tween[] = [];
 
   constructor(scene: Phaser.Scene) {
     // Create as a circle instead of sprite - larger for visibility
@@ -297,29 +299,57 @@ export class Dot extends Phaser.GameObjects.Arc {
     // Primary white burst - large and bright
     const primaryBurst = this.scene.add.circle(this.x, this.y, 20, 0xFFFFFF, 0.9);
     primaryBurst.setDepth(this.depth + 10);
+    this.effectObjects.push(primaryBurst);
     
-    this.scene.tweens.add({
+    const tween1 = this.scene.tweens.add({
       targets: primaryBurst,
       radius: this.size * 1.5,
       alpha: 0,
       duration: 150,
       ease: 'Power2.easeOut',
-      onComplete: () => primaryBurst.destroy()
+      onComplete: () => {
+        const index = this.effectObjects.indexOf(primaryBurst);
+        if (index > -1) {
+          this.effectObjects.splice(index, 1);
+        }
+        const tweenIndex = this.effectTweens.indexOf(tween1);
+        if (tweenIndex > -1) {
+          this.effectTweens.splice(tweenIndex, 1);
+        }
+        if (primaryBurst.scene) {
+          primaryBurst.destroy();
+        }
+      }
     });
+    this.effectTweens.push(tween1);
 
     // Secondary burst - smaller and faster
     const secondaryBurst = this.scene.add.circle(this.x, this.y, 10, 0xFFFFFF, 1);
     secondaryBurst.setDepth(this.depth + 11);
+    this.effectObjects.push(secondaryBurst);
     
-    this.scene.tweens.add({
+    const tween2 = this.scene.tweens.add({
       targets: secondaryBurst,
       radius: this.size * 0.8,
       alpha: 0,
       duration: 100,
       ease: 'Power3.easeOut',
       delay: 25,
-      onComplete: () => secondaryBurst.destroy()
+      onComplete: () => {
+        const index = this.effectObjects.indexOf(secondaryBurst);
+        if (index > -1) {
+          this.effectObjects.splice(index, 1);
+        }
+        const tweenIndex = this.effectTweens.indexOf(tween2);
+        if (tweenIndex > -1) {
+          this.effectTweens.splice(tweenIndex, 1);
+        }
+        if (secondaryBurst.scene) {
+          secondaryBurst.destroy();
+        }
+      }
     });
+    this.effectTweens.push(tween2);
   }
 
   /**
@@ -337,13 +367,15 @@ export class Dot extends Phaser.GameObjects.Arc {
       // Create luminous particle with glow
       const particle = this.scene.add.circle(this.x, this.y, size, dotColor, 0.8);
       particle.setDepth(this.depth + 5);
+      this.effectObjects.push(particle);
       
       // Add subtle glow effect to particle
       const particleGlow = this.scene.add.circle(this.x, this.y, size * 2, dotColor, 0.3);
       particleGlow.setDepth(this.depth + 4);
+      this.effectObjects.push(particleGlow);
       
       // Animate particle movement
-      this.scene.tweens.add({
+      const particleTween = this.scene.tweens.add({
         targets: particle,
         x: this.x + Math.cos(angle) * distance,
         y: this.y + Math.sin(angle) * distance,
@@ -351,11 +383,24 @@ export class Dot extends Phaser.GameObjects.Arc {
         scale: 0,
         duration: 400 + Math.random() * 200,
         ease: 'Power2.easeOut',
-        onComplete: () => particle.destroy()
+        onComplete: () => {
+          const index = this.effectObjects.indexOf(particle);
+          if (index > -1) {
+            this.effectObjects.splice(index, 1);
+          }
+          const tweenIndex = this.effectTweens.indexOf(particleTween);
+          if (tweenIndex > -1) {
+            this.effectTweens.splice(tweenIndex, 1);
+          }
+          if (particle.scene) {
+            particle.destroy();
+          }
+        }
       });
+      this.effectTweens.push(particleTween);
       
       // Animate particle glow
-      this.scene.tweens.add({
+      const glowTween = this.scene.tweens.add({
         targets: particleGlow,
         x: this.x + Math.cos(angle) * distance,
         y: this.y + Math.sin(angle) * distance,
@@ -363,8 +408,21 @@ export class Dot extends Phaser.GameObjects.Arc {
         scale: 0,
         duration: 400 + Math.random() * 200,
         ease: 'Power2.easeOut',
-        onComplete: () => particleGlow.destroy()
+        onComplete: () => {
+          const index = this.effectObjects.indexOf(particleGlow);
+          if (index > -1) {
+            this.effectObjects.splice(index, 1);
+          }
+          const tweenIndex = this.effectTweens.indexOf(glowTween);
+          if (tweenIndex > -1) {
+            this.effectTweens.splice(tweenIndex, 1);
+          }
+          if (particleGlow.scene) {
+            particleGlow.destroy();
+          }
+        }
       });
+      this.effectTweens.push(glowTween);
     }
   }
 
@@ -387,8 +445,9 @@ export class Dot extends Phaser.GameObjects.Arc {
         
         const popDot = this.scene.add.circle(this.x, this.y, layerSize, dotColor, 0.9);
         popDot.setDepth(this.depth + 3 + layer);
+        this.effectObjects.push(popDot);
         
-        this.scene.tweens.add({
+        const popTween = this.scene.tweens.add({
           targets: popDot,
           x: this.x + Math.cos(angle) * distance,
           y: this.y + Math.sin(angle) * distance,
@@ -397,8 +456,21 @@ export class Dot extends Phaser.GameObjects.Arc {
           duration: 350 + layer * 50,
           ease: 'Power2.easeOut',
           delay: layerDelay,
-          onComplete: () => popDot.destroy()
+          onComplete: () => {
+            const index = this.effectObjects.indexOf(popDot);
+            if (index > -1) {
+              this.effectObjects.splice(index, 1);
+            }
+            const tweenIndex = this.effectTweens.indexOf(popTween);
+            if (tweenIndex > -1) {
+              this.effectTweens.splice(tweenIndex, 1);
+            }
+            if (popDot.scene) {
+              popDot.destroy();
+            }
+          }
         });
+        this.effectTweens.push(popTween);
       }
     }
   }
@@ -420,43 +492,85 @@ export class Dot extends Phaser.GameObjects.Arc {
     // Primary ripple - white and bright
     const primaryRipple = this.scene.add.circle(this.x, this.y, 8, 0xFFFFFF, 0.9);
     primaryRipple.setDepth(this.depth + 8);
+    this.effectObjects.push(primaryRipple);
     
-    this.scene.tweens.add({
+    const tween1 = this.scene.tweens.add({
       targets: primaryRipple,
       radius: this.size * 2.5,
       alpha: 0,
       duration: 250,
       ease: 'Power2.easeOut',
-      onComplete: () => primaryRipple.destroy()
+      onComplete: () => {
+        const index = this.effectObjects.indexOf(primaryRipple);
+        if (index > -1) {
+          this.effectObjects.splice(index, 1);
+        }
+        const tweenIndex = this.effectTweens.indexOf(tween1);
+        if (tweenIndex > -1) {
+          this.effectTweens.splice(tweenIndex, 1);
+        }
+        if (primaryRipple.scene) {
+          primaryRipple.destroy();
+        }
+      }
     });
+    this.effectTweens.push(tween1);
 
     // Secondary ripple - colored and luminous
     const secondaryRipple = this.scene.add.circle(this.x, this.y, 12, dotColor, 0.7);
     secondaryRipple.setDepth(this.depth + 7);
+    this.effectObjects.push(secondaryRipple);
     
-    this.scene.tweens.add({
+    const tween2 = this.scene.tweens.add({
       targets: secondaryRipple,
       radius: this.size * 2,
       alpha: 0,
       duration: 300,
       ease: 'Power2.easeOut',
       delay: 50,
-      onComplete: () => secondaryRipple.destroy()
+      onComplete: () => {
+        const index = this.effectObjects.indexOf(secondaryRipple);
+        if (index > -1) {
+          this.effectObjects.splice(index, 1);
+        }
+        const tweenIndex = this.effectTweens.indexOf(tween2);
+        if (tweenIndex > -1) {
+          this.effectTweens.splice(tweenIndex, 1);
+        }
+        if (secondaryRipple.scene) {
+          secondaryRipple.destroy();
+        }
+      }
     });
+    this.effectTweens.push(tween2);
 
     // Tertiary ripple - subtle glow
     const tertiaryRipple = this.scene.add.circle(this.x, this.y, 15, dotColor, 0.4);
     tertiaryRipple.setDepth(this.depth + 6);
+    this.effectObjects.push(tertiaryRipple);
     
-    this.scene.tweens.add({
+    const tween3 = this.scene.tweens.add({
       targets: tertiaryRipple,
       radius: this.size * 1.8,
       alpha: 0,
       duration: 350,
       ease: 'Sine.easeOut',
       delay: 100,
-      onComplete: () => tertiaryRipple.destroy()
+      onComplete: () => {
+        const index = this.effectObjects.indexOf(tertiaryRipple);
+        if (index > -1) {
+          this.effectObjects.splice(index, 1);
+        }
+        const tweenIndex = this.effectTweens.indexOf(tween3);
+        if (tweenIndex > -1) {
+          this.effectTweens.splice(tweenIndex, 1);
+        }
+        if (tertiaryRipple.scene) {
+          tertiaryRipple.destroy();
+        }
+      }
     });
+    this.effectTweens.push(tween3);
   }
 
   /**
@@ -538,17 +652,60 @@ export class Dot extends Phaser.GameObjects.Arc {
     // Create entrance burst effect
     const entranceBurst = this.scene.add.circle(this.x, this.y, 5, parseInt(this.color.replace('#', '0x')), 0.6);
     entranceBurst.setDepth(this.depth + 2);
+    this.effectObjects.push(entranceBurst);
     
-    this.scene.tweens.add({
+    const entranceTween = this.scene.tweens.add({
       targets: entranceBurst,
       radius: this.size * 1.2,
       alpha: 0,
       duration: 300,
       ease: 'Power2.easeOut',
-      onComplete: () => entranceBurst.destroy()
+      onComplete: () => {
+        const index = this.effectObjects.indexOf(entranceBurst);
+        if (index > -1) {
+          this.effectObjects.splice(index, 1);
+        }
+        const tweenIndex = this.effectTweens.indexOf(entranceTween);
+        if (tweenIndex > -1) {
+          this.effectTweens.splice(tweenIndex, 1);
+        }
+        if (entranceBurst.scene) {
+          entranceBurst.destroy();
+        }
+      }
     });
+    this.effectTweens.push(entranceTween);
   }
 
+
+  /**
+   * Clean up all effect objects and their tweens
+   */
+  private cleanupEffects(): void {
+    // Kill all effect tweens first
+    for (const tween of this.effectTweens) {
+      try {
+        if (tween) {
+          tween.remove();
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+    }
+    this.effectTweens = [];
+    
+    // Destroy all effect objects
+    for (const obj of this.effectObjects) {
+      try {
+        if (obj && obj.scene) {
+          obj.destroy();
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+    }
+    this.effectObjects = [];
+  }
 
   /**
    * Deactivate the dot
@@ -565,6 +722,9 @@ export class Dot extends Phaser.GameObjects.Arc {
     
     // Stop all tweens on this dot
     this.scene.tweens.killTweensOf(this);
+    
+    // Clean up all effect objects and their tweens
+    this.cleanupEffects();
     
     // Create exit animation
     this.createExitEffect();
@@ -654,6 +814,9 @@ export class Dot extends Phaser.GameObjects.Arc {
    * Destroy the dot and clean up glow effects
    */
   public override destroy(fromScene?: boolean): void {
+    // Clean up all effects first
+    this.cleanupEffects();
+    
     // Remove shape overlay if it exists
     this.removeShapeOverlay();
     

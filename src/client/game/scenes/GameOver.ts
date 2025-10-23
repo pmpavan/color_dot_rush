@@ -1,28 +1,23 @@
 import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
 import { NeonBackgroundSystem } from '../utils/NeonBackgroundSystem';
-import { NeonTextEffects, NeonTextEffectType, NeonTextSize } from '../utils/NeonTextEffects';
-import { NeonButtonSystem, NeonButtonVariant, NeonButtonSize } from '../utils/NeonButtonSystem';
-import { GlowEffects } from '../utils/GlowEffects';
-import { UIColor } from '../../../shared/types/game';
+import { DOMTextRenderer } from '../utils/DOMTextRenderer';
 
 interface GameOverData {
   finalScore: number;
   sessionTime: number;
   bestScore: number;
   targetColor: string;
+  userRank?: number;
 }
 
 export class GameOver extends Scene {
   private camera: Phaser.Cameras.Scene2D.Camera;
   private background: Phaser.GameObjects.Rectangle;
   private dimmedOverlay: Phaser.GameObjects.Rectangle;
-  private modalCard: Phaser.GameObjects.Container | null = null;
   private gameOverData: GameOverData;
-  private playAgainButton: Phaser.GameObjects.Container | null = null;
-  private leaderboardButton: Phaser.GameObjects.Container | null = null;
-  private mainMenuButton: Phaser.GameObjects.Container | null = null;
   private neonBackground: NeonBackgroundSystem | null = null;
+  private domRenderer: DOMTextRenderer | null = null;
 
   constructor() {
     super('GameOver');
@@ -30,18 +25,29 @@ export class GameOver extends Scene {
 
   shutdown(): void {
     try {
-      // Clean up button references
-      this.playAgainButton = null;
-      this.leaderboardButton = null;
-      this.mainMenuButton = null;
+      // Clean up DOM modal
+      const modalContainer = document.getElementById('game-over-modal');
+      if (modalContainer && modalContainer.parentNode) {
+        modalContainer.parentNode.removeChild(modalContainer);
+      }
       
-      // Clean up container reference
-      this.modalCard = null;
+      // Remove CSS animations
+      const styleElement = document.getElementById('game-over-neon-styles');
+      if (styleElement) {
+        styleElement.remove();
+      }
+      
       
       // Clean up neon background system
       if (this.neonBackground) {
         this.neonBackground.destroy();
         this.neonBackground = null;
+      }
+      
+      // Clean up DOM renderer
+      if (this.domRenderer) {
+        this.domRenderer.destroy();
+        this.domRenderer = null;
       }
       
       // Kill all tweens
@@ -61,19 +67,19 @@ export class GameOver extends Scene {
       finalScore: 0,
       sessionTime: 0,
       bestScore: 0,
-      targetColor: '#E74C3C'
+      targetColor: '#E74C3C',
+      userRank: undefined
     };
 
-    // Reset button references for scene reuse
-    this.playAgainButton = null;
-    this.leaderboardButton = null;
-    this.mainMenuButton = null;
     
     console.log('GameOver scene init completed');
   }
 
   create() {
     console.log('GameOver scene create called');
+    
+    // Clear any existing DOM elements from previous sessions first
+    this.clearExistingDOMElements();
     
     // Configure camera
     this.camera = this.cameras.main;
@@ -89,6 +95,9 @@ export class GameOver extends Scene {
     // Initialize and create neon background system
     this.neonBackground = new NeonBackgroundSystem(this);
     this.neonBackground.createBackground();
+
+    // Initialize DOM renderer for text elements
+    this.domRenderer = new DOMTextRenderer('game-container');
 
     // Create frozen game state background (graphics-only)
     this.background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x080808, 0).setOrigin(0);
@@ -117,239 +126,474 @@ export class GameOver extends Scene {
   }
 
   private createModalCard(): void {
-    // Create modal container positioned at screen center
-    const container = this.add.container(this.scale.width / 2, this.scale.height / 2);
-    if (!container) {
-      return; // Exit early if container creation fails
-    }
-    this.modalCard = container;
+    // Create DOM-based modal overlay similar to HowToPlayModal
+    this.createDOMGameOverModal();
+  }
 
-    // Calculate responsive modal size
-    const modalWidth = Math.min(400, this.scale.width * 0.9);
-    const modalHeight = Math.min(500, this.scale.height * 0.8);
+  private createDOMGameOverModal(): void {
+    if (!this.domRenderer) return;
 
-    // Modal background with dark semi-transparent frosted glass effect
-    const modalBg = this.add.rectangle(0, 0, modalWidth, modalHeight, 0x1E1E1E, 0.85);
-    modalBg.setStrokeStyle(2, 0xFFFFFF, 0.1); // Subtle glass border
-    this.modalCard.add(modalBg);
+    // Create modal overlay container
+    const modalContainer = document.createElement('div');
+    modalContainer.id = 'game-over-modal';
+    modalContainer.setAttribute('role', 'dialog');
+    modalContainer.setAttribute('aria-modal', 'true');
+    modalContainer.setAttribute('aria-labelledby', 'game-over-title');
+    modalContainer.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 8, 8, 0.9);
+      z-index: 2000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+      font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
 
-    // "GAME OVER" title with Warning Red glow
-    const gameOverIcon = this.add.circle(0, -modalHeight * 0.35, 30, 0xFF0000, 1);
-    gameOverIcon.setStrokeStyle(4, 0xFFFFFF, 1);
-    
-    // Add Warning Red glow effect
-    const gameOverGlow = GlowEffects.createGlowEffect(
-      this,
-      0, -modalHeight * 0.35,
-      {
-        color: UIColor.GLOW_RED,
-        intensity: 0.9,
-        radius: 35,
-        blur: 25,
-        alpha: 0.8
-      },
-      -1
-    );
-    this.modalCard.add(gameOverGlow);
-    this.modalCard.add(gameOverIcon);
+    // Create modal content container with glass morphism
+    const contentContainer = document.createElement('div');
+    contentContainer.className = 'modal-content';
+    contentContainer.style.cssText = `
+      background: rgba(30, 30, 30, 0.95);
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      padding: 24px;
+      box-shadow: 0 0 30px rgba(255, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 0, 0, 0.4);
+      color: #ffffff;
+      box-sizing: border-box;
+      outline: none;
+      backdrop-filter: blur(10px) saturate(180%);
+    `;
 
-    // Final score display with Electric Blue glow
-    const scoreLevel = this.gameOverData.finalScore > 20 ? 3 : this.gameOverData.finalScore > 10 ? 2 : 1;
-    const scoreColors = [0xFF0000, 0xFFD700, 0x2ECC71]; // Red, Gold, Green
-    const scoreIndicator = this.add.circle(0, -modalHeight * 0.2, 25, scoreColors[scoreLevel - 1], 1);
-    scoreIndicator.setStrokeStyle(3, 0xFFFFFF, 1);
-    
-    // Add Electric Blue glow effect for final score
-    const scoreGlow = GlowEffects.createGlowEffect(
-      this,
-      0, -modalHeight * 0.2,
-      {
-        color: UIColor.GLOW_BLUE,
-        intensity: 0.8,
-        radius: 30,
-        blur: 20,
-        alpha: 0.7
-      },
-      -1
-    );
-    this.modalCard.add(scoreGlow);
-    this.modalCard.add(scoreIndicator);
+    // Create close button (X)
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '×';
+    closeButton.setAttribute('aria-label', 'Close Game Over modal');
+    closeButton.style.cssText = `
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      min-width: 44px;
+      min-height: 44px;
+      border: 2px solid rgba(255, 0, 0, 0.6);
+      background: rgba(30, 30, 30, 0.8);
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      z-index: 1;
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+    `;
 
-    // Session time display (graphics-only - rotating clock hand)
-    const timeCircle = this.add.circle(0, -modalHeight * 0.1, 20, 0x2ECC71, 0.8);
-    if (timeCircle) {
-      timeCircle.setStrokeStyle(2, 0xFFFFFF, 0.8);
-      this.modalCard.add(timeCircle);
-    }
-    
-    const timeHand = this.add.line(0, -modalHeight * 0.1, 0, 0, 0, -15, 0xFFFFFF, 1);
-    if (timeHand) {
-      timeHand.setLineWidth(2);
-      const rotation = (this.gameOverData.sessionTime / 1000 * 6) * (Math.PI / 180);
-      timeHand.setRotation(rotation);
-      this.modalCard.add(timeHand);
-    }
-
-    // Best score display with trophy icon and white glow
-    const isNewRecord = this.gameOverData.finalScore === this.gameOverData.bestScore && this.gameOverData.finalScore > 0;
-    const bestScoreColor = isNewRecord ? 0xF1C40F : 0x95A5A6; // Gold for new record, grey otherwise
-    
-    // Create trophy icon (cup shape)
-    const trophyBase = this.add.rectangle(0, modalHeight * 0.02 + 8, 16, 8, bestScoreColor, 1);
-    const trophyCup = this.add.rectangle(0, modalHeight * 0.02 - 2, 12, 12, bestScoreColor, 1);
-    const trophyHandles = this.add.ellipse(0, modalHeight * 0.02 - 2, 20, 8, bestScoreColor, 0.3);
-    
-    // Add white glow effect to trophy
-    const trophyGlow = GlowEffects.createGlowEffect(
-      this,
-      0, modalHeight * 0.02,
-      {
-        color: '#FFFFFF',
-        intensity: 0.8,
-        radius: 25,
-        blur: 20,
-        alpha: 0.6
-      },
-      -1
-    );
-    
-    this.modalCard.add(trophyGlow);
-    this.modalCard.add(trophyBase);
-    this.modalCard.add(trophyCup);
-    this.modalCard.add(trophyHandles);
-    
-    if (isNewRecord) {
-      // Add crown effect for new record
-      const crown = this.add.triangle(0, modalHeight * 0.02 - 10, 0, 0, -8, 12, 8, 12, 0xF1C40F);
-      this.modalCard.add(crown);
-      
-      // Add new record celebration effect
-      this.createNewRecordEffect(0, modalHeight * 0.02);
-    }
-
-
-
-    // Create navigation buttons within the modal
-    this.createModalButtons(modalHeight);
-
-    // Enhanced scale-up and fade-in animation with neon effects
-    this.modalCard.setScale(0.1);
-    this.modalCard.setAlpha(0);
-
-    // Create dramatic entrance animation
-    this.tweens.add({
-      targets: this.modalCard,
-      scaleX: 1.1,
-      scaleY: 1.1,
-      alpha: 1,
-      duration: 300,
-      ease: 'Back.easeOut',
-      onUpdate: (tween) => {
-        // Add pulsing glow effect during animation
-        const progress = tween.progress;
-        const pulseIntensity = 0.5 + (Math.sin(progress * Math.PI * 4) * 0.3);
-        // This creates a pulsing effect during the scale animation
-      },
-      onComplete: () => {
-        // Settle to final scale
-        this.tweens.add({
-          targets: this.modalCard,
-          scaleX: 1,
-          scaleY: 1,
-          duration: 150,
-          ease: 'Power2.easeOut',
-          onComplete: () => {
-            // Auto-focus the Play Again button after animation
-            if (this.playAgainButton) {
-              this.playAgainButton.setScale(1.05);
-              // Add subtle pulsing glow effect to indicate focus
-              this.tweens.add({
-                targets: this.playAgainButton,
-                alpha: 0.8,
-                duration: 1000,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-              });
-            }
-          }
-        });
-      }
+    // Add close button hover effects
+    closeButton.addEventListener('mouseenter', () => {
+      closeButton.style.background = 'rgba(255, 0, 0, 0.3)';
+      closeButton.style.transform = 'scale(1.1)';
+      closeButton.style.boxShadow = '0 0 25px rgba(255, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
     });
+
+    closeButton.addEventListener('mouseleave', () => {
+      closeButton.style.background = 'rgba(30, 30, 30, 0.8)';
+      closeButton.style.transform = 'scale(1)';
+      closeButton.style.boxShadow = '0 0 15px rgba(255, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+    });
+
+    closeButton.addEventListener('click', () => {
+      this.handleMainMenu();
+    });
+
+    // Create modal header
+    const header = this.createGameOverHeader();
+    contentContainer.appendChild(header);
+
+    // Create game over content sections
+    const sectionsContainer = this.createGameOverSections();
+    contentContainer.appendChild(sectionsContainer);
+
+    // Create action buttons
+    const buttonsContainer = this.createGameOverButtons();
+    contentContainer.appendChild(buttonsContainer);
+
+    // Add close button to content container
+    contentContainer.appendChild(closeButton);
+
+    // Add content container to modal
+    modalContainer.appendChild(contentContainer);
+
+    // Add modal to document body
+    document.body.appendChild(modalContainer);
+
+    // Inject CSS animations for neon effects
+    this.injectGameOverAnimations();
+
+    // Add entrance animation
+    modalContainer.style.opacity = '0';
+    contentContainer.style.transform = 'scale(0.9) translateY(-20px)';
+    contentContainer.style.transition = 'all 0.3s ease-out';
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+      modalContainer.style.transition = 'opacity 0.3s ease-out';
+      modalContainer.style.opacity = '1';
+      contentContainer.style.transform = 'scale(1) translateY(0)';
+    });
+
+    // Modal is now managed by DOM, no need to store reference
   }
 
-  private createNewRecordEffect(x: number, y: number): void {
-    // Create sparkle effect with simple graphics for new record celebration
-    for (let i = 0; i < 5; i++) {
-      const sparkle = this.add.circle(x, y, 3, 0xF1C40F, 1);
-      const angle = (i / 5) * Math.PI * 2;
-      const distance = 30 + Math.random() * 20;
-      
-      this.tweens.add({
-        targets: sparkle,
-        x: x + Math.cos(angle) * distance,
-        y: y + Math.sin(angle) * distance,
-        alpha: 0,
-        duration: 1000,
-        ease: 'Power2.easeOut',
-        onComplete: () => sparkle.destroy()
-      });
+  private createGameOverHeader(): HTMLElement {
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    header.style.cssText = `
+      text-align: center;
+      margin-bottom: 24px;
+      padding-right: 60px;
+    `;
+
+    const title = document.createElement('h1');
+    title.className = 'modal-title';
+    title.id = 'game-over-title';
+    title.textContent = 'GAME OVER';
+    title.style.cssText = `
+      font-size: 28px;
+      font-weight: bold;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      line-height: 1.2;
+      font-family: 'Orbitron', sans-serif;
+      text-shadow: 0 0 5px rgba(255, 0, 0, 0.8), 0 0 10px rgba(255, 0, 0, 0.6), 0 0 15px rgba(255, 0, 0, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      animation: titleGlow 3s ease-in-out infinite;
+    `;
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'modal-subtitle';
+    subtitle.textContent = 'COLOR DOT RUSH';
+    subtitle.style.cssText = `
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.8);
+      margin: 8px 0 0 0;
+      padding: 0;
+      font-weight: 400;
+      font-family: 'Orbitron', sans-serif;
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    `;
+
+    header.appendChild(title);
+    header.appendChild(subtitle);
+
+    return header;
+  }
+
+  private createGameOverSections(): HTMLElement {
+    const sectionsContainer = document.createElement('div');
+    sectionsContainer.className = 'modal-sections';
+    sectionsContainer.style.cssText = `
+      padding: 20px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      background: rgba(30, 30, 30, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    `;
+
+    // Add rank/congratulations section if user has a rank
+    if (this.gameOverData.userRank && this.gameOverData.userRank <= 5) {
+      const rankSection = this.createRankSection();
+      sectionsContainer.appendChild(rankSection);
     }
+
+    // Final Score section
+    const scoreSection = this.createGameOverInfoItem(
+      '🎯',
+      'FINAL SCORE',
+      `${this.gameOverData.finalScore}`,
+      'rgba(0, 191, 255, 0.8)',
+      false
+    );
+    sectionsContainer.appendChild(scoreSection);
+
+    // Session Time section
+    const timeSection = this.createGameOverInfoItem(
+      '⏱️',
+      'SESSION TIME',
+      `${(this.gameOverData.sessionTime / 1000).toFixed(1)}s`,
+      'rgba(0, 255, 0, 0.8)',
+      false
+    );
+    sectionsContainer.appendChild(timeSection);
+
+    // Best Score section (last item, no border)
+    const isNewRecord = this.gameOverData.finalScore === this.gameOverData.bestScore && this.gameOverData.finalScore > 0;
+    const bestScoreSection = this.createGameOverInfoItem(
+      isNewRecord ? '🏆' : '📊',
+      isNewRecord ? 'NEW RECORD!' : 'BEST SCORE',
+      `${this.gameOverData.bestScore}`,
+      isNewRecord ? 'rgba(255, 215, 0, 0.9)' : 'rgba(255, 255, 255, 0.7)',
+      true // Last item, no border
+    );
+    sectionsContainer.appendChild(bestScoreSection);
+
+    return sectionsContainer;
   }
 
-  private createModalButtons(modalHeight: number): void {
-    // Play Again button with Volt Green border glow
-    const playAgainBg = this.add.rectangle(0, modalHeight * 0.2, 200, 50, 0x1E1E1E, 0.7);
-    playAgainBg.setStrokeStyle(3, 0x00FF00, 0.8); // Volt Green border
-    
-    // Add Volt Green glow effect around button
-    const playAgainGlow = GlowEffects.createGlowEffect(
-      this,
-      0, modalHeight * 0.2,
-      {
-        color: UIColor.GLOW_GREEN,
-        intensity: 0.8,
-        radius: 110,
-        blur: 30,
-        alpha: 0.6
-      },
-      -1
+  private createGameOverInfoItem(icon: string, title: string, value: string, glowColor: string, isLast: boolean = false): HTMLElement {
+    const item = document.createElement('div');
+    item.className = 'game-over-info-item';
+    item.style.cssText = `
+      padding: 12px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: ${isLast ? 'none' : '1px solid rgba(255, 255, 255, 0.05)'};
+    `;
+
+    const leftSide = document.createElement('div');
+    leftSide.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    `;
+
+    const iconElement = document.createElement('div');
+    iconElement.textContent = icon;
+    iconElement.style.cssText = `
+      font-size: 20px;
+      filter: drop-shadow(0 0 8px ${glowColor});
+    `;
+
+    const titleElement = document.createElement('span');
+    titleElement.textContent = title;
+    titleElement.style.cssText = `
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.8);
+      font-family: 'Orbitron', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    `;
+
+    const valueElement = document.createElement('div');
+    valueElement.textContent = value;
+    valueElement.style.cssText = `
+      font-size: 24px;
+      font-weight: bold;
+      color: #ffffff;
+      font-family: 'Orbitron', sans-serif;
+      text-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}40;
+    `;
+
+    leftSide.appendChild(iconElement);
+    leftSide.appendChild(titleElement);
+    item.appendChild(leftSide);
+    item.appendChild(valueElement);
+
+    return item;
+  }
+
+  private createRankSection(): HTMLElement {
+    const rankSection = document.createElement('div');
+    rankSection.className = 'rank-section';
+    rankSection.style.cssText = `
+      padding: 16px 0;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 16px;
+    `;
+
+    // Congratulations message
+    const congratsElement = document.createElement('div');
+    congratsElement.textContent = '🎉 CONGRATULATIONS! 🎉';
+    congratsElement.style.cssText = `
+      font-size: 18px;
+      font-weight: bold;
+      color: #F1C40F;
+      font-family: 'Orbitron', sans-serif;
+      text-shadow: 0 0 10px rgba(241, 196, 15, 0.8), 0 0 20px rgba(241, 196, 15, 0.6);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    `;
+
+    // Rank display
+    const rankElement = document.createElement('div');
+    const rank = this.gameOverData.userRank!;
+    const rankText = rank === 1 ? '🥇 1ST PLACE!' : 
+                     rank === 2 ? '🥈 2ND PLACE!' : 
+                     rank === 3 ? '🥉 3RD PLACE!' : 
+                     `🏆 RANK: ${rank}`;
+    rankElement.textContent = rankText;
+    rankElement.style.cssText = `
+      font-size: 16px;
+      font-weight: bold;
+      color: #E74C3C;
+      font-family: 'Orbitron', sans-serif;
+      text-shadow: 0 0 8px rgba(231, 76, 60, 0.8), 0 0 16px rgba(231, 76, 60, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    `;
+
+    rankSection.appendChild(congratsElement);
+    rankSection.appendChild(rankElement);
+
+    return rankSection;
+  }
+
+  private createGameOverButtons(): HTMLElement {
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'modal-buttons';
+    buttonsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    `;
+
+    // Play Again button
+    const playAgainButton = this.createGameOverButton(
+      'PLAY AGAIN',
+      'rgba(0, 255, 0, 0.2)',
+      'rgba(0, 255, 0, 0.6)',
+      '#00FF00',
+      () => this.handlePlayAgain()
     );
+    buttonsContainer.appendChild(playAgainButton);
+
+    // Leaderboard button
+    const leaderboardButton = this.createGameOverButton(
+      'LEADERBOARD',
+      'rgba(255, 105, 180, 0.2)',
+      'rgba(255, 105, 180, 0.6)',
+      '#FF69B4',
+      () => this.handleLeaderboard()
+    );
+    buttonsContainer.appendChild(leaderboardButton);
+
+    // Main Menu button
+    const mainMenuButton = this.createGameOverButton(
+      'MAIN MENU',
+      'rgba(0, 191, 255, 0.2)',
+      'rgba(0, 191, 255, 0.6)',
+      '#00BFFF',
+      () => this.handleMainMenu()
+    );
+    buttonsContainer.appendChild(mainMenuButton);
+
+    return buttonsContainer;
+  }
+
+  private createGameOverButton(text: string, bgColor: string, borderColor: string, glowColor: string, onClick: () => void): HTMLElement {
+    const button = document.createElement('button');
+    button.textContent = text;
+    button.style.cssText = `
+      background: ${bgColor};
+      border: 2px solid ${borderColor};
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+      font-family: 'Orbitron', sans-serif;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 5px ${glowColor};
+      box-shadow: 0 0 15px ${borderColor}, inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      outline: none;
+    `;
+
+    // Add hover effects
+    button.addEventListener('mouseenter', () => {
+      button.style.background = borderColor;
+      button.style.transform = 'translateY(-2px)';
+      button.style.boxShadow = `0 0 25px ${glowColor}, 0 0 50px ${glowColor}40, inset 0 1px 0 rgba(255, 255, 255, 0.2)`;
+    });
+
+    button.addEventListener('mouseleave', () => {
+      button.style.background = bgColor;
+      button.style.transform = 'translateY(0)';
+      button.style.boxShadow = `0 0 15px ${borderColor}, inset 0 1px 0 rgba(255, 255, 255, 0.1)`;
+    });
+
+    button.addEventListener('click', onClick);
+
+    return button;
+  }
+
+  private injectGameOverAnimations(): void {
+    // Create or update style element for neon animations
+    let styleElement = document.getElementById('game-over-neon-styles') as HTMLStyleElement;
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = 'game-over-neon-styles';
+      document.head.appendChild(styleElement);
+    }
     
-    // Add play triangle icon
-    const playIcon = this.add.triangle(0, modalHeight * 0.2, 0, 0, 0, 15, 12, 7.5, 0xFFFFFF);
-    
-    // Create container for button
-    const playAgainContainer = this.add.container(0, 0);
-    playAgainContainer.add(playAgainGlow);
-    playAgainContainer.add(playAgainBg);
-    playAgainContainer.add(playIcon);
-    
-    if (playAgainContainer && this.modalCard) {
-      this.playAgainButton = playAgainContainer;
-      this.modalCard.add(playAgainContainer);
+    styleElement.textContent = `
+      @keyframes titleGlow {
+        0%, 100% {
+          text-shadow: 0 0 5px rgba(255, 0, 0, 0.8), 
+                       0 0 10px rgba(255, 0, 0, 0.6), 
+                       0 0 15px rgba(255, 0, 0, 0.4);
+        }
+        50% {
+          text-shadow: 0 0 10px rgba(255, 0, 0, 1), 
+                       0 0 20px rgba(255, 0, 0, 0.8), 
+                       0 0 30px rgba(255, 0, 0, 0.6);
+        }
+      }
       
-      playAgainContainer
-        .setInteractive(new Phaser.Geom.Rectangle(-100, modalHeight * 0.2 - 25, 200, 50), Phaser.Geom.Rectangle.Contains)
-        .on('pointerover', () => {
-          playAgainContainer.setScale(1.1);
-          this.tweens.killTweensOf(playAgainContainer);
-          playAgainContainer.setAlpha(1);
-        })
-        .on('pointerout', () => {
-          playAgainContainer.setScale(1.05);
-        })
-        .on('pointerdown', () => {
-          playAgainContainer.setScale(0.95);
-          // Smooth transition back to game with cross-fade
-          this.tweens.add({
-            targets: this.modalCard,
-            scaleX: 0.1,
-            scaleY: 0.1,
-            alpha: 0,
-            duration: 200,
-            ease: 'Back.easeIn',
-            onComplete: () => {
+      @keyframes iconPulse {
+        0%, 100% {
+          filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.6));
+          transform: scale(1);
+        }
+        50% {
+          filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.9));
+          transform: scale(1.1);
+        }
+      }
+      
+      .modal-title {
+        animation: titleGlow 3s ease-in-out infinite;
+      }
+    `;
+  }
+
+
+
+
+
+
+
+
+
+  private handlePlayAgain(): void {
+    this.hideModal(() => {
               try {
                 if (this.cameras?.main?.fadeOut) {
                   this.cameras.main.fadeOut(250, 0, 0, 0);
@@ -357,96 +601,94 @@ export class GameOver extends Scene {
                     // Start Game scene and ensure UI scene is running
                     this.scene.start('Game');
                     
-                    // Check if UI scene exists, if not launch it
-                    const uiScene = this.scene.get('UI') as any;
-                    if (!uiScene || !uiScene.scene.isActive()) {
-                      this.scene.launch('UI');
-                    } else if (uiScene && uiScene.setVisible) {
-                      uiScene.setVisible(true);
-                    } else if (uiScene) {
-                      // Fallback: make sure UI scene is running and visible
-                      this.scene.setVisible(true, 'UI');
-                    }
+            // Force restart the UI scene to ensure fresh DOM elements
+            this.time.delayedCall(100, () => {
+              console.log('GameOver: Force restarting SimpleUI scene...');
+              
+              // Clear any existing DOM elements from previous game session
+              this.clearExistingDOMElements();
+              
+              // Stop the existing UI scene first to ensure clean restart
+              this.scene.stop('SimpleUI');
+              
+              // Wait a bit for cleanup, then restart
+              this.time.delayedCall(50, () => {
+                this.scene.launch('SimpleUI');
+                console.log('GameOver: SimpleUI scene restarted');
+              });
+            });
                   });
                 } else {
                   // Fallback for test environment
-                  // Start Game scene and ensure UI scene is running
                   this.scene.start('Game');
                   
-                  // Check if UI scene exists, if not launch it
-                  const uiScene = this.scene.get('UI') as any;
-                  if (!uiScene || !uiScene.scene.isActive()) {
-                    this.scene.launch('UI');
-                  } else if (uiScene && uiScene.setVisible) {
-                    uiScene.setVisible(true);
-                  } else if (uiScene) {
-                    // Fallback: make sure UI scene is running and visible
-                    this.scene.setVisible(true, 'UI');
-                  }
+          // Force restart the UI scene to ensure fresh DOM elements
+          this.time.delayedCall(100, () => {
+            console.log('GameOver: Force restarting SimpleUI scene (fallback)...');
+            
+            // Clear any existing DOM elements from previous game session
+            this.clearExistingDOMElements();
+            
+            // Stop the existing UI scene first to ensure clean restart
+            this.scene.stop('SimpleUI');
+            
+            // Wait a bit for cleanup, then restart
+            this.time.delayedCall(50, () => {
+              this.scene.launch('SimpleUI');
+              console.log('GameOver: SimpleUI scene restarted (fallback)');
+            });
+          });
                 }
               } catch (error) {
                 console.error('Error restarting game:', error);
               }
-            }
-          });
-        })
-        .on('pointerup', () => {
-          if (this.playAgainButton) {
-            this.playAgainButton.setScale(1.1);
+    });
+  }
+
+  private clearExistingDOMElements(): void {
+    try {
+      console.log('GameOver: Clearing existing DOM elements...');
+      
+      // Clear DOM text overlay container
+      const domTextOverlay = document.getElementById('dom-text-overlay');
+      if (domTextOverlay) {
+        domTextOverlay.innerHTML = '';
+        console.log('GameOver: Cleared dom-text-overlay');
+      }
+      
+      // Clear any remaining DOM elements that might be from previous game session
+      const gameContainer = document.getElementById('game-container');
+      if (gameContainer) {
+        // Remove any DOM elements that might be lingering
+        const domElements = gameContainer.querySelectorAll('[id^="dom-"], [class*="dom-"]');
+        domElements.forEach(element => {
+          if (element.parentNode) {
+            element.parentNode.removeChild(element);
           }
         });
-      this.modalCard.add(this.playAgainButton);
+        console.log(`GameOver: Removed ${domElements.length} lingering DOM elements`);
+      }
+      
+      // Clear any neon button CSS that might be cached
+      const neonButtonStyles = document.getElementById('neon-button-styles');
+      if (neonButtonStyles) {
+        neonButtonStyles.remove();
+      }
+      
+      // Clear any neon text CSS that might be cached
+      const neonTextStyles = document.getElementById('neon-text-styles');
+      if (neonTextStyles) {
+        neonTextStyles.remove();
+      }
+      
+      console.log('GameOver: DOM cleanup completed');
+    } catch (error) {
+      console.warn('GameOver: Error clearing DOM elements:', error);
     }
+  }
 
-    // View Leaderboard button with Cyber Pink border glow
-    const leaderboardBg = this.add.rectangle(0, modalHeight * 0.32, 180, 40, 0x1E1E1E, 0.7);
-    leaderboardBg.setStrokeStyle(2, 0xFF69B4, 0.8); // Cyber Pink border
-    
-    // Add Cyber Pink glow effect around button
-    const leaderboardGlow = GlowEffects.createGlowEffect(
-      this,
-      0, modalHeight * 0.32,
-      {
-        color: UIColor.GLOW_PINK,
-        intensity: 0.6,
-        radius: 95,
-        blur: 25,
-        alpha: 0.5
-      },
-      -1
-    );
-    
-    // Add trophy icon
-    const trophyIcon = this.add.circle(0, modalHeight * 0.32, 8, 0xF1C40F);
-    trophyIcon.setStrokeStyle(2, 0xFFFFFF, 1);
-    
-    const leaderboardContainer = this.add.container(0, 0);
-    leaderboardContainer.add(leaderboardGlow);
-    leaderboardContainer.add(leaderboardBg);
-    leaderboardContainer.add(trophyIcon);
-    
-    if (leaderboardContainer) {
-      this.leaderboardButton = leaderboardContainer;
-      leaderboardContainer
-        .setInteractive(new Phaser.Geom.Rectangle(-90, modalHeight * 0.32 - 20, 180, 40), Phaser.Geom.Rectangle.Contains)
-        .on('pointerover', () => {
-          if (this.leaderboardButton) this.leaderboardButton.setScale(1.1);
-        })
-        .on('pointerout', () => {
-          if (this.leaderboardButton) this.leaderboardButton.setScale(1.0);
-        })
-        .on('pointerdown', () => {
-          if (this.leaderboardButton) {
-            this.leaderboardButton.setScale(0.95);
-            // Navigate to leaderboard scene with smooth transition
-            this.tweens.add({
-              targets: this.modalCard,
-              scaleX: 0.1,
-              scaleY: 0.1,
-              alpha: 0,
-              duration: 200,
-              ease: 'Back.easeIn',
-              onComplete: () => {
+  private handleLeaderboard(): void {
+    this.hideModal(() => {
                 try {
                   if (this.cameras?.main?.fadeOut) {
                     this.cameras.main.fadeOut(250, 0, 0, 0);
@@ -459,69 +701,12 @@ export class GameOver extends Scene {
                   }
                 } catch (error) {
                   console.error('Error navigating to leaderboard:', error);
-                }
               }
             });
           }
-        })
-        .on('pointerup', () => {
-          if (this.leaderboardButton) this.leaderboardButton.setScale(1.1);
-        });
-      if (this.modalCard) {
-        this.modalCard.add(this.leaderboardButton);
-      }
-    }
 
-    // Main Menu button with Electric Blue border glow
-    const mainMenuBg = this.add.rectangle(0, modalHeight * 0.42, 160, 35, 0x1E1E1E, 0.7);
-    mainMenuBg.setStrokeStyle(2, 0x00BFFF, 0.8); // Electric Blue border
-    
-    // Add Electric Blue glow effect around button
-    const mainMenuGlow = GlowEffects.createGlowEffect(
-      this,
-      0, modalHeight * 0.42,
-      {
-        color: UIColor.GLOW_BLUE,
-        intensity: 0.5,
-        radius: 85,
-        blur: 20,
-        alpha: 0.4
-      },
-      -1
-    );
-    
-    // Add home icon (simple house shape)
-    const homeIcon = this.add.rectangle(0, modalHeight * 0.42, 12, 8, 0xFFFFFF);
-    const homeRoof = this.add.triangle(0, modalHeight * 0.42 - 6, 0, 0, -6, 8, 6, 8, 0xFFFFFF);
-    
-    const mainMenuContainer = this.add.container(0, 0);
-    mainMenuContainer.add(mainMenuGlow);
-    mainMenuContainer.add(mainMenuBg);
-    mainMenuContainer.add(homeIcon);
-    mainMenuContainer.add(homeRoof);
-    
-    if (mainMenuContainer) {
-      this.mainMenuButton = mainMenuContainer;
-      mainMenuContainer
-        .setInteractive(new Phaser.Geom.Rectangle(-80, modalHeight * 0.42 - 17.5, 160, 35), Phaser.Geom.Rectangle.Contains)
-        .on('pointerover', () => {
-          if (this.mainMenuButton) this.mainMenuButton.setScale(1.1);
-        })
-        .on('pointerout', () => {
-          if (this.mainMenuButton) this.mainMenuButton.setScale(1.0);
-        })
-        .on('pointerdown', () => {
-          if (this.mainMenuButton) {
-            this.mainMenuButton.setScale(0.95);
-            // Smooth transition to splash screen with cross-fade
-            this.tweens.add({
-              targets: this.modalCard,
-              scaleX: 0.1,
-              scaleY: 0.1,
-              alpha: 0,
-              duration: 200,
-              ease: 'Back.easeIn',
-              onComplete: () => {
+  private handleMainMenu(): void {
+    this.hideModal(() => {
                 try {
                   if (this.cameras?.main?.fadeOut) {
                     this.cameras.main.fadeOut(250, 0, 0, 0);
@@ -534,25 +719,43 @@ export class GameOver extends Scene {
                   }
                 } catch (error) {
                   console.error('Error navigating to main menu:', error);
-                }
               }
             });
           }
-        })
-        .on('pointerup', () => {
-          if (this.mainMenuButton) this.mainMenuButton.setScale(1.1);
-        });
-      if (this.modalCard) {
-        this.modalCard.add(this.mainMenuButton);
-      }
+
+  private hideModal(onComplete?: () => void): void {
+    const modalContainer = document.getElementById('game-over-modal');
+    if (!modalContainer) {
+      onComplete?.();
+      return;
     }
+
+    const contentContainer = modalContainer.querySelector('.modal-content') as HTMLElement;
+    
+    // Start hide animation
+    modalContainer.style.transition = 'opacity 0.2s ease-in';
+    modalContainer.style.opacity = '0';
+    
+    if (contentContainer) {
+      contentContainer.style.transition = 'all 0.2s ease-in';
+      contentContainer.style.transform = 'scale(0.9) translateY(-20px)';
+    }
+
+    // Complete hide after animation
+    setTimeout(() => {
+      if (modalContainer.parentNode) {
+        modalContainer.parentNode.removeChild(modalContainer);
+      }
+      
+      // Remove CSS animations
+      const styleElement = document.getElementById('game-over-neon-styles');
+      if (styleElement) {
+        styleElement.remove();
+      }
+      
+      onComplete?.();
+    }, 200);
   }
-
-
-
-
-
-
 
   private updateLayout(width: number, height: number): void {
     // Resize camera viewport to prevent black bars
@@ -574,9 +777,11 @@ export class GameOver extends Scene {
       this.neonBackground.updateDimensions(width, height);
     }
 
-    // Reposition modal card to center
-    if (this.modalCard) {
-      this.modalCard.setPosition(width / 2, height / 2);
+    // Update DOM renderer size
+    if (this.domRenderer) {
+      this.domRenderer.updateSize(width, height);
     }
+
+    // Modal is now DOM-based, no need to reposition
   }
 }
