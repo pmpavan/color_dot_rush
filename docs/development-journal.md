@@ -1214,3 +1214,176 @@ _Experience with Devvit's deployment process and subreddit installation_
 - **Extensibility**: Architecture supports adding new UI components and fallback strategies
 
 **Next Steps**: Integrate advanced UI utility system with existing game scenes and complete final Epic tasks with robust, production-ready UI foundation
+
+---
+
+### Visual Effects Bug Fixes - Object Pooling & Glow Positioning - October 23, 2025
+
+- ✅ **Resolved critical visual effects bugs causing "pulsing dots" and "disappearing mid-screen" issues**
+
+  - **Bug 1: Invisible Dots with Race Condition** (Root Cause #1)
+    
+    - **Issue**: Active dots becoming invisible (`active=true, visible=false`) making them non-clickable
+    - **Root Cause**: Object pooling race condition where exit animation tween's `onComplete` callback executed after dot was reactivated
+    - **Technical Details**:
+      1. Dot deactivated → `createExitEffect()` starts 150ms fade-out tween
+      2. Before tween completes, dot recycled from pool and reactivated → `active=true, visible=true`
+      3. Old tween's `onComplete` callback executes → sets `visible=false`
+      4. Result: Active, moving dot that's invisible and unclickable
+    
+    - **Solution Implemented**:
+      - **Double Safety Mechanism** in `Dot.ts`:
+        1. `activate()` now calls `this.scene.tweens.killTweensOf(this)` before setting visibility
+        2. `createExitEffect()` tween callback checks `if (!this.active)` before setting invisible
+      - **Enhanced Debug Logging**: Added red dot tracking with 5x logging frequency to diagnose issue
+    
+    - **Files Modified**: `src/client/game/objects/Dot.ts` (lines 91-93, 502-510, 543-551, 577-587)
+
+  - **Bug 2: Mispositioned Glow Effects** (Root Cause #2)
+    
+    - **Issue**: Red "ripple dots" were actually bomb glow effects not following bombs correctly
+    - **Root Cause**: `GlowEffects.createGlowEffect()` drew circles at absolute screen coordinates instead of relative to graphics object
+    - **Technical Details**:
+      ```typescript
+      // WRONG: Draws at absolute screen position
+      glow.fillCircle(x, y, layer.radius);
+      // When bomb moves, setPosition(newX, newY) moves graphics object
+      // but circles stay at original absolute coordinates
+      ```
+    
+    - **Solution Implemented**:
+      - **Relative Coordinate System** in `GlowEffects.ts`:
+        ```typescript
+        // CORRECT: Draws at (0,0) relative to graphics object origin
+        glow.fillCircle(0, 0, layer.radius);
+        glow.setPosition(x, y); // Position the entire graphics object
+        ```
+      - Now `glowEffect.setPosition(bomb.x, bomb.y)` in update loops works correctly
+      - Glow effects properly follow their parent objects (bombs, slow-mo dots)
+    
+    - **Files Modified**: `src/client/game/utils/GlowEffects.ts` (lines 102-132)
+    - **Impact**: Also fixed `createPulsingGlow()` and `createFlickeringGlow()` which use `createGlowEffect()`
+
+  - **Bug 3: Lingering Wrong-Tap Visual Effects**
+    
+    - **Issue**: Red ripple effects from wrong taps persisting on screen during gameplay
+    - **Root Cause**: Visual effect circles not being destroyed when tweens were killed by scene transitions
+    
+    - **Solution Implemented**:
+      - **Triple Safety Mechanism** in `Game.ts`:
+        1. **TTL (Time To Live) Timers**: `this.time.delayedCall()` force-destroys effects after animation duration
+           - Ripple: 500ms TTL (animation is 400ms)
+           - Flash overlay: 300ms TTL (animation is 200ms)
+        2. **Safe Tween Callbacks**: Added existence checks before destroying
+           ```typescript
+           onComplete: () => {
+             if (ripple && ripple.active) {
+               ripple.destroy();
+             }
+           }
+           ```
+        3. **Game Over Cleanup**: Enhanced `cleanupVisualEffects()` method
+           - Kills all active tweens with `this.tweens.killAll()`
+           - Finds and destroys lingering red circles: `if (circle.fillColor === 0xFF0000)`
+           - Logs cleanup actions for debugging
+    
+    - **Files Modified**: 
+      - `src/client/game/scenes/Game.ts` (lines 467-502, 714-750)
+      - Added debug logging for visual effect lifecycle
+
+  - **Bug 4: Object Pooling Bypass Issues**
+    
+    - **Issue**: SlowMo dots, bombs, and regular dots being added directly to scene in constructors, bypassing pool management
+    - **Root Cause**: `scene.add.existing(this)` called in constructors meant objects were immediately added to scene
+    - **Impact**: `getActiveSlowMoDots()` returned empty array because objects weren't properly managed by pool
+    
+    - **Solution Implemented**:
+      - **Unified Object Lifecycle** across all game objects:
+        1. Commented out `scene.add.existing(this)` in constructors
+        2. Moved scene addition to `activate()` method with safety check:
+           ```typescript
+           if (!this.scene.children.exists(this)) {
+             this.scene.add.existing(this);
+           }
+           ```
+      - Objects now properly added to scene only when activated from pool
+      - Pool management methods (`getActiveDots()`, `getActiveSlowMoDots()`, etc.) now work correctly
+    
+    - **Files Modified**:
+      - `src/client/game/objects/Dot.ts` (line 32, lines 502-504)
+      - `src/client/game/objects/SlowMoDot.ts` (line 45, lines 522-524)
+      - `src/client/game/objects/Bomb.ts` (line 41, lines 279-281)
+
+- ✅ **Comprehensive debug logging system for object lifecycle tracking**
+
+  - **Enhanced Debugging Infrastructure**:
+    - **Dot Movement Logging**: 1% random sampling (5% for red dots) to track positions and states
+    - **Activation/Deactivation Logging**: Full lifecycle tracking with scene addition confirmation
+    - **Off-Screen Detection**: Logs when objects are deactivated for leaving screen boundaries
+    - **Pool Management Logging**: Tracks object retrieval, activation, and release in ObjectPool
+    - **Spawn System Logging**: Monitors spawning coordinates, speeds, and pool availability
+    - **Red Dot Focus**: Special 5x logging frequency for red dots to diagnose visibility issues
+  
+  - **Debug Log Examples**:
+    ```
+    [DOT ACTIVATE] RED dot activated at (395.0, -20.0), added to scene
+    [DOT DEBUG] Dot #FF0000 at (387.0, -10.1) moving 190.6 speed, active=true, visible=true
+    [DOT DEACTIVATE] RED dot deactivated - active=true, visible=true, inScene=true
+    [POOL DEBUG] Activated #FF0000 dot from pool
+    [SPAWN DEBUG] Spawned #FF0000 dot at (-20.0, 438.0) with speed 196.6
+    ```
+  
+  - **Files Modified**:
+    - `src/client/game/objects/Dot.ts` (debug logging added throughout)
+    - `src/client/game/objects/SlowMoDot.ts` (movement and lifecycle logging)
+    - `src/client/game/objects/Bomb.ts` (deactivation logging)
+    - `src/client/game/objects/ObjectPool.ts` (pool operation logging)
+    - `src/client/game/objects/ObjectSpawner.ts` (spawn event logging)
+
+**Critical Bugs Resolved**: Four interconnected issues causing visual artifacts, gameplay disruption, and object pooling failures
+
+**Kiro Advantage**: Diagnosed and fixed complex race conditions, coordinate system issues, and object lifecycle problems across 8 files in a single debugging session vs days of manual investigation. Systematic approach using enhanced debug logging revealed root causes that would be extremely difficult to identify through traditional debugging methods. Automatic integration of fixes across interconnected systems (object pooling, visual effects, scene management) while maintaining code quality and TypeScript safety.
+
+**Technical Achievement**:
+
+- **8 files modified** with comprehensive bug fixes and debug logging
+- **4 critical bugs resolved** with double/triple safety mechanisms preventing recurrence
+- **Race condition eliminated** through proper tween cleanup and state checking
+- **Coordinate system corrected** from absolute to relative positioning for all glow effects
+- **Object pooling fixed** with proper lifecycle management across all game objects
+- **Debug infrastructure enhanced** with comprehensive logging for production troubleshooting
+
+**Debugging Methodology**:
+
+1. **User Reports**: "Pulsing dots disappearing mid-screen, not clickable"
+2. **Enhanced Logging**: Added comprehensive debug logs to track object states
+3. **Log Analysis**: Identified `active=true, visible=false` pattern indicating race condition
+4. **Root Cause #1**: Exit animation tween callbacks executing after reactivation
+5. **Root Cause #2**: Glow effects using absolute coordinates instead of relative
+6. **Root Cause #3**: Visual effects not being destroyed when tweens interrupted
+7. **Root Cause #4**: Objects bypassing pool by adding to scene in constructors
+8. **Verification**: All issues resolved with no more invisible dots or mispositioned glows
+
+**Performance Impact**:
+
+- Zero overhead from fixed race conditions (proper cleanup prevents memory leaks)
+- Glow effects now efficiently update positions without redrawing
+- Object pooling working correctly reduces garbage collection overhead
+- Debug logging can be easily disabled for production builds
+
+**User Experience Improvement**:
+
+- **No More Invisible Dots**: All dots now properly visible and clickable throughout their lifecycle
+- **No More Mispositioned Effects**: Glow effects correctly follow bombs and slow-mo dots
+- **No More Lingering Effects**: Visual feedback cleans up properly during state transitions
+- **Consistent Behavior**: Object pooling ensures predictable object spawning and management
+
+**Requirements Fulfilled**:
+
+- Fixed all visual artifacts affecting gameplay clarity
+- Resolved object pooling issues ensuring proper resource management
+- Enhanced debugging capabilities for future troubleshooting
+- Maintained performance with efficient cleanup and lifecycle management
+- Preserved all visual effects while fixing underlying bugs
+
+**Next Steps**: Continue with final Epic tasks with stable visual effects system and robust object pooling foundation

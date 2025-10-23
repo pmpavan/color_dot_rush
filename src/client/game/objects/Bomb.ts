@@ -37,8 +37,8 @@ export class Bomb extends Phaser.GameObjects.Container {
     // Add graphics to container
     this.add([this.bombGraphics, this.fuseGraphics, this.sparkGraphics]);
     
-    // Add to scene
-    scene.add.existing(this);
+    // Don't add to scene directly - let ObjectPool manage this
+    // scene.add.existing(this);
     this.setDepth(999); // Ensure bomb is visible
     
     // Interactive setup handled by centralized input system in GameScene
@@ -91,13 +91,17 @@ export class Bomb extends Phaser.GameObjects.Container {
     );
 
     // Check if bomb is off-screen and deactivate
-    const bounds = this.scene.cameras.main;
     const margin = 100; // Extra margin for cleanup
     
+    // Use consistent bounds checking with collision detection
+    const screenWidth = this.scene.scale.width;
+    const screenHeight = this.scene.scale.height;
+    
     if (this.x < -margin || 
-        this.x > bounds.width + margin || 
+        this.x > screenWidth + margin || 
         this.y < -margin || 
-        this.y > bounds.height + margin) {
+        this.y > screenHeight + margin) {
+      console.log(`[BOMB DEBUG] Bomb deactivated - off screen at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) screen: ${screenWidth}x${screenHeight}`);
       this.deactivate();
     }
   }
@@ -248,8 +252,9 @@ export class Bomb extends Phaser.GameObjects.Container {
       this.glowEffect.destroy();
     }
     
+    // Create a stable glow effect instead of flickering
     const glowConfig = GlowEffects.getBombGlowConfig();
-    const { glow, tween } = GlowEffects.createFlickeringGlow(
+    this.glowEffect = GlowEffects.createGlowEffect(
       this.scene,
       this.x,
       this.y,
@@ -257,8 +262,8 @@ export class Bomb extends Phaser.GameObjects.Container {
       this.depth - 1
     );
     
-    this.glowEffect = glow;
-    this.glowTween = tween;
+    // No flickering tween - keep glow stable
+    this.glowTween = null;
   }
 
   /**
@@ -269,6 +274,11 @@ export class Bomb extends Phaser.GameObjects.Container {
     this.setVisible(true);
     this.setScale(1);
     this.setAlpha(1);
+    
+    // Add to scene when activated
+    if (!this.scene.children.exists(this)) {
+      this.scene.add.existing(this);
+    }
     
     // Ensure graphics are properly activated
     this.bombGraphics.setVisible(true);
@@ -291,6 +301,7 @@ export class Bomb extends Phaser.GameObjects.Container {
    * Deactivate the bomb
    */
   public deactivate(): void {
+    console.log(`[BOMB DEBUG] Deactivating bomb at (${this.x.toFixed(1)}, ${this.y.toFixed(1)})`);
     this.active = false;
     this.setVisible(false);
     this.bombGraphics.setVisible(false);
@@ -418,34 +429,15 @@ export class Bomb extends Phaser.GameObjects.Container {
     // Start spark animation
     this.startSparkAnimation();
     
-    // Start subtle flicker effect
-    this.startFlickerEffect();
+    // No flicker effect - bombs should be stable
   }
 
   /**
    * Start subtle flicker effect for the bomb
    */
   private startFlickerEffect(): void {
-    // Create subtle alpha flicker for the bomb graphics
-    this.scene.tweens.add({
-      targets: this.bombGraphics,
-      alpha: 0.85,
-      duration: 200,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1
-    });
-    
-    // Create subtle scale flicker for the fuse
-    this.scene.tweens.add({
-      targets: this.fuseGraphics,
-      scaleX: 1.05,
-      scaleY: 1.05,
-      duration: 300,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1
-    });
+    // Removed flicker effect to prevent pulsing bombs
+    // Bombs should be clearly visible without pulsing
   }
 
   /**
@@ -469,12 +461,12 @@ export class Bomb extends Phaser.GameObjects.Container {
 
     console.log('Bomb: Starting spark animation at fuse tip:', fuseEndX, fuseEndY);
 
-    // Create spark animation with a more visible effect
+    // Create subtle spark animation
     this.sparkTween = this.scene.tweens.add({
       targets: { sparkAlpha: 1 },
-      sparkAlpha: 0,
-      duration: 150,
-      ease: 'Power2.easeOut',
+      sparkAlpha: 0.3,
+      duration: 300,
+      ease: 'Sine.easeInOut',
       yoyo: true,
       repeat: -1,
       onUpdate: (tween) => {
@@ -491,20 +483,20 @@ export class Bomb extends Phaser.GameObjects.Container {
 
     this.sparkGraphics.clear();
 
-    // Create 4-6 small sparks around the fuse tip
-    const sparkCount = 4 + Math.floor(Math.random() * 3);
-    const sparkColors = [0xFFD700, 0xFFA500, 0xFF4500, 0xFFFFFF, 0xFF0000]; // Gold, Orange, Red-Orange, White, Warning Red
+    // Create 2-3 subtle sparks around the fuse tip
+    const sparkCount = 2 + Math.floor(Math.random() * 2);
+    const sparkColors = [0xFFD700, 0xFFA500, 0xFF4500]; // Gold, Orange, Red-Orange
 
     for (let i = 0; i < sparkCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const distance = 2 + Math.random() * 6; // Smaller distance for more focused sparks
+      const distance = 1 + Math.random() * 3; // Smaller distance for more focused sparks
       const sparkX = fuseEndX + Math.cos(angle) * distance;
       const sparkY = fuseEndY + Math.sin(angle) * distance;
-      const sparkSize = 1.5 + Math.random() * 2.5; // Slightly larger sparks
+      const sparkSize = 1 + Math.random() * 1.5; // Smaller sparks
       const sparkColor = sparkColors[Math.floor(Math.random() * sparkColors.length)];
 
       // Use the alpha from the tween for fade effect
-      this.sparkGraphics.fillStyle(sparkColor, alpha * 0.9);
+      this.sparkGraphics.fillStyle(sparkColor, alpha * 0.6);
       this.sparkGraphics.fillCircle(sparkX, sparkY, sparkSize);
     }
   }

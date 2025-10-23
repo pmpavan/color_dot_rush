@@ -2,13 +2,18 @@ import { Scene } from 'phaser';
 import { GameColor } from '../../../shared/types/game';
 import { DOMTextRenderer } from '../utils/DOMTextRenderer';
 import { NeonTextConfig, NeonTextEffectType, NeonTextSize } from '../utils/NeonTextEffects';
+import { ResponsiveLayoutManager } from '../utils/ResponsiveLayoutManager';
+import { LayoutConfig } from '../utils/UIElementFactory';
 
 /**
  * Simplified UI Scene - Clean, minimal HUD using DOMTextRenderer for better performance
  */
-export default class SimpleUIScene extends Scene {
+export class SimpleUIScene extends Scene {
   // DOM Text Renderer
   private domTextRenderer: DOMTextRenderer | null = null;
+  
+  // Responsive Layout Manager
+  private layoutManager: ResponsiveLayoutManager | null = null;
   
   // Phaser Elements (for graphics)
   private targetColorBg: Phaser.GameObjects.Rectangle | null = null;
@@ -50,6 +55,9 @@ export default class SimpleUIScene extends Scene {
     const camera = this.cameras.main;
     camera.setBackgroundColor('rgba(0,0,0,0)');
     
+    // Initialize Responsive Layout Manager
+    this.layoutManager = new ResponsiveLayoutManager(this);
+    
     // Initialize DOM Text Renderer
     this.domTextRenderer = new DOMTextRenderer('game-container');
     
@@ -61,35 +69,39 @@ export default class SimpleUIScene extends Scene {
     
     // Setup resize handler for responsive updates
     this.setupResizeHandler();
+    
+    // Force refresh HUD positioning to ensure correct margins
+    this.time.delayedCall(100, () => {
+      this.forceRefreshHUD();
+    });
   }
 
   /**
    * Create neon-styled HUD elements according to specification mockup
    */
   private createSimpleHUD(): void {
-    if (!this.domTextRenderer) {
-      console.error('SimpleUIScene: DOMTextRenderer not available');
+    if (!this.domTextRenderer || !this.layoutManager) {
+      console.error('SimpleUIScene: DOMTextRenderer or LayoutManager not available');
       return;
     }
 
-    const { width } = this.scale;
-    const margin = Math.max(20, width * 0.06);
-    const headerY = 30;
+    // Calculate layout using ResponsiveLayoutManager
+    const layout = this.layoutManager.calculateLayout(this.scale.width, this.scale.height);
+    console.log('SimpleUIScene: Layout calculated:', layout);
 
-    // Create top bar elements according to specification
-    this.createTopBar(margin, headerY, width);
+    // Create top bar elements using layout
+    this.createTopBar(layout);
 
-    // Create target color prompt zone (center of screen)
-    this.createTargetColorPrompt();
-
+    // Create target color prompt zone using layout
+    this.createTargetColorPrompt(layout);
 
     console.log('SimpleUIScene: Neon HUD created successfully');
   }
 
   /**
-   * Create top bar with scores and time
+   * Create top bar with scores and time using ResponsiveLayoutManager
    */
-  private createTopBar(margin: number, headerY: number, width: number): void {
+  private createTopBar(layout: LayoutConfig): void {
     if (!this.domTextRenderer) {
       console.error('SimpleUIScene: DOMTextRenderer not available in createTopBar');
       return;
@@ -105,14 +117,13 @@ export default class SimpleUIScene extends Scene {
       performance: 'high'
     };
 
-    // Calculate safe position for best score (left side with same padding as timer)
-    const bestScoreX = margin; // Use same margin as timer on the right
-    
+    // Best score: on the left (ensure it's within screen bounds)
+    const bestScoreX = Math.max(20, Math.min(layout.score.x, this.scale.width - 100));
     this.domTextRenderer.createNeonText(
       'best-score',
       `BEST: ${this.bestScore.toLocaleString()}`,
       bestScoreX,
-      headerY,
+      layout.timer.y,
       bestScoreConfig
     );
 
@@ -125,11 +136,12 @@ export default class SimpleUIScene extends Scene {
       performance: 'high'
     };
 
+    // Score: centered
     this.domTextRenderer.createNeonText(
       'score',
       `SCORE: ${this.score.toLocaleString()}`,
-      width / 2,
-      headerY,
+      this.scale.width / 2,
+      layout.timer.y,
       scoreConfig
     );
 
@@ -142,28 +154,27 @@ export default class SimpleUIScene extends Scene {
       performance: 'high'
     };
 
+    // Timer: on the right (ensure it's within screen bounds)
+    const timerX = Math.max(100, Math.min(this.scale.width - layout.score.x, this.scale.width - 20));
     this.domTextRenderer.createNeonText(
       'time',
       '0:00',
-      width - margin,
-      headerY,
+      timerX,
+      layout.timer.y,
       timeConfig
     );
   }
 
   /**
-   * Create target color prompt zone with instant color changes
+   * Create target color prompt zone with instant color changes using ResponsiveLayoutManager
    */
-  private createTargetColorPrompt(): void {
+  private createTargetColorPrompt(layout: LayoutConfig): void {
     if (!this.domTextRenderer) {
       console.error('SimpleUIScene: DOMTextRenderer not available in createTargetColorPrompt');
       return;
     }
 
-    const { width, height } = this.scale;
-    const targetY = height * 0.15; // 15% from top
-
-    // Create target color text with instant color changes
+    // Create target color text with instant color changes using layout positioning
     const targetColorConfig: NeonTextConfig = {
       effectType: NeonTextEffectType.GLOW_WHITE, // Will be overridden by color
       size: NeonTextSize.TITLE,
@@ -175,8 +186,8 @@ export default class SimpleUIScene extends Scene {
     this.domTextRenderer.createNeonText(
       'target-color',
       `TAP: ${this.getColorName(this.targetColor)}`,
-      width / 2,
-      targetY,
+      layout.targetColor.x,
+      layout.targetColor.y,
       targetColorConfig
     );
 
@@ -193,17 +204,18 @@ export default class SimpleUIScene extends Scene {
 
 
   /**
-   * Create colored border around the target color text
+   * Create colored border around the target color text using ResponsiveLayoutManager
    */
   private createTargetColorBorder(): void {
-    if (!this.domTextRenderer) return;
+    if (!this.domTextRenderer || !this.layoutManager) return;
     
     // Get the actual text element to measure its dimensions
     const textElement = this.domTextRenderer.getElement('target-color');
     if (!textElement) return;
     
-    const { width, height } = this.scale;
-    const targetY = height * 0.15;
+    // Get layout for positioning
+    const layout = this.layoutManager.getCurrentLayout();
+    if (!layout) return;
     
     // Get actual text dimensions from DOM element
     const textWidth = textElement.element.offsetWidth;
@@ -218,9 +230,9 @@ export default class SimpleUIScene extends Scene {
     
     console.log('Border dimensions:', { borderWidth, borderHeight });
     
-    // Center the border around the text
-    const borderX = (width - borderWidth) / 2;
-    const borderY = targetY - borderHeight / 2;
+    // Center the border around the text using layout positioning
+    const borderX = layout.targetColor.x - borderWidth / 2;
+    const borderY = layout.targetColor.y - borderHeight / 2;
     
     // Create border rectangle
     this.targetColorBorder = this.add.rectangle(
@@ -522,6 +534,28 @@ export default class SimpleUIScene extends Scene {
   }
 
   /**
+   * Force refresh the HUD positioning using ResponsiveLayoutManager
+   */
+  public forceRefreshHUD(): void {
+    if (!this.domTextRenderer || !this.layoutManager) return;
+    
+    // Get current layout
+    const layout = this.layoutManager.getCurrentLayout();
+    if (!layout) return;
+    
+    // Update positions using new layout with safety bounds
+    const bestScoreX = Math.max(20, Math.min(layout.score.x, this.scale.width - 100));
+    const timerX = Math.max(100, Math.min(this.scale.width - layout.score.x, this.scale.width - 20));
+    
+    this.domTextRenderer.updatePosition('best-score', bestScoreX, layout.timer.y);
+    this.domTextRenderer.updatePosition('score', this.scale.width / 2, layout.timer.y);
+    this.domTextRenderer.updatePosition('time', timerX, layout.timer.y);
+    this.domTextRenderer.updatePosition('target-color', layout.targetColor.x, layout.targetColor.y);
+    
+    console.log('HUD positions refreshed using ResponsiveLayoutManager');
+  }
+
+  /**
    * Cleanup on shutdown
    */
   shutdown(): void {
@@ -541,6 +575,12 @@ export default class SimpleUIScene extends Scene {
     
     // Kill all tweens
     this.tweens.killAll();
+    
+    // Clean up ResponsiveLayoutManager
+    if (this.layoutManager) {
+      this.layoutManager.destroy();
+      this.layoutManager = null;
+    }
     
     // Clean up DOMTextRenderer
     if (this.domTextRenderer) {

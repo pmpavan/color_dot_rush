@@ -84,15 +84,15 @@ export class GlowEffects {
   }
 
   /**
-   * Get glow configuration for slow-mo dot (Laser Grid Green)
+   * Get glow configuration for slow-mo dot (Brown)
    */
   static getSlowMoGlowConfig(): GlowConfig {
     return {
-      color: '#32CD32', // Laser Grid Green - distinct from regular dot colors
-      intensity: 0.9,
-      radius: 30,
-      blur: 25,
-      alpha: 0.8
+      color: '#8B4513', // Brown - distinct from regular dot colors
+      intensity: 0.6,
+      radius: 20,
+      blur: 15,
+      alpha: 0.4
     };
   }
 
@@ -109,6 +109,10 @@ export class GlowEffects {
     const glow = scene.add.graphics();
     glow.setDepth(depth);
     
+    // CRITICAL: Draw at (0, 0) relative to the graphics object
+    // Then use setPosition to move the entire graphics
+    // This allows proper repositioning with setPosition later
+    
     // Create multiple layers for realistic glow effect
     const layers = [
       { radius: config.radius * 0.3, alpha: config.alpha * 0.3, blur: config.blur * 0.5 },
@@ -119,8 +123,12 @@ export class GlowEffects {
     layers.forEach((layer, index) => {
       const color = Phaser.Display.Color.HexStringToColor(config.color);
       glow.fillStyle(color.color, layer.alpha);
-      glow.fillCircle(x, y, layer.radius);
+      // Draw at (0, 0) relative to graphics object
+      glow.fillCircle(0, 0, layer.radius);
     });
+    
+    // Position the graphics at the desired location
+    glow.setPosition(x, y);
 
     return glow;
   }

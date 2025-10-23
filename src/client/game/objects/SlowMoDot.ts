@@ -5,7 +5,7 @@ import { GlowEffects } from '../utils/GlowEffects';
 
 /**
  * SlowMoDot class represents the slow-motion power-up
- * Appears as a single Laser Grid Green ball with white clock icon
+ * Appears as a single brown ball with white clock icon
  * Uses a distinct color that's not used by regular game dots
  */
 export class SlowMoDot extends Phaser.GameObjects.Arc {
@@ -25,8 +25,8 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
-    // Create as a single Laser Grid Green circle with clock icon (distinct from regular dot colors)
-    super(scene, 0, 0, 40, 0, 360, false, 0x32CD32);
+    // Create as a single brown circle with clock icon (distinct from regular dot colors)
+    super(scene, 0, 0, 40, 0, 360, false, 0x8B4513);
     
     this.speed = 100; // Default speed
     this.size = 80; // Default size
@@ -34,15 +34,15 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
     // Create clock icon as graphics with white outline
-    this.clockIcon = scene.add.circle(0, 0, 15, 0xFFFFFF, 0);
+    this.clockIcon = scene.add.circle(0, 0, 15, 0xFFFFFF, 0.8);
     this.clockIcon.setStrokeStyle(3, 0xFFFFFF, 1);
     
     // Create clock hand with white color
     this.clockHand = scene.add.line(0, 0, 0, 0, 0, -8, 0xFFFFFF, 1);
     this.clockHand.setLineWidth(2);
     
-    // Add to scene
-    scene.add.existing(this);
+    // Don't add to scene directly - let ObjectPool manage this
+    // scene.add.existing(this);
     
     // Interactive setup handled by centralized input system in GameScene
   }
@@ -55,8 +55,9 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.size = size;
     this.direction = direction.clone();
     
-    // Set visual properties
+    // Set visual properties - ensure SlowMo dots stay brown
     this.setRadius(size / 2);
+    this.setFillStyle(0x8B4513); // Brown - distinct from regular dot colors
     
     // Update hitbox - significantly larger than visual sprite for better accessibility
     const hitboxSize = Math.max(size * 1.5, 60); // 50% larger than visual size, minimum 60px tap target
@@ -90,6 +91,11 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     const deltaSeconds = delta / 1000;
     this.x += this.direction.x * this.speed * deltaSeconds;
     this.y += this.direction.y * this.speed * deltaSeconds;
+    
+    // Debug logging for SlowMo dot movement
+    if (Math.random() < 0.01) { // 1% chance to log
+      console.log(`[SLOWMO DEBUG] SlowMo dot at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) moving ${this.speed} speed`);
+    }
 
     // Update clock icon position
     this.clockIcon.setPosition(this.x, this.y);
@@ -107,13 +113,17 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     );
 
     // Check if dot is off-screen and deactivate
-    const bounds = this.scene.cameras.main;
     const margin = 100; // Extra margin for cleanup
     
+    // Use consistent bounds checking with collision detection
+    const screenWidth = this.scene.scale.width;
+    const screenHeight = this.scene.scale.height;
+    
     if (this.x < -margin || 
-        this.x > bounds.width + margin || 
+        this.x > screenWidth + margin || 
         this.y < -margin || 
-        this.y > bounds.height + margin) {
+        this.y > screenHeight + margin) {
+      console.log(`[SLOWMO DEBUG] SlowMo dot deactivated - off screen at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) screen: ${screenWidth}x${screenHeight}`);
       this.deactivate();
     }
   }
@@ -135,6 +145,14 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   public isCollidingWith(other: any): boolean {
     if (!this.active || !other.active) return false;
     
+    // Skip collision detection for objects that are off-screen
+    if (this.x < -100 || this.x > this.scene.scale.width + 100 || 
+        this.y < -100 || this.y > this.scene.scale.height + 100 ||
+        other.x < -100 || other.x > this.scene.scale.width + 100 || 
+        other.y < -100 || other.y > this.scene.scale.height + 100) {
+      return false;
+    }
+    
     // Calculate distance between centers
     const dx = other.x - this.x;
     const dy = other.y - this.y;
@@ -143,8 +161,14 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     // Calculate minimum distance for collision
     const minDistance = (this.size + other.size) / 2;
     
-    // Use exact collision detection - no buffer to prevent pass-through
-    return distance < minDistance;
+    // Use a more conservative collision detection
+    const collisionBuffer = 8; // Increased buffer to reduce false positives
+    
+    // Ensure we don't get negative collision threshold
+    const collisionThreshold = Math.max(8, minDistance - collisionBuffer);
+    
+    // Only check current distance, not predictive
+    return distance < collisionThreshold;
   }
 
   /**
@@ -155,7 +179,7 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     
     // Add collision cooldown to prevent rapid multiple collisions
     const currentTime = this.scene.time.now;
-    const collisionCooldown = 100; // 100ms cooldown
+    const collisionCooldown = 500; // Increased to 500ms cooldown to prevent rapid collisions
     
     if (currentTime - this.lastCollisionTime < collisionCooldown || 
         currentTime - dot.lastCollisionTime < collisionCooldown) {
@@ -185,28 +209,31 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     
     // Separate objects first to prevent overlap - push them apart more aggressively
     const overlap = minDistance - distance;
-    const separationX = normalX * overlap * 0.6; // Increased separation
-    const separationY = normalY * overlap * 0.6;
+    const separationForce = Math.max(overlap * 0.8, 5); // Increased separation force
+    const separationX = normalX * separationForce;
+    const separationY = normalY * separationForce;
     
     this.x -= separationX;
     this.y -= separationY;
     dot.x += separationX;
     dot.y += separationY;
     
-    // Perfect opposite direction bouncing: each object bounces back exactly where it came from
-    // Simply reverse each object's direction vector to get perfect opposite direction
-    
+    // Realistic collision physics: objects bounce off each other based on collision normal
     // Store original directions for debug logging
     const originalThisDir = { x: this.direction.x, y: this.direction.y };
     const originalDotDir = { x: dot.direction.x, y: dot.direction.y };
     
-    // Reverse this slow-mo dot's direction (multiply by -1)
-    this.direction.x = -this.direction.x;
-    this.direction.y = -this.direction.y;
+    // Calculate reflection vectors based on collision normal
+    // Each object bounces off the collision surface (normal vector)
+    const dot1 = 2 * (this.direction.x * normalX + this.direction.y * normalY);
+    const dot2 = 2 * (dot.direction.x * normalX + dot.direction.y * normalY);
     
-    // Reverse regular dot's direction (multiply by -1)
-    dot.direction.x = -dot.direction.x;
-    dot.direction.y = -dot.direction.y;
+    // Update directions using reflection formula: new_dir = old_dir - 2 * dot(old_dir, normal) * normal
+    this.direction.x = this.direction.x - dot1 * normalX;
+    this.direction.y = this.direction.y - dot1 * normalY;
+    
+    dot.direction.x = dot.direction.x - dot2 * normalX;
+    dot.direction.y = dot.direction.y - dot2 * normalY;
     
     // Ensure directions remain normalized unit vectors
     const thisLength = Math.sqrt(this.direction.x * this.direction.x + this.direction.y * this.direction.y);
@@ -238,7 +265,7 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     
     // Add collision cooldown to prevent rapid multiple collisions
     const currentTime = this.scene.time.now;
-    const collisionCooldown = 100; // 100ms cooldown
+    const collisionCooldown = 500; // Increased to 500ms cooldown to prevent rapid collisions
     
     if (currentTime - this.lastCollisionTime < collisionCooldown || 
         currentTime - otherSlowMo.lastCollisionTime < collisionCooldown) {
@@ -268,28 +295,31 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     
     // Separate objects first to prevent overlap - push them apart more aggressively
     const overlap = minDistance - distance;
-    const separationX = normalX * overlap * 0.6; // Increased separation
-    const separationY = normalY * overlap * 0.6;
+    const separationForce = Math.max(overlap * 0.8, 5); // Increased separation force
+    const separationX = normalX * separationForce;
+    const separationY = normalY * separationForce;
     
     this.x -= separationX;
     this.y -= separationY;
     otherSlowMo.x += separationX;
     otherSlowMo.y += separationY;
     
-    // Perfect opposite direction bouncing: each object bounces back exactly where it came from
-    // Simply reverse each object's direction vector to get perfect opposite direction
-    
+    // Realistic collision physics: objects bounce off each other based on collision normal
     // Store original directions for debug logging
     const originalThisDir = { x: this.direction.x, y: this.direction.y };
     const originalOtherDir = { x: otherSlowMo.direction.x, y: otherSlowMo.direction.y };
     
-    // Reverse this slow-mo dot's direction (multiply by -1)
-    this.direction.x = -this.direction.x;
-    this.direction.y = -this.direction.y;
+    // Calculate reflection vectors based on collision normal
+    // Each object bounces off the collision surface (normal vector)
+    const dot1 = 2 * (this.direction.x * normalX + this.direction.y * normalY);
+    const dot2 = 2 * (otherSlowMo.direction.x * normalX + otherSlowMo.direction.y * normalY);
     
-    // Reverse other slow-mo dot's direction (multiply by -1)
-    otherSlowMo.direction.x = -otherSlowMo.direction.x;
-    otherSlowMo.direction.y = -otherSlowMo.direction.y;
+    // Update directions using reflection formula: new_dir = old_dir - 2 * dot(old_dir, normal) * normal
+    this.direction.x = this.direction.x - dot1 * normalX;
+    this.direction.y = this.direction.y - dot1 * normalY;
+    
+    otherSlowMo.direction.x = otherSlowMo.direction.x - dot2 * normalX;
+    otherSlowMo.direction.y = otherSlowMo.direction.y - dot2 * normalY;
     
     // Ensure directions remain normalized unit vectors
     const thisLength = Math.sqrt(this.direction.x * this.direction.x + this.direction.y * this.direction.y);
@@ -452,8 +482,9 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       this.glowEffect.destroy();
     }
     
+    // Create a stable glow effect instead of pulsing
     const glowConfig = GlowEffects.getSlowMoGlowConfig();
-    const { glow, tween } = GlowEffects.createPulsingGlow(
+    this.glowEffect = GlowEffects.createGlowEffect(
       this.scene,
       this.x,
       this.y,
@@ -461,22 +492,16 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       this.depth - 1
     );
     
-    this.glowEffect = glow;
-    this.glowTween = tween;
+    // No pulsing tween - keep glow stable
+    this.glowTween = null;
   }
 
   /**
    * Start shimmering effect for the slow-mo dot
    */
   private startShimmerEffect(): void {
-    this.shimmerTween = this.scene.tweens.add({
-      targets: this,
-      alpha: 0.7,
-      duration: 800,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1
-    });
+    // Removed shimmer effect to prevent pulsing dots
+    // SlowMo dots should be clearly visible without pulsing
   }
 
 
@@ -485,6 +510,7 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
    * Activate the slow-mo dot
    */
   public activate(): void {
+    console.log(`[SLOWMO DEBUG] Activating SlowMo dot at (${this.x.toFixed(1)}, ${this.y.toFixed(1)})`);
     this.active = true;
     this.setVisible(true);
     this.clockIcon.setVisible(true);
@@ -492,18 +518,24 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.setScale(1);
     this.setAlpha(1);
     
+    // Add to scene when activated
+    if (!this.scene.children.exists(this)) {
+      this.scene.add.existing(this);
+    }
+    
     // Show glow effect
     if (this.glowEffect) {
       this.glowEffect.setVisible(true);
     }
     
-    this.startShimmerEffect();
+    // No shimmer effect - SlowMo dots should be stable
   }
 
   /**
    * Deactivate the slow-mo dot
    */
   public deactivate(): void {
+    console.log(`[SLOWMO DEBUG] Deactivating SlowMo dot at (${this.x.toFixed(1)}, ${this.y.toFixed(1)})`);
     this.active = false;
     this.setVisible(false);
     this.clockIcon.setVisible(false);

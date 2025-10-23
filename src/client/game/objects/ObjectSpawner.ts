@@ -275,6 +275,8 @@ export class ObjectSpawner {
     
     if (!dot) {
       console.warn('Failed to spawn dot - pool may be full');
+    } else {
+      console.log(`[SPAWN DEBUG] Spawned ${color} dot at (${x.toFixed(1)}, ${y.toFixed(1)}) with speed ${variedSpeed}`);
     }
   }
 
@@ -300,6 +302,8 @@ export class ObjectSpawner {
     
     if (!bomb) {
       console.warn('Failed to spawn bomb - pool may be full');
+    } else {
+      console.log(`[SPAWN DEBUG] Spawned bomb at (${x.toFixed(1)}, ${y.toFixed(1)}) with speed ${bombSpeed}`);
     }
   }
 
@@ -321,10 +325,13 @@ export class ObjectSpawner {
     const clampedSize = Math.max(limits.minSize, Math.min(limits.maxSize, size));
     
     // Spawn the slow-mo dot
+    console.log(`[SPAWN DEBUG] Calling objectPool.spawnSlowMoDot with speed ${slowMoSpeed}, size ${clampedSize}, pos (${x}, ${y})`);
     const slowMoDot = this.objectPool.spawnSlowMoDot(slowMoSpeed, clampedSize, x, y, variedDirection);
     
     if (!slowMoDot) {
       console.warn('Failed to spawn slow-mo dot - pool may be full');
+    } else {
+      console.log(`[SPAWN DEBUG] Spawned SlowMo dot at (${x.toFixed(1)}, ${y.toFixed(1)}) with speed ${slowMoSpeed}`);
     }
   }
 

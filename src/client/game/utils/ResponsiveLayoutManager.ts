@@ -100,8 +100,8 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
   calculateLayout(screenWidth: number, screenHeight: number): LayoutConfig {
     console.log('ResponsiveLayoutManager: Calculating layout for', screenWidth, 'x', screenHeight);
 
-    // Calculate responsive margin - minimum 20px, 3% of screen width
-    const margin = Math.max(20, screenWidth * 0.03);
+    // Calculate responsive margin - minimum 50px, 5% of screen width for better visibility
+    const margin = Math.max(50, screenWidth * 0.05);
 
     // Header configuration
     const headerHeight = 60;
@@ -145,7 +145,10 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
       margin,
       headerHeight,
       targetColorWidth,
-      chargeStartX
+      chargeStartX,
+      scoreX: layout.score.x,
+      timerX: layout.timer.x,
+      screenWidth
     });
 
     this.currentLayout = layout;
@@ -525,7 +528,6 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
    * Get settings icon position (top left)
    */
   getSettingsIconPosition(): Position {
-    const { width, height } = this.currentDimensions;
     return {
       x: 50, // 50px from left edge
       y: 50  // 50px from top edge

@@ -164,12 +164,15 @@ export class ObjectPoolManager {
     let slowMo = this.slowMoPool.children.entries.find(item => !(item as SlowMoDot).active) as SlowMoDot;
     
     if (!slowMo) {
+      console.log(`[POOL DEBUG] No inactive SlowMo dot found, pool size: ${this.slowMoPool.children.size}/${this.MAX_SLOWMO}`);
       if (this.slowMoPool.children.size < this.MAX_SLOWMO) {
         try {
+          console.log(`[POOL DEBUG] Creating new SlowMo dot`);
           slowMo = new SlowMoDot(this.scene);
           // Validate the slow-mo dot was created successfully
           if (slowMo && typeof slowMo.destroy === 'function') {
             this.slowMoPool.add(slowMo);
+            console.log(`[POOL DEBUG] New SlowMo dot created and added to pool`);
           } else {
             console.warn('Failed to create valid slow-mo dot object');
             return null;
@@ -179,9 +182,11 @@ export class ObjectPoolManager {
           return null;
         }
       } else {
-        // Pool is full, return null
+        console.log(`[POOL DEBUG] SlowMo pool is full (${this.MAX_SLOWMO}), cannot create new SlowMo dot`);
         return null;
       }
+    } else {
+      console.log(`[POOL DEBUG] Found inactive SlowMo dot in pool`);
     }
     
     return slowMo;
@@ -196,6 +201,7 @@ export class ObjectPoolManager {
     
     dot.init(color, speed, size, x, y, direction);
     dot.activate();
+    console.log(`[POOL DEBUG] Activated ${color} dot from pool`);
     
     // Apply slow motion if active
     if (this.slowMotionCallback) {
@@ -228,8 +234,12 @@ export class ObjectPoolManager {
    */
   public spawnSlowMoDot(speed: number, size: number, x: number, y: number, direction: Phaser.Math.Vector2): SlowMoDot | null {
     const slowMo = this.getSlowMoDot();
-    if (!slowMo) return null;
+    if (!slowMo) {
+      console.log(`[POOL DEBUG] Failed to get SlowMo dot from pool`);
+      return null;
+    }
     
+    console.log(`[POOL DEBUG] Got SlowMo dot from pool, calling init and activate`);
     slowMo.init(speed, size, x, y, direction);
     slowMo.activate();
     
@@ -240,6 +250,7 @@ export class ObjectPoolManager {
    * Release a dot back to the pool
    */
   public releaseDot(dot: Dot): void {
+    console.log(`[POOL DEBUG] Releasing ${dot.color} dot back to pool`);
     dot.deactivate();
   }
 
@@ -247,6 +258,7 @@ export class ObjectPoolManager {
    * Release a bomb back to the pool
    */
   public releaseBomb(bomb: Bomb): void {
+    console.log(`[POOL DEBUG] Releasing bomb back to pool`);
     bomb.deactivate();
   }
 
@@ -254,6 +266,7 @@ export class ObjectPoolManager {
    * Release a slow-mo dot back to the pool
    */
   public releaseSlowMoDot(slowMo: SlowMoDot): void {
+    console.log(`[POOL DEBUG] Releasing SlowMo dot back to pool`);
     slowMo.deactivate();
   }
 
@@ -293,12 +306,35 @@ export class ObjectPoolManager {
   }
 
   /**
+   * Console filter helper - add this to your browser console to filter collision logs:
+   * 
+   * // Filter only collision logs
+   * const originalLog = console.log;
+   * console.log = function(...args) {
+   *   if (args[0] && args[0].includes('[COLLISION]')) {
+   *     originalLog.apply(console, args);
+   *   }
+   * };
+   * 
+   * // To restore normal logging:
+   * console.log = originalLog;
+   */
+  
+  /**
    * Handle all collision types for bouncing behavior
    * Includes: dot-dot, slowmo-dot, slowmo-slowmo collisions
    */
   private handleAllCollisions(): void {
     const activeDots = this.getActiveDots();
     const activeSlowMoDots = this.getActiveSlowMoDots();
+    
+    // Track processed collisions to prevent duplicate processing
+    const processedCollisions = new Set<string>();
+    
+    // Only check collisions every few frames to reduce frequency
+    if (this.scene.game.loop.frame % 2 !== 0) {
+      return;
+    }
     
     // 1. Handle dot-to-dot collisions
     for (let i = 0; i < activeDots.length; i++) {
@@ -307,9 +343,24 @@ export class ObjectPoolManager {
         const dot2 = activeDots[j];
         
         // Ensure both dots exist and are active
-        if (dot1 && dot2 && dot1.isCollidingWith(dot2)) {
-          // Handle collision and bouncing
-          dot1.handleDotCollision(dot2);
+        if (dot1 && dot2 && dot1.active && dot2.active) {
+          // Create a unique key for this collision pair
+          const collisionKey = `${Math.min(dot1.id || i, dot2.id || j)}-${Math.max(dot1.id || i, dot2.id || j)}`;
+          
+          // Skip if we've already processed this collision pair
+          if (processedCollisions.has(collisionKey)) {
+            continue;
+          }
+          
+          const isColliding = dot1.isCollidingWith(dot2);
+          
+          if (isColliding) {
+            // Mark this collision pair as processed
+            processedCollisions.add(collisionKey);
+            
+            // Handle collision and bouncing
+            dot1.handleDotCollision(dot2);
+          }
         }
       }
     }
@@ -321,9 +372,24 @@ export class ObjectPoolManager {
         const dot = activeDots[j];
         
         // Ensure both objects exist and are active
-        if (slowMoDot && dot && slowMoDot.isCollidingWith(dot)) {
-          // Handle collision and bouncing
-          slowMoDot.handleDotCollision(dot);
+        if (slowMoDot && dot && slowMoDot.active && dot.active) {
+          // Create a unique key for this collision pair
+          const collisionKey = `slowmo-${slowMoDot.id || i}-dot-${dot.id || j}`;
+          
+          // Skip if we've already processed this collision pair
+          if (processedCollisions.has(collisionKey)) {
+            continue;
+          }
+          
+          const isColliding = slowMoDot.isCollidingWith(dot);
+          
+          if (isColliding) {
+            // Mark this collision pair as processed
+            processedCollisions.add(collisionKey);
+            
+            // Handle collision and bouncing
+            slowMoDot.handleDotCollision(dot);
+          }
         }
       }
     }
@@ -335,9 +401,24 @@ export class ObjectPoolManager {
         const slowMoDot2 = activeSlowMoDots[j];
         
         // Ensure both slow-mo dots exist and are active
-        if (slowMoDot1 && slowMoDot2 && slowMoDot1.isCollidingWith(slowMoDot2)) {
-          // Handle collision and bouncing
-          slowMoDot1.handleSlowMoCollision(slowMoDot2);
+        if (slowMoDot1 && slowMoDot2 && slowMoDot1.active && slowMoDot2.active) {
+          // Create a unique key for this collision pair
+          const collisionKey = `slowmo-${Math.min(slowMoDot1.id || i, slowMoDot2.id || j)}-${Math.max(slowMoDot1.id || i, slowMoDot2.id || j)}`;
+          
+          // Skip if we've already processed this collision pair
+          if (processedCollisions.has(collisionKey)) {
+            continue;
+          }
+          
+          const isColliding = slowMoDot1.isCollidingWith(slowMoDot2);
+          
+          if (isColliding) {
+            // Mark this collision pair as processed
+            processedCollisions.add(collisionKey);
+            
+            // Handle collision and bouncing
+            slowMoDot1.handleSlowMoCollision(slowMoDot2);
+          }
         }
       }
     }
@@ -585,4 +666,5 @@ export class ObjectPoolManager {
     this.bombPool = null as any;
     this.slowMoPool = null as any;
   }
+
 }

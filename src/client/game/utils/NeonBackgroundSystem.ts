@@ -127,26 +127,34 @@ export class NeonBackgroundSystem {
    * Animate starfield movement
    */
   private animateStarField(): void {
-    if (!this.starField || !this.starField.getChildren) return;
+    if (!this.starField || !this.starField.getChildren || typeof this.starField.getChildren !== 'function' || !this.starField.scene) return;
     
-    this.scene.tweens.add({
-      targets: this.starField.getChildren(),
+    try {
+      this.scene.tweens.add({
+        targets: this.starField.getChildren(),
       y: '-=100',
       duration: 10000 / this.starFieldConfig.speed,
       ease: 'Linear',
       repeat: -1,
       onRepeat: (tween) => {
         // Reset stars that have moved off screen
-        if (!this.starField || !this.starField.getChildren) return;
-        const stars = this.starField.getChildren() as Phaser.GameObjects.Circle[];
-        stars.forEach(star => {
-          if (star.y < -10) {
-            star.y = this.scene.scale.height + 10;
-            star.x = Math.random() * this.scene.scale.width;
-          }
-        });
+        if (!this.starField || !this.starField.getChildren || typeof this.starField.getChildren !== 'function' || !this.starField.scene) return;
+        try {
+          const stars = this.starField.getChildren() as Phaser.GameObjects.Circle[];
+          stars.forEach(star => {
+            if (star.y < -10) {
+              star.y = this.scene.scale.height + 10;
+              star.x = Math.random() * this.scene.scale.width;
+            }
+          });
+        } catch (error) {
+          console.error('NeonBackgroundSystem: Error resetting stars:', error);
+        }
       }
     });
+    } catch (error) {
+      console.error('NeonBackgroundSystem: Error animating starfield:', error);
+    }
   }
 
   /**
@@ -255,6 +263,12 @@ export class NeonBackgroundSystem {
   public updateDimensions(width: number, height: number): void {
     console.log('NeonBackgroundSystem: Updating dimensions to', width, 'x', height);
     
+    // Validate dimensions
+    if (!width || !height || width <= 0 || height <= 0) {
+      console.warn('NeonBackgroundSystem: Invalid dimensions provided:', width, 'x', height);
+      return;
+    }
+    
     // Update base background
     if (this.background) {
       this.background.setDisplaySize(width, height);
@@ -276,9 +290,10 @@ export class NeonBackgroundSystem {
     this.drawGrid();
     
     // Update starfield - reset stars that are off screen and adjust count
-    if (this.starField && this.starField.getChildren) {
-      const stars = this.starField.getChildren() as Phaser.GameObjects.Circle[];
-      const currentCount = stars.length;
+    if (this.starField && this.starField.getChildren && typeof this.starField.getChildren === 'function' && this.starField.scene) {
+      try {
+        const stars = this.starField.getChildren() as Phaser.GameObjects.Circle[];
+        const currentCount = stars.length;
       
       // Add or remove stars based on new count
       if (currentCount < starCount) {
@@ -301,6 +316,9 @@ export class NeonBackgroundSystem {
           star.y = Math.random() * height;
         }
       });
+      } catch (error) {
+        console.error('NeonBackgroundSystem: Error updating starfield:', error);
+      }
     }
     
     console.log('NeonBackgroundSystem: Background updated for', width, 'x', height, 'screen');

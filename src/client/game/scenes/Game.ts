@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
-import SimpleUIScene from './SimpleUIScene';
+import { SimpleUIScene } from './SimpleUIScene';
 import { DebugService, ProductionDebugService } from '../../services/DebugService';
 import { DifficultyManager } from '../../services/DifficultyManager';
 import { ILeaderboardService, DevvitLeaderboardService, MockLeaderboardService } from '../../services/LeaderboardService';
@@ -386,6 +386,9 @@ export class Game extends Scene {
       // Deactivate the wrong dot immediately to prevent further interaction
       dot.deactivate();
 
+      // Clean up any existing visual effects before state change
+      this.cleanupVisualEffects();
+
       // Immediate state change to game over - no delays or animations
       this.changeState(GameState.GAME_OVER);
       return;
@@ -467,6 +470,13 @@ export class Game extends Scene {
   private createWrongTapEffect(dot: Dot): void {
     // Create red warning ripple effect
     const ripple = this.add.circle(dot.x, dot.y, 10, 0xFF0000, 0.8);
+    
+    // Set a short TTL (time to live) as a failsafe
+    this.time.delayedCall(500, () => {
+      if (ripple && ripple.active) {
+        ripple.destroy();
+      }
+    });
 
     this.tweens.add({
       targets: ripple,
@@ -475,13 +485,22 @@ export class Game extends Scene {
       duration: 400,
       ease: 'Power2',
       onComplete: () => {
-        ripple.destroy();
+        if (ripple && ripple.active) {
+          ripple.destroy();
+        }
       }
     });
 
     // Create red flash overlay on the dot
     const flashOverlay = this.add.circle(dot.x, dot.y, dot.size / 2, 0xFF0000, 0.8);
     flashOverlay.setDepth(dot.depth + 1);
+    
+    // Set a short TTL (time to live) as a failsafe
+    this.time.delayedCall(300, () => {
+      if (flashOverlay && flashOverlay.active) {
+        flashOverlay.destroy();
+      }
+    });
 
     this.tweens.add({
       targets: flashOverlay,
@@ -489,7 +508,9 @@ export class Game extends Scene {
       duration: 200,
       ease: 'Power2.easeOut',
       onComplete: () => {
-        flashOverlay.destroy();
+        if (flashOverlay && flashOverlay.active) {
+          flashOverlay.destroy();
+        }
       }
     });
   }
@@ -706,6 +727,40 @@ export class Game extends Scene {
       }
     }
     this.temporaryObjects = [];
+  }
+
+  /**
+   * Clean up visual effects that might be lingering on screen
+   */
+  private cleanupVisualEffects(): void {
+    try {
+      // Kill all tweens to prevent visual effects from continuing
+      this.tweens.killAll();
+      
+      let cleanedCount = 0;
+      
+      // Find and destroy any red circles that might be lingering (visual effects)
+      // Make a copy of the list to avoid modification during iteration
+      const childrenCopy = [...this.children.list];
+      childrenCopy.forEach(child => {
+        if (child && typeof child === 'object' && 'fillColor' in child) {
+          const circle = child as any;
+          // Check if it's a red visual effect (0xFF0000 color)
+          // Visual effects are temporary circles, not game objects
+          if (circle.fillColor === 0xFF0000 && circle.type === 'Arc') {
+            console.log(`[CLEANUP] Destroying red visual effect at (${circle.x?.toFixed(1)}, ${circle.y?.toFixed(1)}), alpha=${circle.alpha}`);
+            circle.destroy();
+            cleanedCount++;
+          }
+        }
+      });
+      
+      if (cleanedCount > 0) {
+        console.log(`[CLEANUP] Cleaned up ${cleanedCount} lingering visual effects`);
+      }
+    } catch (error) {
+      console.warn('Error cleaning up visual effects:', error);
+    }
   }
 
   /**

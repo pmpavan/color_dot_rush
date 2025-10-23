@@ -28,8 +28,8 @@ export class Dot extends Phaser.GameObjects.Arc {
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
-    // Add to scene
-    scene.add.existing(this);
+    // Don't add to scene directly - let ObjectPool manage this
+    // scene.add.existing(this);
     
     // Start hidden until activated
     this.setVisible(false);
@@ -87,6 +87,12 @@ export class Dot extends Phaser.GameObjects.Arc {
     this.x += this.direction.x * this.speed * deltaSeconds;
     this.y += this.direction.y * this.speed * deltaSeconds;
     
+    // Debug logging for dot movement (increased frequency for red dots)
+    const isRed = this.color === '#FF0000';
+    if (Math.random() < (isRed ? 0.05 : 0.01)) { // 5% for red, 1% for others
+      console.log(`[DOT DEBUG] Dot ${this.color} at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) moving ${this.speed} speed, active=${this.active}, visible=${this.visible}`);
+    }
+    
     // No glow effect to update
     
     // Debug: Log movement occasionally
@@ -104,13 +110,17 @@ export class Dot extends Phaser.GameObjects.Arc {
     this.updateShapeOverlay();
 
     // Check if dot is off-screen and deactivate
-    const bounds = this.scene.cameras.main;
     const margin = 100; // Extra margin for cleanup
     
+    // Use consistent bounds checking with collision detection
+    const screenWidth = this.scene.scale.width;
+    const screenHeight = this.scene.scale.height;
+    
     if (this.x < -margin || 
-        this.x > bounds.width + margin || 
+        this.x > screenWidth + margin || 
         this.y < -margin || 
-        this.y > bounds.height + margin) {
+        this.y > screenHeight + margin) {
+      console.log(`[DOT DEBUG] Dot ${this.color} deactivated - off screen at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) screen: ${screenWidth}x${screenHeight}`);
       this.deactivate();
     }
   }
@@ -140,11 +150,25 @@ export class Dot extends Phaser.GameObjects.Arc {
   public isCollidingWith(other: Dot): boolean {
     if (!this.active || !other.active) return false;
     
+    // Skip collision detection for dots that are off-screen
+    if (this.x < -100 || this.x > this.scene.scale.width + 100 || 
+        this.y < -100 || this.y > this.scene.scale.height + 100 ||
+        other.x < -100 || other.x > this.scene.scale.width + 100 || 
+        other.y < -100 || other.y > this.scene.scale.height + 100) {
+      return false;
+    }
+    
     const distance = Phaser.Math.Distance.Between(this.x, this.y, other.x, other.y);
     const minDistance = (this.size + other.size) / 2;
     
-    // Use exact collision detection - no buffer to prevent pass-through
-    return distance < minDistance;
+    // Use a more conservative collision detection
+    const collisionBuffer = 8; // Increased buffer to reduce false positives
+    
+    // Ensure we don't get negative collision threshold
+    const collisionThreshold = Math.max(8, minDistance - collisionBuffer);
+    
+    // Only check current distance, not predictive
+    return distance < collisionThreshold;
   }
 
   /**
@@ -155,7 +179,7 @@ export class Dot extends Phaser.GameObjects.Arc {
     
     // Add collision cooldown to prevent rapid multiple collisions
     const currentTime = this.scene.time.now;
-    const collisionCooldown = 100; // 100ms cooldown
+    const collisionCooldown = 500; // Increased to 500ms cooldown to prevent rapid collisions
     
     if (currentTime - this.lastCollisionTime < collisionCooldown || 
         currentTime - other.lastCollisionTime < collisionCooldown) {
@@ -185,8 +209,9 @@ export class Dot extends Phaser.GameObjects.Arc {
     
     // Separate dots first to prevent overlap - push them apart more aggressively
     const overlap = minDistance - distance;
-    const separationX = normalX * overlap * 0.6; // Increased separation
-    const separationY = normalY * overlap * 0.6;
+    const separationForce = Math.max(overlap * 0.8, 5); // Increased separation force
+    const separationX = normalX * separationForce;
+    const separationY = normalY * separationForce;
     
     this.x -= separationX;
     this.y -= separationY;
@@ -470,9 +495,22 @@ export class Dot extends Phaser.GameObjects.Arc {
    */
   public activate(): void {
     this.active = true;
+    
+    // CRITICAL: Kill any ongoing tweens (especially exit animations) before setting visible
+    // This prevents race conditions where a previous exit animation sets visible=false
+    this.scene.tweens.killTweensOf(this);
+    
     this.setVisible(true);
     this.setScale(1.0);  // Full size for consistency
     this.setAlpha(1.0);  // Full opacity for consistency
+    
+    // Add to scene when activated
+    if (!this.scene.children.exists(this)) {
+      this.scene.add.existing(this);
+      if (this.color === '#FF0000') {
+        console.log(`[DOT ACTIVATE] RED dot activated at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}), added to scene`);
+      }
+    }
     
     // Create entrance animation
     this.createEntranceEffect();
@@ -516,6 +554,13 @@ export class Dot extends Phaser.GameObjects.Arc {
    * Deactivate the dot
    */
   public deactivate(): void {
+    const isRed = this.color === '#FF0000';
+    console.log(`[DOT DEBUG] Deactivating dot ${this.color} at (${this.x.toFixed(1)}, ${this.y.toFixed(1)})${isRed ? ' [RED DOT]' : ''}`);
+    
+    if (isRed) {
+      console.log(`[DOT DEACTIVATE] RED dot deactivated - active=${this.active}, visible=${this.visible}, inScene=${this.scene.children.exists(this)}`);
+    }
+    
     this.active = false;
     
     // Stop all tweens on this dot
@@ -540,7 +585,11 @@ export class Dot extends Phaser.GameObjects.Arc {
       duration: 150,
       ease: 'Power2.easeIn',
       onComplete: () => {
-        this.setVisible(false);
+        // Only set invisible if the dot is still inactive
+        // This prevents race conditions where dot is reactivated during exit animation
+        if (!this.active) {
+          this.setVisible(false);
+        }
       }
     });
   }
