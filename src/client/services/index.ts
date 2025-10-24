@@ -6,3 +6,4 @@ export {
   DevvitLeaderboardService,
   type ILeaderboardService 
 } from './LeaderboardService';
+export { OnboardingService } from './OnboardingService';

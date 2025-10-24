@@ -11,6 +11,8 @@ import { gameLimitsManager } from '../../../shared/config/GameLimits';
 import { NeonBackgroundSystem } from '../utils/NeonBackgroundSystem';
 import { NeonMotionEffects } from '../utils/NeonMotionEffects';
 import { AccessibilityManager } from '../utils/AccessibilityManager';
+import { OnboardingService } from '../../services/OnboardingService';
+import { OnboardingTutorial } from '../utils/OnboardingTutorial';
 
 // Game state finite state machine
 enum GameState {
@@ -57,6 +59,9 @@ export class Game extends Scene {
   // Track temporary objects for proper cleanup
   private temporaryObjects: Phaser.GameObjects.GameObject[] = [];
   private temporaryTweens: Phaser.Tweens.Tween[] = [];
+  
+  // Onboarding tutorial
+  private onboardingTutorial: OnboardingTutorial | null = null;
   
   // Shutdown flag to prevent updates during destruction
   private isShuttingDown: boolean = false;
@@ -2404,6 +2409,9 @@ export class Game extends Scene {
       console.warn('Game: UIScene became invalid before updating UI');
     }
 
+    // Check for first-time user and start onboarding
+    this.checkAndStartOnboarding();
+
     console.log('Game: UIScene communication setup completed');
   }
 
@@ -2707,6 +2715,37 @@ export class Game extends Scene {
     }
   }
 
+  /**
+   * Check if user is first-time and start onboarding tutorial
+   */
+  private checkAndStartOnboarding(): void {
+    // Only show onboarding for first-time users who haven't completed it
+    if (OnboardingService.isFirstTimeUser() && !OnboardingService.hasCompletedOnboarding()) {
+      console.log('Game: First-time user detected, starting onboarding tutorial');
+      
+      // Initialize onboarding tutorial with DOM text renderer from UI scene
+      if (this.uiScene && this.uiScene.getDOMTextRenderer) {
+        const domTextRenderer = this.uiScene.getDOMTextRenderer();
+        if (domTextRenderer) {
+          this.onboardingTutorial = new OnboardingTutorial(this, domTextRenderer);
+          
+          // Start tutorial after a short delay to ensure UI is ready
+          this.time.delayedCall(500, () => {
+            if (this.onboardingTutorial) {
+              this.onboardingTutorial.startTutorial();
+            }
+          });
+        } else {
+          console.warn('Game: DOMTextRenderer not available for onboarding');
+        }
+      } else {
+        console.warn('Game: UI scene not available for onboarding');
+      }
+    } else {
+      console.log('Game: User has completed onboarding or is returning user');
+    }
+  }
+
   // Clean up debug resources when scene shuts down
   shutdown(): void {
     // Generate unique session ID for this shutdown sequence
@@ -2816,6 +2855,11 @@ export class Game extends Scene {
       if (this.accessibilityManager) {
         this.accessibilityManager.destroy();
         this.accessibilityManager = null;
+      }
+
+      // Clean up onboarding tutorial
+      if (this.onboardingTutorial) {
+        this.onboardingTutorial = null;
       }
 
       console.log(`[${sessionId}] [GAME_SHUTDOWN] Game: Scene shutdown completed`);

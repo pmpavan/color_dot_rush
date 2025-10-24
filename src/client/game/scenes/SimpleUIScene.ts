@@ -561,6 +561,13 @@ export class SimpleUIScene extends Scene {
   }
 
   /**
+   * Get the DOM text renderer for external access
+   */
+  public getDOMTextRenderer(): DOMTextRenderer | null {
+    return this.domTextRenderer;
+  }
+
+  /**
    * Cleanup on shutdown
    */
   shutdown(): void {
