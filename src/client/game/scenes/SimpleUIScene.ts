@@ -46,6 +46,10 @@ export class SimpleUIScene extends Scene {
     // Initialize previous values for change detection
     this.previousScore = 0;
     this.previousTargetColor = GameColor.RED;
+    
+    // Reset Phaser object references
+    this.targetColorBg = null;
+    this.targetColorBorder = null;
   }
 
   create(): void {
@@ -560,7 +564,9 @@ export class SimpleUIScene extends Scene {
    * Cleanup on shutdown
    */
   shutdown(): void {
-    console.log('SimpleUIScene: Shutting down');
+    // Generate unique session ID for this shutdown sequence
+    const sessionId = `UI_SHUTDOWN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] SimpleUIScene: Shutting down`);
     
     // Remove event listeners
     this.events.off('updateScore');
@@ -577,21 +583,48 @@ export class SimpleUIScene extends Scene {
     // Kill all tweens
     this.tweens.killAll();
     
+    // Destroy Phaser game objects before clearing references with enhanced safety checks
+    console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Checking targetColorBg:`, this.targetColorBg);
+    if (this.targetColorBg && this.targetColorBg.scene) {
+      try {
+        console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Destroying targetColorBg`);
+        this.targetColorBg.destroy();
+      } catch (error) {
+        console.error(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Error destroying targetColorBg:`, error);
+      }
+    } else {
+      console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] targetColorBg is null or has no scene:`, this.targetColorBg);
+    }
+    this.targetColorBg = null;
+    
+    console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Checking targetColorBorder:`, this.targetColorBorder);
+    if (this.targetColorBorder && this.targetColorBorder.scene) {
+      try {
+        console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Destroying targetColorBorder`);
+        this.targetColorBorder.destroy();
+      } catch (error) {
+        console.error(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Error destroying targetColorBorder:`, error);
+      }
+    } else {
+      console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] targetColorBorder is null or has no scene:`, this.targetColorBorder);
+    }
+    this.targetColorBorder = null;
+    
     // Clean up ResponsiveLayoutManager
     if (this.layoutManager) {
+      console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Destroying layoutManager`);
       this.layoutManager.destroy();
       this.layoutManager = null;
     }
     
     // Clean up DOMTextRenderer
     if (this.domTextRenderer) {
+      console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] Destroying domTextRenderer`);
       this.domTextRenderer.destroy();
       this.domTextRenderer = null;
     }
     
-    // Clear references
-    this.targetColorBg = null;
-    this.targetColorBorder = null;
+    console.log(`[${sessionId}] [SIMPLE_UI_SHUTDOWN] SimpleUIScene shutdown completed`);
     // slowMoCharges cleanup removed - simplified logic
   }
 }

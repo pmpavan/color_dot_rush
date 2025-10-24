@@ -103,6 +103,10 @@ export class Game extends Scene {
     this.temporaryObjects = [];
     this.temporaryTweens = [];
     
+    // Reset blast animation tracking arrays
+    this.blastAnimationObjects = [];
+    this.blastAnimationTweens = [];
+    
     // Reset shutdown flag
     this.isShuttingDown = false;
     
@@ -1237,7 +1241,9 @@ export class Game extends Scene {
   }
 
   private endGame(): void {
-    console.log('endGame() method called');
+    // Generate unique session ID for this game end sequence
+    const sessionId = `GAME_END_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`[BLAST_DEBUG] [${sessionId}] [END_GAME] endGame() method called`);
 
     // Set game state to GAME_OVER immediately
     this.changeState(GameState.GAME_OVER);
@@ -1328,28 +1334,568 @@ export class Game extends Scene {
       userRank: this.userRank
     };
 
-    // Transition to GameOver scene
-    this.time.delayedCall(1000, () => {
-      try {
-        console.log('Transitioning to GameOver scene with data:', gameOverData);
+    // Create blast animation to replace grey screen during transition
+    console.log(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Starting blast animation...`);
+    this.createGameOverBlastAnimation(sessionId, () => {
+      // This callback runs when blast animation completes
+      console.log(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Blast animation completed, transitioning to GameOver scene...`);
+      
+          // Add a small delay to ensure all cleanup is complete before scene transition
+          this.time.delayedCall(100, () => {
+            try {
+              // Safety check: ensure scene is still active before transition
+              if (!this.scene || !this.scene.isActive()) {
+                console.warn(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Scene is no longer active, skipping GameOver transition`);
+                return;
+              }
+              
+              console.log(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Transitioning to GameOver scene with data:`, gameOverData);
+              
+              // Force cleanup of all game objects before scene transition to prevent destroy errors
+              console.log(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Performing pre-transition cleanup...`);
+              this.performPreTransitionCleanup(false); // Don't remove children yet - we need the timer system
+              
+              // Add a small delay after cleanup to ensure all objects are properly destroyed
+              this.time.delayedCall(50, () => {
+                console.log(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Cleanup delay complete, proceeding with scene transition...`);
+                
+                // Keep UIScene running but hide it, start GameOver on top
+                if (this.uiScene) {
+                  console.log('[BLAST_DEBUG] Hiding UIScene');
+                  this.uiScene.setVisible(false); // Hide UI instead of pausing/stopping
+                } else {
+                  console.warn('[BLAST_DEBUG] UIScene not found when trying to hide it');
+                }
 
-        // Keep UIScene running but hide it, start GameOver on top
-        if (this.uiScene) {
-          console.log('Hiding UIScene');
-          this.uiScene.setVisible(false); // Hide UI instead of pausing/stopping
-        } else {
-          console.warn('UIScene not found when trying to hide it');
-        }
+                console.log('[BLAST_DEBUG] Starting GameOver scene...');
 
-        console.log('Starting GameOver scene...');
+                // Add temporary error handler to catch destroy errors during scene transition
+                const originalOnError = window.onerror;
+                let errorHandlerActive = true;
+                window.onerror = (message, source, lineno, colno, error) => {
+                  if (errorHandlerActive && typeof message === 'string' && message.includes('Cannot read properties of undefined (reading \'destroy\')')) {
+                    console.warn(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Suppressing destroy error during GameOver transition`);
+                    return true; // Prevent default error handling and suppress the error
+                  }
+                  // Let other errors through to original handler
+                  if (originalOnError) {
+                    return originalOnError(message, source, lineno, colno, error);
+                  }
+                  return false;
+                };
 
-        // Start the GameOver scene
-        this.scene.start('GameOver', gameOverData);
-        console.log('GameOver scene started');
-      } catch (error) {
-        console.error('Error during scene transition to GameOver:', error);
+                // Start the GameOver scene
+                this.scene.start('GameOver', gameOverData);
+                console.log('[BLAST_DEBUG] GameOver scene started');
+                
+                // Disable error handler almost immediately to prevent interference with GameOver init
+                this.time.delayedCall(100, () => {
+                  errorHandlerActive = false;
+                  console.log('[BLAST_DEBUG] Destroy error handler disabled');
+                  window.onerror = originalOnError;
+                });
+              });
+            } catch (error) {
+              console.error(`[BLAST_DEBUG] [${sessionId}] [END_GAME] Error during scene transition to GameOver:`, error);
+            }
+          });
+    });
+  }
+
+  // Track blast animation objects for cleanup
+  private blastAnimationObjects: Phaser.GameObjects.GameObject[] = [];
+  private blastAnimationTweens: Phaser.Tweens.Tween[] = [];
+
+  /**
+   * Create blast animation to replace grey screen during game over transition
+   * Shows an explosive effect instead of empty grey screen
+   */
+  private createGameOverBlastAnimation(sessionId: string, onComplete?: () => void): void {
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Creating game over blast animation...`);
+    
+    // Safety check: ensure scene is still active
+    if (!this.scene || !this.scene.isActive()) {
+      console.warn(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Scene is not active, skipping blast animation`);
+      if (onComplete) {
+        onComplete();
+      }
+      return;
+    }
+    
+    const centerX = this.scale.width / 2;
+    const centerY = this.scale.height / 2;
+    
+    // Clear any existing blast animation objects
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Clearing existing blast animation objects...`);
+    this.cleanupBlastAnimation(sessionId);
+    
+    // Create starfield background to match app theme
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Creating starfield background...`);
+    this.createBlastStarfieldBackground();
+    
+    // Use a simpler approach: just wait for the animation duration, then clean up and complete
+    const animationDuration = 1200; // Total animation duration in ms
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Animation duration set to ${animationDuration}ms`);
+    
+    // Create all blast effects (don't wait for their completion callbacks)
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Creating blast layers...`);
+    this.createBlastLayers(centerX, centerY);
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Creating screen flash...`);
+    this.createBlastScreenFlash(centerX, centerY);
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Creating particles...`);
+    this.createBlastParticles(centerX, centerY);
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Creating shockwave...`);
+    this.createBlastShockwave(centerX, centerY);
+    
+    // After animation duration, clean up and call completion
+    console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Setting up delayed call for cleanup...`);
+    this.time.delayedCall(animationDuration, () => {
+      console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Blast animation duration complete, cleaning up...`);
+      this.cleanupBlastAnimation(sessionId);
+      
+      if (onComplete) {
+        console.log(`[BLAST_DEBUG] [${sessionId}] [BLAST_ANIMATION] Calling blast animation onComplete callback`);
+        onComplete();
       }
     });
+  }
+
+  /**
+   * Perform comprehensive cleanup before scene transition to prevent destroy errors
+   * @param removeChildren - Whether to remove all children from the scene (default: true)
+   */
+  private performPreTransitionCleanup(removeChildren: boolean = true): void {
+    console.log('[BLAST_DEBUG] [PRE_TRANSITION_CLEANUP] Starting pre-transition cleanup...');
+    
+    try {
+      // Stop all tweens first
+      if (this.tweens) {
+        this.tweens.killAll();
+      }
+      
+      // Stop object spawner
+      if (this.objectSpawner) {
+        this.objectSpawner.pause();
+      }
+      
+      // Clear object pool
+      if (this.objectPool) {
+        this.objectPool.clearAll();
+      }
+      
+      // Stop game timer
+      if (this.gameTimer && !this.gameTimer.hasDispatched) {
+        this.gameTimer.destroy();
+        this.gameTimer = null;
+      }
+      
+      // Reset physics time scale
+      if (this.physics && this.physics.world) {
+        this.physics.world.timeScale = 1;
+      }
+      
+      // Clean up slow motion effects
+      if (this.slowMoTween) {
+        this.slowMoTween.remove();
+        this.slowMoTween = null;
+      }
+      
+      if (this.slowMoVignette) {
+        this.slowMoVignette.destroy();
+        this.slowMoVignette = null;
+      }
+      
+      // Clean up hitbox graphics
+      if (this.hitboxGraphics) {
+        this.hitboxGraphics.destroy();
+        this.hitboxGraphics = null;
+      }
+      
+      // Clean up background
+      if (this.background) {
+        this.background.destroy();
+        this.background = null;
+      }
+      
+      // Clean up neon background system
+      if (this.neonBackground) {
+        this.neonBackground.destroy();
+        this.neonBackground = null;
+      }
+      
+      // Clean up motion effects
+      if (this.motionEffects) {
+        this.motionEffects.destroy();
+        this.motionEffects = null;
+      }
+      
+      // Clean up accessibility manager
+      if (this.accessibilityManager) {
+        this.accessibilityManager.destroy();
+        this.accessibilityManager = null;
+      }
+      
+      // Optionally remove all children from the scene to prevent Phaser from trying to destroy them
+      // Note: We skip this if we still need the timer system to execute delayed calls
+      if (removeChildren) {
+        console.log('[BLAST_DEBUG] [PRE_TRANSITION_CLEANUP] Removing all children from scene...');
+        this.children.removeAll();
+      } else {
+        console.log('[BLAST_DEBUG] [PRE_TRANSITION_CLEANUP] Skipping children removal (timer system needed)');
+        // However, we still need to forcefully remove display objects to prevent destroy errors
+        // We'll remove children but preserve the timer system
+        try {
+          const children = this.children.getAll();
+          children.forEach(child => {
+            if (child && typeof child.destroy === 'function' && child.type !== 'Timer') {
+              try {
+                child.destroy();
+              } catch (e) {
+                // Silently ignore destroy errors
+              }
+            }
+          });
+        } catch (error) {
+          console.warn('[BLAST_DEBUG] [PRE_TRANSITION_CLEANUP] Error during selective child removal:', error);
+        }
+      }
+      
+      // Clear all input handlers
+      if (this.input) {
+        this.input.removeAllListeners();
+      }
+      
+      // Clear all events (but keep scene lifecycle events)
+      // Don't remove all listeners as it might break scene transitions
+      // this.events.removeAllListeners();
+      
+      console.log('[BLAST_DEBUG] [PRE_TRANSITION_CLEANUP] Pre-transition cleanup completed');
+    } catch (error) {
+      console.error('[BLAST_DEBUG] [PRE_TRANSITION_CLEANUP] Error during pre-transition cleanup:', error);
+    }
+  }
+
+  /**
+   * Clean up all blast animation objects and tweens
+   */
+  private cleanupBlastAnimation(sessionId?: string): void {
+    const logPrefix = sessionId ? `[BLAST_DEBUG] [${sessionId}]` : '[BLAST_DEBUG]';
+    console.log(`${logPrefix} [BLAST_CLEANUP] Starting cleanup of ${this.blastAnimationObjects.length} blast objects and ${this.blastAnimationTweens.length} blast tweens`);
+    
+    // Stop and remove all blast animation tweens with enhanced safety
+    this.blastAnimationTweens.forEach((tween, index) => {
+      try {
+        console.log(`${logPrefix} [BLAST_CLEANUP] Processing tween at index ${index}:`, tween);
+        if (!tween) {
+          console.warn(`${logPrefix} [BLAST_CLEANUP] Blast tween at index ${index} is null/undefined`);
+          return;
+        }
+        if (typeof tween.isPlaying === 'function' && tween.isPlaying()) {
+          console.log(`${logPrefix} [BLAST_CLEANUP] Stopping tween at index ${index}`);
+          tween.stop();
+        }
+        if (typeof tween.remove === 'function') {
+          console.log(`${logPrefix} [BLAST_CLEANUP] Removing tween at index ${index}`);
+          tween.remove();
+        }
+      } catch (error) {
+        console.error(`${logPrefix} [BLAST_CLEANUP] Error removing blast tween at index ${index}:`, error);
+      }
+    });
+    this.blastAnimationTweens = [];
+    
+    // Destroy all blast animation objects with enhanced safety
+    this.blastAnimationObjects.forEach((obj, index) => {
+      try {
+        console.log(`${logPrefix} [BLAST_CLEANUP] Processing object at index ${index}:`, obj);
+        if (!obj) {
+          console.warn(`${logPrefix} [BLAST_CLEANUP] Blast object at index ${index} is null/undefined`);
+          return;
+        }
+        
+        // Enhanced logging for object properties
+        console.log(`${logPrefix} [BLAST_CLEANUP] Object ${index} details:`, {
+          type: obj.constructor.name,
+          hasScene: !!obj.scene,
+          sceneActive: obj.scene ? (obj.scene as any).isActive?.() : false,
+          hasDestroy: typeof obj.destroy === 'function',
+          destroyMethod: obj.destroy
+        });
+        
+        // Check if object has a scene property and it's not null
+        if (obj.scene && typeof obj.destroy === 'function') {
+          console.log(`${logPrefix} [BLAST_CLEANUP] Destroying object at index ${index} (type: ${obj.constructor.name})`);
+          obj.destroy();
+        } else {
+          console.warn(`${logPrefix} [BLAST_CLEANUP] Blast object at index ${index} has no valid scene or destroy method (scene: ${obj.scene}, destroy: ${typeof obj.destroy})`);
+        }
+      } catch (error) {
+        console.error(`${logPrefix} [BLAST_CLEANUP] Error destroying blast object at index ${index}:`, error);
+        console.error(`${logPrefix} [BLAST_CLEANUP] Object that caused error:`, obj);
+      }
+    });
+    this.blastAnimationObjects = [];
+    
+    console.log(`${logPrefix} [BLAST_CLEANUP] Blast animation cleanup completed`);
+  }
+
+  /**
+   * Create multiple layers of blast effects
+   */
+  private createBlastLayers(centerX: number, centerY: number): void {
+    // Safety check: ensure scene is still active
+    if (!this.scene || !this.scene.isActive()) {
+      return;
+    }
+    
+    const blastColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700, 0xFFFFFF];
+    
+    // Create 3 layers of expanding blast rings
+    for (let layer = 0; layer < 3; layer++) {
+      const delay = layer * 100;
+      const maxRadius = 200 + layer * 100;
+      const color = blastColors[layer % blastColors.length];
+      const alpha = 0.8 - layer * 0.2;
+      
+      const blastRing = this.add.circle(centerX, centerY, 20, color, alpha);
+      blastRing.setDepth(1000 + layer);
+      this.blastAnimationObjects.push(blastRing);
+      
+      const tween = this.tweens.add({
+        targets: blastRing,
+        radius: maxRadius,
+        alpha: 0,
+        duration: 600 + layer * 200,
+        ease: 'Power2.easeOut',
+        delay: delay
+      });
+      this.blastAnimationTweens.push(tween);
+    }
+  }
+
+  /**
+   * Create screen flash effect for blast
+   */
+  private createBlastScreenFlash(centerX: number, centerY: number): void {
+    // Safety check: ensure scene is still active
+    if (!this.scene || !this.scene.isActive()) {
+      return;
+    }
+    
+    // Create bright white flash overlay
+    const flashOverlay = this.add.rectangle(
+      centerX, 
+      centerY, 
+      this.scale.width, 
+      this.scale.height, 
+      0xFFFFFF, 
+      0.9
+    );
+    flashOverlay.setDepth(2000);
+    this.blastAnimationObjects.push(flashOverlay);
+    
+    // Flash in and out quickly
+    const tween = this.tweens.add({
+      targets: flashOverlay,
+      alpha: 0,
+      duration: 200,
+      ease: 'Power2.easeOut',
+      delay: 50
+    });
+    this.blastAnimationTweens.push(tween);
+  }
+
+  /**
+   * Create particle explosion for blast
+   */
+  private createBlastParticles(centerX: number, centerY: number): void {
+    // Safety check: ensure scene is still active
+    if (!this.scene || !this.scene.isActive()) {
+      return;
+    }
+    
+    const particleColors = [0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700, 0xFFFFFF, 0xFF6666];
+    
+    // Create 40+ particles for intense explosion
+    for (let i = 0; i < 45; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 100 + Math.random() * 200;
+      const color = particleColors[Math.floor(Math.random() * particleColors.length)];
+      const size = 6 + Math.random() * 10;
+      
+      const particle = this.add.circle(centerX, centerY, size, color);
+      particle.setDepth(1500);
+      this.blastAnimationObjects.push(particle);
+      
+      const tween = this.tweens.add({
+        targets: particle,
+        x: centerX + Math.cos(angle) * distance,
+        y: centerY + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 800 + Math.random() * 400,
+        ease: 'Power2.easeOut'
+      });
+      this.blastAnimationTweens.push(tween);
+    }
+  }
+
+  /**
+   * Create expanding shockwave effect
+   */
+  private createBlastShockwave(centerX: number, centerY: number): void {
+    // Safety check: ensure scene is still active
+    if (!this.scene || !this.scene.isActive()) {
+      return;
+    }
+    
+    // Create shockwave ring
+    const shockwave = this.add.circle(centerX, centerY, 10, 0x00BFFF, 0.8);
+    shockwave.setStrokeStyle(8, 0x00BFFF, 1);
+    shockwave.setDepth(1200);
+    this.blastAnimationObjects.push(shockwave);
+    
+    const tween = this.tweens.add({
+      targets: shockwave,
+      radius: 300,
+      alpha: 0,
+      duration: 500,
+      ease: 'Power2.easeOut'
+    });
+    this.blastAnimationTweens.push(tween);
+    
+    // Create secondary shockwave
+    this.time.delayedCall(100, () => {
+      if (!this.scene || !this.scene.isActive()) {
+        return;
+      }
+      
+      const shockwave2 = this.add.circle(centerX, centerY, 15, 0xFFFFFF, 0.6);
+      shockwave2.setStrokeStyle(6, 0xFFFFFF, 0.8);
+      shockwave2.setDepth(1201);
+      this.blastAnimationObjects.push(shockwave2);
+      
+      const tween2 = this.tweens.add({
+        targets: shockwave2,
+        radius: 250,
+        alpha: 0,
+        duration: 400,
+        ease: 'Power2.easeOut'
+      });
+      this.blastAnimationTweens.push(tween2);
+    });
+  }
+
+  /**
+   * Create starfield background for blast animation to match app theme
+   */
+  private createBlastStarfieldBackground(): void {
+    console.log('Creating blast starfield background...');
+    
+    // Safety check: ensure scene is still active
+    if (!this.scene || !this.scene.isActive()) {
+      return;
+    }
+    
+    const { width, height } = this.scale;
+    
+    // Create animated starfield with neon colors
+    const starColors = [0xFFFFFF, 0x00BFFF, 0xFF69B4, 0x00FF00, 0xFFA500, 0xFF0000];
+    const starCount = 100; // Dense starfield for dramatic effect
+    
+    for (let i = 0; i < starCount; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const size = 1 + Math.random() * 3;
+      const color = starColors[Math.floor(Math.random() * starColors.length)];
+      const alpha = 0.6 + Math.random() * 0.4;
+      
+      const star = this.add.circle(x, y, size, color, alpha);
+      star.setDepth(500); // Behind blast effects but above background
+      this.blastAnimationObjects.push(star);
+      
+      // Animate stars with twinkling effect
+      const tween1 = this.tweens.add({
+        targets: star,
+        alpha: alpha * 0.3,
+        scale: size * 0.5,
+        duration: 1000 + Math.random() * 2000,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1,
+        delay: Math.random() * 1000
+      });
+      this.blastAnimationTweens.push(tween1);
+      
+      // Add subtle movement
+      const tween2 = this.tweens.add({
+        targets: star,
+        y: y + (Math.random() - 0.5) * 20,
+        duration: 3000 + Math.random() * 2000,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1,
+        delay: Math.random() * 2000
+      });
+      this.blastAnimationTweens.push(tween2);
+    }
+    
+    // Create nebula-like background effect
+    const nebula = this.add.graphics();
+    nebula.setDepth(400);
+    this.blastAnimationObjects.push(nebula);
+    
+    // Create multiple nebula layers
+    for (let layer = 0; layer < 3; layer++) {
+      const nebulaColor = layer === 0 ? 0x080808 : layer === 1 ? 0x1a1a2e : 0x16213e;
+      const nebulaAlpha = 0.1 - layer * 0.02;
+      const nebulaSize = 200 + layer * 100;
+      
+      nebula.fillStyle(nebulaColor, nebulaAlpha);
+      nebula.fillCircle(
+        width / 2 + (Math.random() - 0.5) * 100,
+        height / 2 + (Math.random() - 0.5) * 100,
+        nebulaSize
+      );
+    }
+    
+    // Animate nebula with pulsing effect
+    const tween3 = this.tweens.add({
+      targets: nebula,
+      alpha: 0.2,
+      duration: 2000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    this.blastAnimationTweens.push(tween3);
+    
+    // Create grid lines for sci-fi effect
+    const grid = this.add.graphics();
+    grid.setDepth(450);
+    grid.lineStyle(1, 0x00BFFF, 0.1);
+    this.blastAnimationObjects.push(grid);
+    
+    // Vertical grid lines
+    for (let x = 0; x < width; x += 50) {
+      grid.lineBetween(x, 0, x, height);
+    }
+    
+    // Horizontal grid lines
+    for (let y = 0; y < height; y += 50) {
+      grid.lineBetween(0, y, width, y);
+    }
+    
+    // Animate grid with subtle pulsing
+    const tween4 = this.tweens.add({
+      targets: grid,
+      alpha: 0.05,
+      duration: 3000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    this.blastAnimationTweens.push(tween4);
   }
 
   /**
@@ -2163,22 +2709,39 @@ export class Game extends Scene {
 
   // Clean up debug resources when scene shuts down
   shutdown(): void {
+    // Generate unique session ID for this shutdown sequence
+    const sessionId = `SHUTDOWN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
-      console.log('Game: Starting scene shutdown...');
+      console.log(`[BLAST_DEBUG] [${sessionId}] [GAME_SHUTDOWN] Game: Starting scene shutdown...`);
       
       // Set shutdown flag to prevent updates during cleanup
       this.isShuttingDown = true;
 
+      // Clean up blast animation first to prevent destroy errors
+      console.log(`[BLAST_DEBUG] [${sessionId}] [GAME_SHUTDOWN] Cleaning up blast animation...`);
+      this.cleanupBlastAnimation(sessionId);
+      
+      // Force remove all children to prevent Phaser from trying to destroy them
+      console.log(`[BLAST_DEBUG] [${sessionId}] [GAME_SHUTDOWN] Removing all children from scene...`);
+      try {
+        this.children.removeAll();
+      } catch (error) {
+        console.warn(`[BLAST_DEBUG] [${sessionId}] [GAME_SHUTDOWN] Error removing children:`, error);
+      }
+
       // Clean up UIScene communication first
+      console.log(`[${sessionId}] [GAME_SHUTDOWN] Cleaning up UI scene communication...`);
       this.cleanupUISceneCommunication();
 
       // Kill all tweens first to prevent cleanup issues
+      console.log(`[${sessionId}] [GAME_SHUTDOWN] Killing all tweens...`);
       if (this.tweens) {
         this.tweens.killAll();
         this.tweens.timeScale = 1;
       }
 
       // Clean up temporary objects we created
+      console.log(`[${sessionId}] [GAME_SHUTDOWN] Cleaning up temporary objects...`);
       this.cleanupAllTemporaryObjects();
 
       // Clean up debug service (non-Phaser object)
@@ -2255,9 +2818,9 @@ export class Game extends Scene {
         this.accessibilityManager = null;
       }
 
-      console.log('Game: Scene shutdown completed');
+      console.log(`[${sessionId}] [GAME_SHUTDOWN] Game: Scene shutdown completed`);
     } catch (error) {
-      console.warn('Error during scene shutdown:', error);
+      console.error(`[${sessionId}] [GAME_SHUTDOWN] Error during scene shutdown:`, error);
     }
   }
 }

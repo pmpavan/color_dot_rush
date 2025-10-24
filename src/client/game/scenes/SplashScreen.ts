@@ -1387,22 +1387,70 @@ Good luck!
    */
   private launchGameScenes(): void {
     try {
-      // Start Game scene first
-      this.scene.start('Game');
-      console.log('SplashScreen: Game scene started');
+      // Clear any existing DOM elements from previous game session
+      this.clearExistingDOMElements();
       
-      // Launch UI scene with a small delay to ensure Game scene is ready
-      this.time.delayedCall(50, () => {
-        this.scene.launch('SimpleUI');
-        console.log('SplashScreen: SimpleUI scene launched (delayed)');
-      });
+      console.log('SplashScreen: Preparing to start game...');
+      
+      // Stop SimpleUI if it's running - the Game scene will restart it properly
+      if (this.scene.isActive('SimpleUI') || this.scene.isSleeping('SimpleUI')) {
+        console.log('SplashScreen: Stopping existing SimpleUI scene for restart...');
+        this.scene.stop('SimpleUI');
+      }
+      
+      // Start Game scene - it will handle launching SimpleUI
+      this.scene.start('Game');
+      console.log('SplashScreen: Game scene started, will initialize UI scene');
     } catch (sceneError) {
       console.error('SplashScreen: Error launching scenes:', sceneError);
       this.handleTransitionError(sceneError);
     }
   }
 
-
+  /**
+   * Clear any existing DOM elements from previous game session
+   */
+  private clearExistingDOMElements(): void {
+    try {
+      console.log('SplashScreen: Clearing existing DOM elements...');
+      
+      // Clear any existing UI elements that might be left over
+      const existingElements = [
+        'game-ui-container',
+        'score-display',
+        'target-color-display',
+        'timer-display',
+        'slow-mo-charge-display',
+        'game-over-modal'
+      ];
+      
+      existingElements.forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element && element.parentNode) {
+          element.parentNode.removeChild(element);
+          console.log(`SplashScreen: Removed existing element: ${elementId}`);
+        }
+      });
+      
+      // Clear any existing CSS styles
+      const existingStyles = [
+        'game-over-neon-styles',
+        'game-ui-styles'
+      ];
+      
+      existingStyles.forEach(styleId => {
+        const styleElement = document.getElementById(styleId);
+        if (styleElement) {
+          styleElement.remove();
+          console.log(`SplashScreen: Removed existing style: ${styleId}`);
+        }
+      });
+      
+      console.log('SplashScreen: DOM cleanup completed');
+    } catch (error) {
+      console.warn('SplashScreen: Error during DOM cleanup:', error);
+    }
+  }
 
   /**
    * Handle transition errors by restoring button state

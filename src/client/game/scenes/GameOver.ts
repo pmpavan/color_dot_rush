@@ -24,14 +24,20 @@ export class GameOver extends Scene {
   }
 
   shutdown(): void {
+    // Generate unique session ID for this GameOver shutdown
+    const sessionId = `GAMEOVER_SHUTDOWN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
+      console.log(`[${sessionId}] [GAMEOVER_SHUTDOWN] GameOver scene shutdown started`);
+      
       // Clean up DOM modal
+      console.log(`[${sessionId}] [GAMEOVER_SHUTDOWN] Cleaning up DOM modal...`);
       const modalContainer = document.getElementById('game-over-modal');
       if (modalContainer && modalContainer.parentNode) {
         modalContainer.parentNode.removeChild(modalContainer);
       }
       
       // Remove CSS animations
+      console.log(`[${sessionId}] [GAMEOVER_SHUTDOWN] Removing CSS animations...`);
       const styleElement = document.getElementById('game-over-neon-styles');
       if (styleElement) {
         styleElement.remove();
@@ -39,58 +45,131 @@ export class GameOver extends Scene {
       
       
       // Clean up neon background system
+      console.log(`[${sessionId}] [GAMEOVER_SHUTDOWN] Cleaning up neon background system...`);
       if (this.neonBackground) {
         this.neonBackground.destroy();
         this.neonBackground = null;
       }
       
       // Clean up DOM renderer
+      console.log(`[${sessionId}] [GAMEOVER_SHUTDOWN] Cleaning up DOM renderer...`);
       if (this.domRenderer) {
         this.domRenderer.destroy();
         this.domRenderer = null;
       }
       
       // Kill all tweens
+      console.log(`[${sessionId}] [GAMEOVER_SHUTDOWN] Killing all tweens...`);
       if (this.tweens) {
         this.tweens.killAll();
       }
+      
+      console.log(`[${sessionId}] [GAMEOVER_SHUTDOWN] GameOver scene shutdown completed`);
     } catch (error) {
-      console.warn('Error during GameOver scene shutdown:', error);
+      console.error(`[${sessionId}] [GAMEOVER_SHUTDOWN] Error during GameOver scene shutdown:`, error);
     }
   }
 
   init(data: GameOverData): void {
-    console.log('GameOver scene init called with data:', data);
+    // Generate unique session ID for this GameOver scene
+    const sessionId = `GAMEOVER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_INIT] GameOver scene init called with data:`, data);
     
-    // Store game over data passed from Game scene
-    this.gameOverData = data || {
-      finalScore: 0,
-      sessionTime: 0,
-      bestScore: 0,
-      targetColor: '#E74C3C',
-      userRank: undefined
-    };
+    try {
+      // Add temporary error handler to catch destroy errors during GameOver init
+      const originalOnError = window.onerror;
+      window.onerror = (message, source, lineno, colno, error) => {
+        if (typeof message === 'string' && message.includes('Cannot read properties of undefined (reading \'destroy\')')) {
+          console.error(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_INIT] Caught destroy error during GameOver init:`, {
+            message,
+            source,
+            lineno,
+            colno,
+            error,
+            stack: error?.stack
+          });
+          // Restore original error handler
+          window.onerror = originalOnError;
+          return true; // Prevent default error handling
+        }
+        // Let other errors through to original handler
+        if (originalOnError) {
+          return originalOnError(message, source, lineno, colno, error);
+        }
+        return false;
+      };
+      
+      // Store game over data passed from Game scene
+      this.gameOverData = data || {
+        finalScore: 0,
+        sessionTime: 0,
+        bestScore: 0,
+        targetColor: '#E74C3C',
+        userRank: undefined
+      };
 
-    
-    console.log('GameOver scene init completed');
+      console.log(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_INIT] GameOver scene init completed`);
+      
+      // Restore original error handler after a short delay
+      setTimeout(() => {
+        window.onerror = originalOnError;
+      }, 1000);
+    } catch (error) {
+      console.error(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_INIT] Error during GameOver scene init:`, error);
+    }
   }
 
   create() {
-    console.log('GameOver scene create called');
+    // Generate unique session ID for this GameOver scene creation
+    const sessionId = `GAMEOVER_CREATE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_CREATE] GameOver scene create called`);
     
-    // Clear any existing DOM elements from previous sessions first
-    this.clearExistingDOMElements();
-    
-    // Configure camera
-    this.camera = this.cameras.main;
-    this.camera.setBackgroundColor(0x080808); // Deep Space Black background
-    
-    // Fade in from black for smooth transition (with safety check for tests)
-    if (this.cameras?.main?.fadeIn) {
-      this.cameras.main.fadeIn(250, 0, 0, 0);
+    try {
+      // Add temporary error handler to catch destroy errors during GameOver create
+      const originalOnError = window.onerror;
+      window.onerror = (message, source, lineno, colno, error) => {
+        if (typeof message === 'string' && message.includes('Cannot read properties of undefined (reading \'destroy\')')) {
+          console.error(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_CREATE] Caught destroy error during GameOver create:`, {
+            message,
+            source,
+            lineno,
+            colno,
+            error,
+            stack: error?.stack
+          });
+          // Restore original error handler
+          window.onerror = originalOnError;
+          return true; // Prevent default error handling
+        }
+        // Let other errors through to original handler
+        if (originalOnError) {
+          return originalOnError(message, source, lineno, colno, error);
+        }
+        return false;
+      };
+      
+      // Clear any existing DOM elements from previous sessions first
+      console.log(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_CREATE] Clearing existing DOM elements...`);
+      this.clearExistingDOMElements();
+      
+      // Configure camera
+      this.camera = this.cameras.main;
+      this.camera.setBackgroundColor(0x080808); // Deep Space Black background
+      
+      // Fade in from black for smooth transition (with safety check for tests)
+      if (this.cameras?.main?.fadeIn) {
+        this.cameras.main.fadeIn(250, 0, 0, 0);
+      }
+      
+      console.log('[BLAST_DEBUG] GameOver scene camera configured');
+      
+      // Restore original error handler after a short delay
+      setTimeout(() => {
+        window.onerror = originalOnError;
+      }, 1000);
+    } catch (error) {
+      console.error(`[BLAST_DEBUG] [${sessionId}] [GAMEOVER_CREATE] Error during GameOver scene create:`, error);
     }
-    
-    console.log('GameOver scene camera configured');
 
     // Initialize and create neon background system
     this.neonBackground = new NeonBackgroundSystem(this);
@@ -594,54 +673,33 @@ export class GameOver extends Scene {
 
   private handlePlayAgain(): void {
     this.hideModal(() => {
-              try {
-                if (this.cameras?.main?.fadeOut) {
-                  this.cameras.main.fadeOut(250, 0, 0, 0);
-                  this.cameras.main.once('camerafadeoutcomplete', () => {
-                    // Start Game scene and ensure UI scene is running
-                    this.scene.start('Game');
-                    
-            // Force restart the UI scene to ensure fresh DOM elements
-            this.time.delayedCall(100, () => {
-              console.log('GameOver: Force restarting SimpleUI scene...');
-              
-              // Clear any existing DOM elements from previous game session
-              this.clearExistingDOMElements();
-              
-              // Stop the existing UI scene first to ensure clean restart
-              this.scene.stop('SimpleUI');
-              
-              // Wait a bit for cleanup, then restart
-              this.time.delayedCall(50, () => {
-                this.scene.launch('SimpleUI');
-                console.log('GameOver: SimpleUI scene restarted');
-              });
-            });
-                  });
-                } else {
-                  // Fallback for test environment
-                  this.scene.start('Game');
-                  
-          // Force restart the UI scene to ensure fresh DOM elements
-          this.time.delayedCall(100, () => {
-            console.log('GameOver: Force restarting SimpleUI scene (fallback)...');
-            
-            // Clear any existing DOM elements from previous game session
-            this.clearExistingDOMElements();
-            
-            // Stop the existing UI scene first to ensure clean restart
-            this.scene.stop('SimpleUI');
-            
-            // Wait a bit for cleanup, then restart
-            this.time.delayedCall(50, () => {
-              this.scene.launch('SimpleUI');
-              console.log('GameOver: SimpleUI scene restarted (fallback)');
-            });
+      try {
+        // Clear any existing DOM elements from previous game session BEFORE starting Game scene
+        this.clearExistingDOMElements();
+        
+        console.log('GameOver: Preparing to restart game...');
+        
+        // Stop SimpleUI if it's running - the Game scene will restart it properly
+        if (this.scene.isActive('SimpleUI') || this.scene.isSleeping('SimpleUI')) {
+          console.log('GameOver: Stopping existing SimpleUI scene for restart...');
+          this.scene.stop('SimpleUI');
+        }
+        
+        if (this.cameras?.main?.fadeOut) {
+          this.cameras.main.fadeOut(250, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete', () => {
+            // Start Game scene - it will handle launching SimpleUI via initializeUIScene()
+            console.log('GameOver: Starting Game scene (will initialize UI scene)...');
+            this.scene.start('Game');
           });
-                }
-              } catch (error) {
-                console.error('Error restarting game:', error);
-              }
+        } else {
+          // Fallback for test environment
+          console.log('GameOver: Starting Game scene (will initialize UI scene)...');
+          this.scene.start('Game');
+        }
+      } catch (error) {
+        console.error('Error restarting game:', error);
+      }
     });
   }
 
