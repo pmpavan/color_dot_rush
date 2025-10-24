@@ -97,6 +97,19 @@ export class GlowEffects {
   }
 
   /**
+   * Get glow configuration for 2x dot (Bright Green)
+   */
+  static getDoubleGlowConfig(): GlowConfig {
+    return {
+      color: '#00FF00', // Bright green - distinct from all regular dot colors
+      intensity: 1.0,
+      radius: 30,
+      blur: 25,
+      alpha: 0.8
+    };
+  }
+
+  /**
    * Create a glow effect using Phaser graphics
    */
   static createGlowEffect(

@@ -14,7 +14,7 @@ export interface OnboardingStep {
   showVisualDemo?: boolean; // Whether to show visual dot examples
   demoDots?: Array<{
     color: string;
-    type: 'normal' | 'bomb' | 'slowmo';
+    type: 'normal' | 'bomb' | 'slowmo' | 'double';
     x: number;
     y: number;
   }>;
@@ -138,6 +138,19 @@ export class OnboardingService {
           { color: '#ff4444', type: 'normal', x: 0.3, y: 0.4 },
           { color: '#44ff44', type: 'normal', x: 0.7, y: 0.6 },
           { color: '#ffff44', type: 'slowmo', x: 0.5, y: 0.3 }
+        ]
+      },
+      {
+        id: 'double-points',
+        title: '2x Points',
+        description: 'Green 2x dots double your points for 10 seconds! Collect them to boost your score.',
+        position: 'center',
+        duration: 3000,
+        showVisualDemo: true,
+        demoDots: [
+          { color: '#ff4444', type: 'normal', x: 0.3, y: 0.4 },
+          { color: '#44ff44', type: 'normal', x: 0.7, y: 0.6 },
+          { color: '#00ff00', type: 'double', x: 0.5, y: 0.3 }
         ]
       },
       {

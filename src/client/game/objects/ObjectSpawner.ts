@@ -52,6 +52,11 @@ export class ObjectSpawner {
   private minSlowMoInterval: number = 5000; // 5 seconds minimum interval (start)
   private maxSlowMoInterval: number = 20000; // 20 seconds maximum interval (end)
   
+  // 2x dot timing - slightly rarer than slow mo
+  private lastDoubleTime: number = 0;
+  private minDoubleInterval: number = 3000; // 3 seconds minimum interval (start) - reduced for testing
+  private maxDoubleInterval: number = 30000; // 30 seconds maximum interval (end) - rarer than slow mo
+  
   // Screen boundaries
   private screenBounds: Phaser.Geom.Rectangle;
   
@@ -157,15 +162,20 @@ export class ObjectSpawner {
     const hasActiveSlowMo = this.objectPool.getActiveSlowMoDots().length > 0;
     const shouldSpawnSlowMo = !hasActiveSlowMo && (elapsedTime - this.lastSlowMoTime) >= currentSlowMoInterval;
     
-    // Debug logging
-    if (Math.random() < 0.05) { // 5% chance to log for debugging (increased for troubleshooting)
-      console.log(`Spawner: roll=${spawnRoll.toFixed(3)}, bombChance=${this.config.bombChance}, shouldSpawnSlowMo=${shouldSpawnSlowMo}, slowMoInterval=${currentSlowMoInterval.toFixed(0)}ms, currentBombs=${currentBombCount}, maxBombs=${maxBombCount}, elapsedTime=${elapsedTime}ms`);
-    }
+    // Check if it's time to spawn a 2x dot (slightly rarer than slow mo)
+    const currentDoubleInterval = this.calculateDoubleInterval(elapsedTime);
+    const hasActiveDouble = this.objectPool.getActiveDoubleDots().length > 0;
+    const shouldSpawnDouble = !hasActiveDouble && (elapsedTime - this.lastDoubleTime) >= currentDoubleInterval;
+    
     
     if (shouldSpawnSlowMo) {
       // Spawn a slow-mo dot (interval-based, not probability-based)
       this.spawnSlowMoDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
       this.lastSlowMoTime = elapsedTime; // Update last slow mo spawn time
+    } else if (shouldSpawnDouble) {
+      // Spawn a 2x dot (interval-based, rarer than slow mo)
+      this.spawnDoubleDot(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
+      this.lastDoubleTime = elapsedTime; // Update last 2x spawn time
     } else if (spawnRoll < this.config.bombChance && currentBombCount < maxBombCount) {
       // Spawn a bomb (only if under the limit)
       this.spawnBomb(difficulty.speed, responsiveSize, edge.x, edge.y, edge.direction);
@@ -336,6 +346,31 @@ export class ObjectSpawner {
   }
 
   /**
+   * Spawn a 2x power-up dot
+   */
+  private spawnDoubleDot(speed: number, size: number, x: number, y: number, direction: Phaser.Math.Vector2): void {
+    // Get limits for 2x dots (use same limits as slow-mo for now)
+    const limits = gameLimitsManager.getLimits('slowMo');
+    
+    // Add some movement variation
+    const variationAngle = Phaser.Math.Between(-10, 10) * Math.PI / 180; // ±10 degrees
+    const variedDirection = direction.clone().rotate(variationAngle);
+    
+    // 2x dots move at normal speed, but respect limits
+    const doubleSpeed = Math.min(speed, limits.maxSpeed);
+    
+    // Ensure size is within limits
+    const clampedSize = Math.max(limits.minSize, Math.min(limits.maxSize, size));
+    
+    // Spawn the 2x dot
+    const doubleDot = this.objectPool.spawnDoubleDot(doubleSpeed, clampedSize, x, y, variedDirection);
+    
+    if (!doubleDot) {
+      console.warn(`Failed to spawn 2x dot - pool may be full`);
+    }
+  }
+
+  /**
    * Set the target color for balanced spawning
    */
   public setTargetColor(color: GameColor): void {
@@ -483,6 +518,25 @@ export class ObjectSpawner {
     
     // Ensure we don't go above maximum
     return Math.min(calculatedInterval, this.maxSlowMoInterval);
+  }
+
+  /**
+   * Calculate inverse exponential 2x dot interval based on elapsed time
+   * Starts at minDoubleInterval (frequent) and increases exponentially to maxDoubleInterval (less frequent)
+   * Slightly rarer than slow-mo dots
+   */
+  private calculateDoubleInterval(elapsedTime: number): number {
+    const elapsedSeconds = elapsedTime / 1000; // Convert to seconds
+    
+    // Inverse exponential growth: interval = min + (max - min) * (1 - e^(-rate * time))
+    // Using a rate of 0.08 for slower growth than slow-mo (rarer)
+    const growthRate = 0.08;
+    const exponentialFactor = 1 - Math.exp(-growthRate * elapsedSeconds);
+    
+    const calculatedInterval = this.minDoubleInterval + (this.maxDoubleInterval - this.minDoubleInterval) * exponentialFactor;
+    
+    // Ensure we don't go above maximum
+    return Math.min(calculatedInterval, this.maxDoubleInterval);
   }
 
   /**

@@ -70,6 +70,12 @@ export const GAME_ASSETS: AssetDefinition[] = [
     path: 'assets/slowmo-dot.svg',
     description: 'Slow-motion power-up dot with clock icon',
   },
+  {
+    key: 'double-dot',
+    type: 'image',
+    path: 'assets/double-dot.svg',
+    description: '2x points power-up dot with 2x icon',
+  },
 
   // UI icons
   {
@@ -127,7 +133,7 @@ export function validateAssets(): { valid: boolean; missing: string[] } {
   const requiredAssets = [
     'background', 'logo',
     'dot-red', 'dot-green', 'dot-blue', 'dot-yellow', 'dot-purple',
-    'bomb', 'slowmo-dot', 'clock-icon'
+    'bomb', 'slowmo-dot', 'double-dot', 'clock-icon'
   ];
 
   const definedKeys = GAME_ASSETS.map(asset => asset.key);

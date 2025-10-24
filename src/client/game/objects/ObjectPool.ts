@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { Dot } from './Dot';
 import { Bomb } from './Bomb';
 import { SlowMoDot } from './SlowMoDot';
+import { DoubleDot } from './DoubleDot';
 import { GameColor } from '../../../shared/types/game';
 
 /**
@@ -29,11 +30,13 @@ export class ObjectPoolManager {
   private dotPool: Phaser.GameObjects.Group;
   private bombPool: Phaser.GameObjects.Group;
   private slowMoPool: Phaser.GameObjects.Group;
+  private doublePool: Phaser.GameObjects.Group;
   
   // Pool size limits based on performance testing
   private readonly MAX_DOTS = 50;
   private readonly MAX_BOMBS = 20;
   private readonly MAX_SLOWMO = 10;
+  private readonly MAX_DOUBLE = 5;
   
   // Shutdown flag to prevent updates during destruction
   private isShuttingDown: boolean = false;
@@ -90,6 +93,18 @@ export class ObjectPoolManager {
         const slowMo = item as SlowMoDot;
         slowMo.active = false;
         slowMo.setVisible(false);
+      }
+    });
+
+    // 2x dot pool configuration
+    this.doublePool = this.scene.add.group({
+      classType: DoubleDot,
+      maxSize: this.MAX_DOUBLE,
+      runChildUpdate: false, // We'll handle updates manually
+      createCallback: (item: Phaser.GameObjects.GameObject) => {
+        const double = item as DoubleDot;
+        double.active = false;
+        double.setVisible(false);
       }
     });
   }
@@ -193,6 +208,36 @@ export class ObjectPoolManager {
   }
 
   /**
+   * Get a 2x dot from the pool or create a new one
+   */
+  public getDoubleDot(): DoubleDot | null {
+    // Find an inactive 2x dot
+    let double = this.doublePool.children.entries.find(item => !(item as DoubleDot).active) as DoubleDot;
+    
+    if (!double) {
+      if (this.doublePool.children.size < this.MAX_DOUBLE) {
+        try {
+          double = new DoubleDot(this.scene);
+          // Validate the 2x dot was created successfully
+          if (double && typeof double.destroy === 'function') {
+            this.doublePool.add(double);
+          } else {
+            console.warn(`Failed to create valid 2x dot object`);
+            return null;
+          }
+        } catch (error) {
+          console.warn(`Error creating 2x dot:`, error);
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+    
+    return double;
+  }
+
+  /**
    * Spawn a dot with specific properties
    */
   public spawnDot(color: GameColor, speed: number, size: number, x: number, y: number, direction: Phaser.Math.Vector2): Dot | null {
@@ -247,6 +292,22 @@ export class ObjectPoolManager {
   }
 
   /**
+   * Spawn a 2x dot with specific properties
+   */
+  public spawnDoubleDot(speed: number, size: number, x: number, y: number, direction: Phaser.Math.Vector2): DoubleDot | null {
+    const double = this.getDoubleDot();
+    if (!double) {
+      console.log(`[POOL DEBUG] Failed to get 2x dot from pool`);
+      return null;
+    }
+    
+    double.init(speed, size, x, y, direction);
+    double.activate();
+    
+    return double;
+  }
+
+  /**
    * Release a dot back to the pool
    */
   public releaseDot(dot: Dot): void {
@@ -268,6 +329,14 @@ export class ObjectPoolManager {
   public releaseSlowMoDot(slowMo: SlowMoDot): void {
     console.log(`[POOL DEBUG] Releasing SlowMo dot back to pool`);
     slowMo.deactivate();
+  }
+
+  /**
+   * Release a 2x dot back to the pool
+   */
+  public releaseDoubleDot(double: DoubleDot): void {
+    console.log(`[POOL DEBUG] Releasing 2x dot back to pool`);
+    double.deactivate();
   }
 
   /**
@@ -301,6 +370,17 @@ export class ObjectPoolManager {
       }
     });
 
+    this.doublePool.children.entries.forEach((double: Phaser.GameObjects.GameObject) => {
+      const doubleObj = double as DoubleDot;
+      if (doubleObj.active && doubleObj.update) {
+        // Debug: Log 2x dot update occasionally
+        if (Math.random() < 0.01) { // 1% chance to log
+          console.log(`[POOL DEBUG] Updating 2x dot at (${doubleObj.x.toFixed(1)}, ${doubleObj.y.toFixed(1)}) - active: ${doubleObj.active}, visible: ${doubleObj.visible}`);
+        }
+        doubleObj.update(delta);
+      }
+    });
+
     // Handle all collision types for bouncing behavior
     this.handleAllCollisions();
   }
@@ -322,11 +402,12 @@ export class ObjectPoolManager {
   
   /**
    * Handle all collision types for bouncing behavior
-   * Includes: dot-dot, slowmo-dot, slowmo-slowmo collisions
+   * Includes: dot-dot, slowmo-dot, slowmo-slowmo, double-dot, double-double collisions
    */
   private handleAllCollisions(): void {
     const activeDots = this.getActiveDots();
     const activeSlowMoDots = this.getActiveSlowMoDots();
+    const activeDoubleDots = this.getActiveDoubleDots();
     
     // Track processed collisions to prevent duplicate processing
     const processedCollisions = new Set<string>();
@@ -345,7 +426,7 @@ export class ObjectPoolManager {
         // Ensure both dots exist and are active
         if (dot1 && dot2 && dot1.active && dot2.active) {
           // Create a unique key for this collision pair
-          const collisionKey = `${Math.min(dot1.id || i, dot2.id || j)}-${Math.max(dot1.id || i, dot2.id || j)}`;
+          const collisionKey = `${Math.min(i, j)}-${Math.max(i, j)}`;
           
           // Skip if we've already processed this collision pair
           if (processedCollisions.has(collisionKey)) {
@@ -374,7 +455,7 @@ export class ObjectPoolManager {
         // Ensure both objects exist and are active
         if (slowMoDot && dot && slowMoDot.active && dot.active) {
           // Create a unique key for this collision pair
-          const collisionKey = `slowmo-${slowMoDot.id || i}-dot-${dot.id || j}`;
+          const collisionKey = `slowmo-${i}-dot-${j}`;
           
           // Skip if we've already processed this collision pair
           if (processedCollisions.has(collisionKey)) {
@@ -403,7 +484,7 @@ export class ObjectPoolManager {
         // Ensure both slow-mo dots exist and are active
         if (slowMoDot1 && slowMoDot2 && slowMoDot1.active && slowMoDot2.active) {
           // Create a unique key for this collision pair
-          const collisionKey = `slowmo-${Math.min(slowMoDot1.id || i, slowMoDot2.id || j)}-${Math.max(slowMoDot1.id || i, slowMoDot2.id || j)}`;
+          const collisionKey = `slowmo-${Math.min(i, j)}-${Math.max(i, j)}`;
           
           // Skip if we've already processed this collision pair
           if (processedCollisions.has(collisionKey)) {
@@ -418,6 +499,64 @@ export class ObjectPoolManager {
             
             // Handle collision and bouncing
             slowMoDot1.handleSlowMoCollision(slowMoDot2);
+          }
+        }
+      }
+    }
+    
+    // 4. Handle 2x dot to regular dot collisions
+    for (let i = 0; i < activeDoubleDots.length; i++) {
+      for (let j = 0; j < activeDots.length; j++) {
+        const doubleDot = activeDoubleDots[i];
+        const dot = activeDots[j];
+        
+        // Ensure both objects exist and are active
+        if (doubleDot && dot && doubleDot.active && dot.active) {
+          // Create a unique key for this collision pair
+          const collisionKey = `double-${i}-dot-${j}`;
+          
+          // Skip if we've already processed this collision pair
+          if (processedCollisions.has(collisionKey)) {
+            continue;
+          }
+          
+          const isColliding = doubleDot.isCollidingWith(dot);
+          
+          if (isColliding) {
+            // Mark this collision pair as processed
+            processedCollisions.add(collisionKey);
+            
+            // Handle collision and bouncing
+            doubleDot.handleDotCollision(dot);
+          }
+        }
+      }
+    }
+    
+    // 5. Handle 2x dot to 2x dot collisions
+    for (let i = 0; i < activeDoubleDots.length; i++) {
+      for (let j = i + 1; j < activeDoubleDots.length; j++) {
+        const doubleDot1 = activeDoubleDots[i];
+        const doubleDot2 = activeDoubleDots[j];
+        
+        // Ensure both 2x dots exist and are active
+        if (doubleDot1 && doubleDot2 && doubleDot1.active && doubleDot2.active) {
+          // Create a unique key for this collision pair
+          const collisionKey = `double-${Math.min(i, j)}-${Math.max(i, j)}`;
+          
+          // Skip if we've already processed this collision pair
+          if (processedCollisions.has(collisionKey)) {
+            continue;
+          }
+          
+          const isColliding = doubleDot1.isCollidingWith(doubleDot2);
+          
+          if (isColliding) {
+            // Mark this collision pair as processed
+            processedCollisions.add(collisionKey);
+            
+            // Handle collision and bouncing
+            doubleDot1.handleDoubleCollision(doubleDot2);
           }
         }
       }
@@ -466,6 +605,20 @@ export class ObjectPoolManager {
           }
         } catch (error) {
           console.warn('Error pausing slow-mo dot:', error);
+        }
+      }
+    });
+    
+    // Pause all active 2x dots - properly deactivate to clean up effects
+    this.doublePool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
+      if (item && item.active) {
+        try {
+          const double = item as DoubleDot;
+          if (double && typeof double.deactivate === 'function') {
+            double.deactivate();
+          }
+        } catch (error) {
+          console.warn('Error pausing 2x dot:', error);
         }
       }
     });
@@ -519,6 +672,20 @@ export class ObjectPoolManager {
         }
       }
     });
+    
+    // Clear 2x dots
+    this.doublePool.children.entries.forEach((item: Phaser.GameObjects.GameObject) => {
+      if (item && typeof item.destroy === 'function') {
+        try {
+          const double = item as DoubleDot;
+          if (double && typeof double.deactivate === 'function') {
+            double.deactivate();
+          }
+        } catch (error) {
+          console.warn('Error deactivating 2x dot:', error);
+        }
+      }
+    });
   }
 
   /**
@@ -528,6 +695,7 @@ export class ObjectPoolManager {
     dots: { active: number; total: number; max: number };
     bombs: { active: number; total: number; max: number };
     slowMo: { active: number; total: number; max: number };
+    double: { active: number; total: number; max: number };
   } {
     return {
       dots: {
@@ -544,6 +712,11 @@ export class ObjectPoolManager {
         active: this.slowMoPool.countActive(),
         total: this.slowMoPool.children.size,
         max: this.MAX_SLOWMO
+      },
+      double: {
+        active: this.doublePool.countActive(),
+        total: this.doublePool.children.size,
+        max: this.MAX_DOUBLE
       }
     };
   }
@@ -570,10 +743,22 @@ export class ObjectPoolManager {
   }
 
   /**
+   * Get all active 2x dots
+   */
+  public getActiveDoubleDots(): DoubleDot[] {
+    const activeDots = this.doublePool.children.entries.filter(double => double.active) as DoubleDot[];
+    // Debug logging for active double dots
+    if (Math.random() < 0.05) { // 5% chance to log
+      console.log(`[POOL DEBUG] getActiveDoubleDots: pool size=${this.doublePool.children.size}, active count=${activeDots.length}`);
+    }
+    return activeDots;
+  }
+
+  /**
    * Get total count of active objects across all pools
    */
   public getActiveObjectCount(): number {
-    return this.getActiveDots().length + this.getActiveBombs().length + this.getActiveSlowMoDots().length;
+    return this.getActiveDots().length + this.getActiveBombs().length + this.getActiveSlowMoDots().length + this.getActiveDoubleDots().length;
   }
 
   /**
@@ -661,10 +846,19 @@ export class ObjectPoolManager {
       console.warn('Error destroying slowMoPool:', error);
     }
 
+    try {
+      if (this.doublePool && typeof this.doublePool.destroy === 'function') {
+        this.doublePool.destroy(true);
+      }
+    } catch (error) {
+      console.warn('Error destroying doublePool:', error);
+    }
+
     // Clear references
     this.dotPool = null as any;
     this.bombPool = null as any;
     this.slowMoPool = null as any;
+    this.doublePool = null as any;
   }
 
 }

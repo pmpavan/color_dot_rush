@@ -107,13 +107,13 @@ const MODAL_CONTENT: ContentSection[] = [
   {
     id: 'powerups',
     title: '⚡ Power-ups',
-    content: 'Collect Slow-Mo charges to slow down time when things get intense. Use them wisely!',
+    content: 'Collect Slow-Mo charges to slow down time and green 2x dots to double your points for 10 seconds! Use them wisely!',
     className: 'powerups-section'
   },
   {
     id: 'tips',
     title: '💡 Tips',
-    content: 'Stay focused on the Target Color. The game gets faster over time, so use your Slow-Mo charges strategically!',
+    content: 'Stay focused on the Target Color. The game gets faster over time, so use your Slow-Mo charges and 2x dots strategically!',
     className: 'tips-section'
   }
 ];
@@ -979,7 +979,7 @@ COLOR DOT RUSH - How to Play:
 
 🎯 Tap dots that match the Target Color
 ❌ Avoid wrong colors and bombs  
-⚡ Use Slow-Mo charges strategically
+⚡ Use Slow-Mo charges and 2x dots strategically
 🏆 Survive as long as possible!
 
 Good luck!

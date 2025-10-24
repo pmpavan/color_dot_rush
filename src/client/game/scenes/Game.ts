@@ -5,7 +5,7 @@ import { DebugService, ProductionDebugService } from '../../services/DebugServic
 import { DifficultyManager } from '../../services/DifficultyManager';
 import { ILeaderboardService, DevvitLeaderboardService, MockLeaderboardService } from '../../services/LeaderboardService';
 import { IDebugService } from '../../../shared/types/debug';
-import { ObjectPoolManager, ObjectSpawner, Dot, Bomb, SlowMoDot } from '../objects';
+import { ObjectPoolManager, ObjectSpawner, Dot, Bomb, SlowMoDot, DoubleDot } from '../objects';
 import { GameColor } from '../../../shared/types/game';
 import { gameLimitsManager } from '../../../shared/config/GameLimits';
 import { NeonBackgroundSystem } from '../utils/NeonBackgroundSystem';
@@ -45,6 +45,12 @@ export class Game extends Scene {
   private slowMoVignette: Phaser.GameObjects.Rectangle | null = null;
   private slowMoTween: Phaser.Tweens.Tween | null = null;
   private originalSpeeds: Map<any, number> = new Map(); // Track original speeds of objects
+
+  // 2x points state management
+  private isDoublePointsActive: boolean = false;
+  private doublePointsStartTime: number = 0;
+  private doublePointsVignette: Phaser.GameObjects.Rectangle | null = null;
+  private doublePointsTween: Phaser.Tweens.Tween | null = null;
 
   // Object management
   private objectPool: ObjectPoolManager | null = null;
@@ -103,6 +109,12 @@ export class Game extends Scene {
     this.slowMoStartTime = 0;
     this.slowMoVignette = null;
     this.slowMoTween = null;
+
+    // Reset 2x points state
+    this.isDoublePointsActive = false;
+    this.doublePointsStartTime = 0;
+    this.doublePointsVignette = null;
+    this.doublePointsTween = null;
 
     // Reset temporary objects tracking
     this.temporaryObjects = [];
@@ -297,6 +309,9 @@ export class Game extends Scene {
       } else if (tappedObject instanceof SlowMoDot) {
         console.log('[SLOW-MO] Slow-mo dot tapped! Calling handleSlowMoActivation...');
         this.handleSlowMoActivation(tappedObject);
+      } else if (tappedObject instanceof DoubleDot) {
+        console.log('[2X] 2x dot tapped! Calling handleDoubleActivation...');
+        this.handleDoubleActivation(tappedObject);
       }
     } else {
       // Handle taps on empty space - provide feedback but no penalty
@@ -315,7 +330,7 @@ export class Game extends Scene {
    * Centralized collision detection for tap input
    * Checks all active game objects for collision with tap point
    */
-  private checkCollisionAtPoint(x: number, y: number): Dot | Bomb | SlowMoDot | null {
+  private checkCollisionAtPoint(x: number, y: number): Dot | Bomb | SlowMoDot | DoubleDot | null {
     if (!this.objectPool) return null;
 
     // Check dots first (highest priority for gameplay)
@@ -333,6 +348,16 @@ export class Game extends Scene {
       if (this.isPointInBounds(x, y, bounds)) {
         console.log(`[COLLISION] SlowMoDot hit at (${x}, ${y}), bounds: (${bounds.x}, ${bounds.y}, ${bounds.width}, ${bounds.height})`);
         return slowMoDot;
+      }
+    }
+
+    // Check 2x dots (power-ups have priority over bombs)
+    const activeDoubleDots = this.objectPool.getActiveDoubleDots();
+    for (const doubleDot of activeDoubleDots) {
+      const bounds = doubleDot.getBounds();
+      if (this.isPointInBounds(x, y, bounds)) {
+        console.log(`[COLLISION] DoubleDot hit at (${x}, ${y}), bounds: (${bounds.x}, ${bounds.y}, ${bounds.width}, ${bounds.height})`);
+        return doubleDot;
       }
     }
 
@@ -359,8 +384,9 @@ export class Game extends Scene {
 
     // Check if dot matches target color
     if (dot.isCorrectColor(this.targetColor)) {
-      // Correct tap - award point (+1 for correct taps)
-      this.score++;
+      // Correct tap - award points (2x if double points is active)
+      const pointsToAward = this.isDoublePointsActive ? 2 : 1;
+      this.score += pointsToAward;
 
       // Create celebratory pop effect with particle burst
       this.createCorrectTapEffect(dot);
@@ -655,6 +681,34 @@ export class Game extends Scene {
     this.updateUI();
   }
 
+  private handleDoubleActivation(doubleDot: DoubleDot): void {
+    console.log(`[2X] handleDoubleActivation called - State: ${this.currentState}, Active: ${this.isDoublePointsActive}`);
+    
+    if (this.currentState !== GameState.PLAYING || this.isDoublePointsActive) {
+      console.log('[2X] 2x points activation blocked - conditions not met');
+      return;
+    }
+
+    console.log(`[2X] 2x points activated!`);
+
+    // Create radial green glow and visual feedback
+    this.createDoubleActivationEffect(doubleDot);
+
+    // Add power-up motion effects
+    if (this.motionEffects) {
+      this.motionEffects.createInteractionFeedback(doubleDot, 'success');
+      this.motionEffects.createScreenShake(4, 200);
+    }
+
+    // Activate 2x points effect with smooth transitions
+    this.activateDoublePoints();
+
+    // Deactivate the 2x dot with special effect
+    doubleDot.activateDouble();
+
+    this.updateUI();
+  }
+
   /**
    * Create visual effects for slow-mo activation
    * Specifications: radial blue glow and smooth ease-in-out time scaling
@@ -739,6 +793,98 @@ export class Game extends Scene {
     // Shrink the slow-mo dot with satisfying animation
     this.tweens.add({
       targets: slowMoDot,
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      duration: 400,
+      ease: 'Back.easeIn'
+    });
+  }
+
+  /**
+   * Create visual effects for 2x points activation
+   * Specifications: radial green glow and smooth ease-in-out points scaling
+   */
+  private createDoubleActivationEffect(doubleDot: DoubleDot): void {
+    const x = doubleDot.x;
+    const y = doubleDot.y;
+
+    // Primary radial green glow emanating from tap point
+    const primaryGlow = this.add.circle(x, y, 25, 0x00FF00, 0.8);
+    primaryGlow.setDepth(998);
+
+    this.tweens.add({
+      targets: primaryGlow,
+      radius: 350,
+      alpha: 0,
+      duration: 800,
+      ease: 'Power2.easeOut',
+      onComplete: () => {
+        primaryGlow.destroy();
+      }
+    });
+
+    // Secondary glow with different timing for layered effect
+    const secondaryGlow = this.add.circle(x, y, 15, 0xFFFFFF, 0.9);
+    secondaryGlow.setDepth(999);
+
+    this.tweens.add({
+      targets: secondaryGlow,
+      radius: 200,
+      alpha: 0,
+      duration: 500,
+      ease: 'Power3.easeOut',
+      delay: 100,
+      onComplete: () => {
+        secondaryGlow.destroy();
+      }
+    });
+
+    // Tertiary pulse effect for extra impact
+    const pulseGlow = this.add.circle(x, y, 40, 0x00FF00, 0.5);
+    pulseGlow.setDepth(997);
+
+    this.tweens.add({
+      targets: pulseGlow,
+      radius: 500,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Sine.easeOut',
+      delay: 50,
+      onComplete: () => {
+        pulseGlow.destroy();
+      }
+    });
+
+    // Create particle burst with green theme using simple graphics
+    const greenColors = [0x00FF00, 0x32CD32, 0x90EE90];
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2;
+      const distance = 80 + Math.random() * 50;
+      const color = greenColors[Math.floor(Math.random() * greenColors.length)];
+
+      const greenDot = this.add.circle(
+        x + Math.cos(angle) * 15,
+        y + Math.sin(angle) * 15,
+        6,
+        color
+      );
+
+      this.tweens.add({
+        targets: greenDot,
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0,
+        duration: 600,
+        ease: 'Power2.easeOut',
+        onComplete: () => greenDot.destroy()
+      });
+    }
+
+    // Shrink the 2x dot with satisfying animation
+    this.tweens.add({
+      targets: doubleDot,
       scaleX: 0,
       scaleY: 0,
       alpha: 0,
@@ -1120,6 +1266,116 @@ export class Game extends Scene {
     });
   }
 
+  private activateDoublePoints(): void {
+    if (this.isDoublePointsActive) {
+      console.log('[2X] Double points already active, skipping activation');
+      return;
+    }
+
+    this.isDoublePointsActive = true;
+    this.doublePointsStartTime = this.time.now;
+
+    console.log('[2X] Double points activated - awarding 2x points for 10 seconds');
+
+    // Create green vignette effect around screen edges
+    this.doublePointsVignette = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2,
+      this.scale.width,
+      this.scale.height,
+      0x00FF00,
+      0.0
+    );
+    this.doublePointsVignette.setDepth(999);
+
+    // Smooth transition to double points vignette
+    this.doublePointsTween = this.tweens.add({
+      targets: { vignetteAlpha: 0.0 },
+      vignetteAlpha: 0.25, // Subtle green vignette
+      duration: 400, // Smooth 400ms transition for better feel
+      ease: 'Power2.easeInOut', // Smooth ease-in-out curve as specified
+      onUpdate: (tween) => {
+        const progress = tween.getValue();
+        const vignetteAlpha = 0.25 * progress; // 0.0 -> 0.25
+
+        // Update vignette alpha with smooth interpolation
+        if (this.doublePointsVignette) {
+          this.doublePointsVignette.setAlpha(vignetteAlpha);
+        }
+      },
+      onComplete: () => {
+        // Add subtle pulsing effect to vignette during double points for enhanced feedback
+        if (this.doublePointsVignette) {
+          this.tweens.add({
+            targets: this.doublePointsVignette,
+            alpha: 0.35,
+            duration: 800,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1
+          });
+        }
+      }
+    });
+
+    // Schedule restoration of normal points after 10 seconds
+    console.log(`[2X] Scheduling double points deactivation in ${DoubleDot.DURATION}ms`);
+    this.time.delayedCall(DoubleDot.DURATION, () => {
+      console.log('[2X] Delayed call triggered - calling deactivateDoublePoints()');
+      this.deactivateDoublePoints();
+    });
+  }
+
+  /**
+   * Deactivate double points with smooth transition back to normal points
+   */
+  private deactivateDoublePoints(): void {
+    if (!this.isDoublePointsActive) return;
+
+    console.log('[2X] Double points deactivating - restoring normal points');
+
+    // Stop any ongoing double points tweens
+    if (this.doublePointsTween) {
+      this.doublePointsTween.remove();
+      this.doublePointsTween = null;
+    }
+
+    // Stop vignette pulsing
+    if (this.doublePointsVignette) {
+      this.tweens.killTweensOf(this.doublePointsVignette);
+    }
+
+    // Smooth transition to fade out vignette
+    this.tweens.add({
+      targets: { vignetteAlpha: this.doublePointsVignette?.alpha || 0.25 },
+      vignetteAlpha: 0.0, // Fade out vignette
+      duration: 500, // Slightly longer transition out for smooth feel
+      ease: 'Power2.easeInOut', // Smooth ease-in-out curve as specified
+      onUpdate: (tween) => {
+        const progress = tween.getValue();
+        const vignetteAlpha = (this.doublePointsVignette?.alpha || 0.25) * (1 - progress);
+
+        // Update vignette alpha with smooth fade
+        if (this.doublePointsVignette) {
+          this.doublePointsVignette.setAlpha(vignetteAlpha);
+        }
+      },
+      onComplete: () => {
+        // Clean up vignette
+        if (this.doublePointsVignette) {
+          this.doublePointsVignette.destroy();
+          this.doublePointsVignette = null;
+        }
+
+        // Reset double points state
+        this.isDoublePointsActive = false;
+        this.doublePointsStartTime = 0;
+
+        console.log('[2X] Double points fully deactivated - normal points restored');
+      }
+    });
+  }
+
   private updateLayout(width: number, height: number): void {
     // Resize camera viewport to avoid black bars
     this.cameras.resize(width, height);
@@ -1211,6 +1467,18 @@ export class Game extends Scene {
       this.slowMoTween = null;
     }
 
+    // Reset 2x points state
+    this.isDoublePointsActive = false;
+    this.doublePointsStartTime = 0;
+    if (this.doublePointsVignette) {
+      this.doublePointsVignette.setVisible(false);
+      this.doublePointsVignette = null;
+    }
+    if (this.doublePointsTween) {
+      this.doublePointsTween.remove();
+      this.doublePointsTween = null;
+    }
+
     // Reset object systems
     if (this.objectSpawner) {
       this.objectSpawner.reset();
@@ -1268,6 +1536,15 @@ export class Game extends Scene {
         this.forceDeactivateSlowMotion();
       } catch (error) {
         console.warn('Error force deactivating slow motion:', error);
+      }
+    }
+
+    // Force deactivate double points if active
+    if (this.isDoublePointsActive) {
+      try {
+        this.forceDeactivateDoublePoints();
+      } catch (error) {
+        console.warn('Error force deactivating double points:', error);
       }
     }
 
@@ -2061,6 +2338,10 @@ export class Game extends Scene {
     return this.isSlowMoActive;
   }
 
+  public getDoublePointsActive(): boolean {
+    return this.isDoublePointsActive;
+  }
+
   /**
    * Update Game Over overlay with rank information for top 5 players
    * NOTE: This is now handled by the GameOver scene, keeping for reference
@@ -2293,6 +2574,37 @@ export class Game extends Scene {
     // Reset slow-mo state
     this.isSlowMoActive = false;
     this.slowMoStartTime = 0;
+  }
+
+  /**
+   * Force deactivate double points immediately (used during game over)
+   */
+  private forceDeactivateDoublePoints(): void {
+    if (!this.isDoublePointsActive) return;
+
+    console.log('Force deactivating double points');
+
+    // Stop any ongoing double points tweens
+    if (this.doublePointsTween) {
+      this.doublePointsTween.remove();
+      this.doublePointsTween = null;
+    }
+
+    // Clean up vignette immediately
+    if (this.doublePointsVignette) {
+      try {
+        this.tweens.killTweensOf(this.doublePointsVignette);
+        // Don't manually destroy - let Phaser handle it
+        this.doublePointsVignette.setVisible(false);
+      } catch (error) {
+        console.warn('Error hiding doublePointsVignette in forceDeactivate:', error);
+      }
+      this.doublePointsVignette = null;
+    }
+
+    // Reset double points state
+    this.isDoublePointsActive = false;
+    this.doublePointsStartTime = 0;
   }
 
   /**

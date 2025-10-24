@@ -633,6 +633,17 @@ export class DOMTextRenderer {
   }
 
   /**
+   * Update element size
+   */
+  updateElementSize(id: string, width: number, height: number): void {
+    const element = this.elements.get(id);
+    if (element) {
+      element.element.style.width = `${width}px`;
+      element.element.style.height = `${height}px`;
+    }
+  }
+
+  /**
    * Show/hide element
    */
   setVisible(id: string, visible: boolean): void {

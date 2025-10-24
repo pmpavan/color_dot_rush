@@ -158,6 +158,9 @@ export class SplashScreen extends Scene {
 
       const leaderboardButtonPos = this.layoutManager.getButtonPosition(ButtonType.TERTIARY);
       this.domTextRenderer.updatePosition('leaderboard-button', leaderboardButtonPos.x, leaderboardButtonPos.y);
+
+      // Update accessibility settings positions if they are visible
+      this.updateAccessibilitySettingsPositions(width, height);
     }
 
     // Update HowToPlayModal layout for responsive behavior
@@ -1061,7 +1064,7 @@ export class SplashScreen extends Scene {
     if (this.domTextRenderer) {
       this.domTextRenderer.createNeonButton(
         'accessibility-button',
-        'ACCESSIBILITY SETTINGS',
+        'SETTINGS',
         accessibilityButtonPos.x,
         accessibilityButtonPos.y,
         accessibilityButtonConfig,
@@ -1254,7 +1257,7 @@ export class SplashScreen extends Scene {
     // Create title
     this.domTextRenderer.createText(
       'accessibility-title',
-      'ACCESSIBILITY SETTINGS',
+      'SETTINGS',
       centerX,
       centerY - 150,
       {
@@ -1267,29 +1270,49 @@ export class SplashScreen extends Scene {
       }
     );
 
-    // Create High Contrast toggle
-    console.log('SplashScreen: Creating High Contrast toggle');
-    this.createAccessibilityToggle('high-contrast', 'High Contrast Mode', centerX, centerY - 80, 'highContrastMode');
+    // Create High Contrast setting
+    console.log('SplashScreen: Creating High Contrast setting');
+    this.createSettingCheckbox('high-contrast', 'High Contrast Mode', 'Enhances color contrast for better visibility', centerX, centerY - 80, 'highContrastMode');
     
-    // Create Shape Overlays toggle
-    console.log('SplashScreen: Creating Shape Overlays toggle');
-    this.createAccessibilityToggle('shape-overlays', 'Shape Overlays (Color-blind support)', centerX, centerY - 20, 'shapeOverlays');
-    
-    // Create Reduced Motion toggle
-    console.log('SplashScreen: Creating Reduced Motion toggle');
-    this.createAccessibilityToggle('reduced-motion', 'Reduced Motion', centerX, centerY + 40, 'reducedMotion');
-    
-    // Create Large Tap Areas toggle
-    console.log('SplashScreen: Creating Large Tap Areas toggle');
-    this.createAccessibilityToggle('large-tap-areas', 'Large Tap Areas', centerX, centerY + 100, 'largeTapAreas');
+    // Create Shape Overlays setting
+    console.log('SplashScreen: Creating Shape Overlays setting');
+    this.createSettingCheckbox('shape-overlays', 'Shape Overlays', 'Adds shapes to help distinguish colors', centerX, centerY - 20, 'shapeOverlays');
+
+    // Create Save button
+    this.domTextRenderer.createButton(
+      'accessibility-save',
+      'SAVE SETTINGS',
+      centerX,
+      centerY + 100,
+      Math.min(width * 0.8, 400),
+      50,
+      {
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        background: 'rgba(52, 152, 219, 0.8)',
+        borderRadius: '8px',
+        border: '2px solid #3498DB',
+        boxShadow: '0 0 20px rgba(52, 152, 219, 0.3)',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease'
+      },
+      () => this.saveAccessibilitySettings()
+    );
 
     // Create Back button
     this.domTextRenderer.createButton(
       'accessibility-back',
       'BACK TO MENU',
       centerX,
-      centerY + 150,
-      Math.min(width * 0.6, 300),
+      centerY + 160,
+      Math.min(width * 0.8, 400),
       50,
       {
         fontFamily: 'Orbitron, Arial, sans-serif',
@@ -1315,15 +1338,15 @@ export class SplashScreen extends Scene {
   }
 
   /**
-   * Create accessibility toggle button
+   * Create setting checkbox with title and subtitle
    */
-  private createAccessibilityToggle(id: string, label: string, x: number, y: number, settingKey: string): void {
+  private createSettingCheckbox(id: string, title: string, subtitle: string, x: number, y: number, settingKey: string): void {
     if (!this.domTextRenderer) {
-      console.error('SplashScreen: DOMTextRenderer not available for toggle creation');
+      console.error('SplashScreen: DOMTextRenderer not available for checkbox creation');
       return;
     }
     
-    console.log(`SplashScreen: Creating toggle for ${id} at position (${x}, ${y})`);
+    console.log(`SplashScreen: Creating checkbox for ${id} at position (${x}, ${y})`);
 
     // Load current setting from localStorage
     const savedSettings = localStorage.getItem('color-rush-accessibility');
@@ -1337,15 +1360,15 @@ export class SplashScreen extends Scene {
     }
     
     const isEnabled = (currentSettings as any)[settingKey] || false;
-    const buttonText = `${isEnabled ? '✓' : '○'} ${label}`;
 
+    // Create checkbox container
     this.domTextRenderer.createButton(
-      `accessibility-toggle-${id}`,
-      buttonText,
+      `accessibility-checkbox-${id}`,
+      '',
       x,
       y,
-      Math.min(this.scale.width * 0.6, 350),
-      40,
+      Math.min(this.scale.width * 0.8, 450),
+      70,
       {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
@@ -1353,20 +1376,68 @@ export class SplashScreen extends Scene {
         color: '#FFFFFF',
         textAlign: 'left',
         background: 'rgba(51, 51, 51, 0.8)',
-        borderRadius: '6px',
-        border: '1px solid #9B59B6',
+        borderRadius: '8px',
+        border: '2px solid #9B59B6',
         cursor: 'pointer',
         pointerEvents: 'auto',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        padding: '8px 16px',
+        padding: '12px 16px',
         transition: 'all 0.2s ease'
       },
-      () => this.toggleAccessibilitySetting(settingKey, id, label)
+      () => this.toggleAccessibilitySetting(settingKey, id, title)
+    );
+
+    // Create checkbox visual indicator (above title)
+    this.domTextRenderer.createText(
+      `accessibility-checkbox-indicator-${id}`,
+      isEnabled ? '☑' : '☐',
+      x,
+      y - 25,
+      {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '24px',
+        fontWeight: 'bold',
+        color: isEnabled ? '#9B59B6' : '#666666',
+        textAlign: 'center',
+        display: 'block'
+      }
+    );
+
+    // Create title (centered below checkbox)
+    this.domTextRenderer.createText(
+      `accessibility-checkbox-title-${id}`,
+      title,
+      x,
+      y - 5,
+      {
+        fontFamily: 'Orbitron, Arial, sans-serif',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        display: 'block'
+      }
+    );
+
+    // Create subtitle (centered below title)
+    this.domTextRenderer.createText(
+      `accessibility-checkbox-subtitle-${id}`,
+      subtitle,
+      x,
+      y + 15,
+      {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '12px',
+        fontWeight: 'normal',
+        color: '#CCCCCC',
+        textAlign: 'center',
+        display: 'block'
+      }
     );
     
-    console.log(`SplashScreen: Toggle ${id} created successfully`);
+    console.log(`SplashScreen: Checkbox ${id} created successfully`);
   }
 
   /**
@@ -1392,12 +1463,51 @@ export class SplashScreen extends Scene {
     // Save settings
     localStorage.setItem('color-rush-accessibility', JSON.stringify(currentSettings));
 
-    // Update button text
+    // Update the checkbox indicator
     const isEnabled = (currentSettings as any)[settingKey];
-    const buttonText = `${isEnabled ? '✓' : '○'} ${label}`;
-    this.domTextRenderer.updateText(`accessibility-toggle-${toggleId}`, buttonText);
+    this.domTextRenderer.updateText(`accessibility-checkbox-indicator-${toggleId}`, isEnabled ? '☑' : '☐');
+    
+    // Update checkbox indicator color
+    const indicatorElement = document.getElementById(`dom-text-accessibility-checkbox-indicator-${toggleId}`);
+    if (indicatorElement) {
+      indicatorElement.style.color = isEnabled ? '#9B59B6' : '#666666';
+    }
 
     console.log(`Accessibility setting ${settingKey} toggled to:`, isEnabled);
+  }
+
+  /**
+   * Save accessibility settings
+   */
+  private saveAccessibilitySettings(): void {
+    console.log('SplashScreen: Saving accessibility settings');
+    
+    // Show confirmation message
+    if (this.domTextRenderer) {
+      // Create temporary confirmation message
+      this.domTextRenderer.createText(
+        'settings-saved-message',
+        'Settings saved successfully!',
+        this.scale.width / 2,
+        this.scale.height / 2 - 200,
+        {
+          fontFamily: 'Orbitron, Arial, sans-serif',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: '#4CAF50',
+          textAlign: 'center',
+          display: 'block',
+          textShadow: '0 0 10px rgba(76, 175, 80, 0.5)'
+        }
+      );
+
+      // Remove confirmation message after 2 seconds
+      setTimeout(() => {
+        this.domTextRenderer?.removeText('settings-saved-message');
+      }, 2000);
+    }
+    
+    console.log('SplashScreen: Settings saved successfully');
   }
 
   /**
@@ -1410,10 +1520,15 @@ export class SplashScreen extends Scene {
     this.domTextRenderer.removeText('accessibility-overlay');
     this.domTextRenderer.removeText('accessibility-panel');
     this.domTextRenderer.removeText('accessibility-title');
-    this.domTextRenderer.removeText('accessibility-toggle-high-contrast');
-    this.domTextRenderer.removeText('accessibility-toggle-shape-overlays');
-    this.domTextRenderer.removeText('accessibility-toggle-reduced-motion');
-    this.domTextRenderer.removeText('accessibility-toggle-large-tap-areas');
+    this.domTextRenderer.removeText('accessibility-checkbox-high-contrast');
+    this.domTextRenderer.removeText('accessibility-checkbox-indicator-high-contrast');
+    this.domTextRenderer.removeText('accessibility-checkbox-title-high-contrast');
+    this.domTextRenderer.removeText('accessibility-checkbox-subtitle-high-contrast');
+    this.domTextRenderer.removeText('accessibility-checkbox-shape-overlays');
+    this.domTextRenderer.removeText('accessibility-checkbox-indicator-shape-overlays');
+    this.domTextRenderer.removeText('accessibility-checkbox-title-shape-overlays');
+    this.domTextRenderer.removeText('accessibility-checkbox-subtitle-shape-overlays');
+    this.domTextRenderer.removeText('accessibility-save');
     this.domTextRenderer.removeText('accessibility-back');
 
     // Show main menu buttons again
@@ -1421,6 +1536,54 @@ export class SplashScreen extends Scene {
     this.domTextRenderer.setVisible('how-to-play-button', true);
     this.domTextRenderer.setVisible('leaderboard-button', true);
     this.domTextRenderer.setVisible('accessibility-button', true);
+  }
+
+  /**
+   * Update accessibility settings positions on resize
+   */
+  private updateAccessibilitySettingsPositions(width: number, height: number): void {
+    if (!this.domTextRenderer) return;
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // Check if accessibility settings are currently visible
+    const overlayExists = document.getElementById('accessibility-overlay');
+    if (!overlayExists) return;
+
+    console.log('SplashScreen: Updating accessibility settings positions for new dimensions');
+
+    // Update overlay position and size
+    this.domTextRenderer.updatePosition('accessibility-overlay', centerX, centerY);
+    this.domTextRenderer.updateElementSize('accessibility-overlay', width, height);
+
+    // Update panel position and size
+    this.domTextRenderer.updatePosition('accessibility-panel', centerX, centerY);
+    this.domTextRenderer.updateElementSize('accessibility-panel', Math.min(width * 0.8, 400), 400);
+
+    // Update title position
+    this.domTextRenderer.updatePosition('accessibility-title', centerX, centerY - 150);
+
+    // Update checkbox positions
+    this.domTextRenderer.updatePosition('accessibility-checkbox-high-contrast', centerX, centerY - 80);
+    this.domTextRenderer.updateElementSize('accessibility-checkbox-high-contrast', Math.min(width * 0.8, 450), 70);
+    this.domTextRenderer.updatePosition('accessibility-checkbox-indicator-high-contrast', centerX, centerY - 105);
+    this.domTextRenderer.updatePosition('accessibility-checkbox-title-high-contrast', centerX, centerY - 85);
+    this.domTextRenderer.updatePosition('accessibility-checkbox-subtitle-high-contrast', centerX, centerY - 65);
+
+    this.domTextRenderer.updatePosition('accessibility-checkbox-shape-overlays', centerX, centerY - 20);
+    this.domTextRenderer.updateElementSize('accessibility-checkbox-shape-overlays', Math.min(width * 0.8, 450), 70);
+    this.domTextRenderer.updatePosition('accessibility-checkbox-indicator-shape-overlays', centerX, centerY - 45);
+    this.domTextRenderer.updatePosition('accessibility-checkbox-title-shape-overlays', centerX, centerY - 25);
+    this.domTextRenderer.updatePosition('accessibility-checkbox-subtitle-shape-overlays', centerX, centerY - 5);
+
+    // Update save and back button positions (stacked vertically, full width)
+    this.domTextRenderer.updatePosition('accessibility-save', centerX, centerY + 100);
+    this.domTextRenderer.updateElementSize('accessibility-save', Math.min(width * 0.8, 400), 50);
+    this.domTextRenderer.updatePosition('accessibility-back', centerX, centerY + 160);
+    this.domTextRenderer.updateElementSize('accessibility-back', Math.min(width * 0.8, 400), 50);
+
+    console.log('SplashScreen: Accessibility settings positions updated successfully');
   }
 
   /**
