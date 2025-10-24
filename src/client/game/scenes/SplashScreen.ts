@@ -385,6 +385,9 @@ export class SplashScreen extends Scene {
     // Clear any cached logo texture to ensure fresh logo is loaded
     this.clearLogoTextureCache();
 
+    // Force clear any existing logo
+    this.forceClearLogo();
+
     // Create a simple loading state first
     this.createLoadingState();
 
@@ -392,6 +395,17 @@ export class SplashScreen extends Scene {
     this.time.delayedCall(50, () => {
       this.initializeScene();
     });
+  }
+
+  /**
+   * Force clear any existing logo object
+   */
+  private forceClearLogo(): void {
+    if (this.logo) {
+      console.log('SplashScreen: Force clearing existing logo object');
+      this.logo.destroy();
+      this.logo = null;
+    }
   }
 
   /**
@@ -403,6 +417,21 @@ export class SplashScreen extends Scene {
       if (this.textures.exists('logo')) {
         this.textures.remove('logo');
         console.log('SplashScreen: Cleared cached logo texture');
+      }
+      
+      // Clear browser cache for logo if possible
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        caches.keys().then(cacheNames => {
+          cacheNames.forEach(cacheName => {
+            caches.open(cacheName).then(cache => {
+              cache.delete('assets/logo.png').then(() => {
+                console.log('SplashScreen: Cleared logo from browser cache');
+              });
+            });
+          });
+        }).catch(error => {
+          console.warn('SplashScreen: Could not clear browser cache:', error);
+        });
       }
       
       // Note: Loader cache clearing removed due to TypeScript compatibility issues
@@ -793,18 +822,18 @@ export class SplashScreen extends Scene {
    * Create and position the logo image responsively
    */
   private createLogo(): void {
-    const { width, height } = this.layoutManager.getCurrentDimensions();
-
-    // Create logo if it doesn't exist
-    if (!this.logo) {
-      // Always force reload logo to ensure we get the updated version with cache busting
-      console.log('SplashScreen: Forcing logo reload to ensure updated version...');
-      this.reloadLogoTexture();
-      return;
+    // Always force reload logo to ensure we get the updated version with cache busting
+    console.log('SplashScreen: Forcing logo reload to ensure updated version...');
+    
+    // Clear existing logo if it exists
+    if (this.logo) {
+      console.log('SplashScreen: Destroying existing logo before reload');
+      this.logo.destroy();
+      this.logo = null;
     }
-
-    // Update position and scale for existing logo
-    this.positionAndScaleLogo(width, height);
+    
+    // Force reload with cache busting
+    this.reloadLogoTexture();
   }
 
   /**
