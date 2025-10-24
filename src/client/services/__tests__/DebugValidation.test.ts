@@ -419,7 +419,7 @@ describe('Debug Panel and Development Tools Validation', () => {
       
       // Verify critical assets
       expect(requiredAssets).toContain('assets/bg.png');
-      expect(requiredAssets).toContain('assets/logo.png');
+      expect(requiredAssets).toContain('assets/logo.png'); // Colorful logo with hand gesture
       expect(requiredAssets).toContain('assets/dot-red.svg');
       expect(requiredAssets).toContain('assets/bomb.svg');
       expect(requiredAssets).toContain('fonts/poppins-regular.woff2');

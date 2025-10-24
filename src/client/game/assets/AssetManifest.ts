@@ -22,7 +22,7 @@ export const GAME_ASSETS: AssetDefinition[] = [
     key: 'logo',
     type: 'image',
     path: 'assets/logo.png',
-    description: 'Color Dot Rush logo',
+    description: 'Color Dot Rush colorful logo with hand gesture and TAP! effect',
   },
 
   // Colored dots for gameplay

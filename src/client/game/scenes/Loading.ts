@@ -121,8 +121,11 @@ export class Loading extends Scene {
     
     try {
       // Load the logo image that's needed for the splash screen
-      // Add cache-busting parameter to ensure updated logo is loaded
-      const logoPath = `assets/logo.png?v=${Date.now()}&r=${Math.random()}`;
+      // Add aggressive cache-busting parameters to ensure updated logo is loaded
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substr(2, 9);
+      const logoPath = `assets/logo.png?v=${timestamp}&r=${randomId}&t=${timestamp}`;
+      console.log('Loading: Loading logo with cache-busting:', logoPath);
       this.load.image('logo', logoPath);
       
       // Set up loading progress tracking

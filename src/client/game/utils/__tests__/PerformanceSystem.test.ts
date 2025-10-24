@@ -88,7 +88,7 @@ describe('Performance System Core', () => {
 
       // Verify all critical assets are included
       expect(requiredAssets).toContain('assets/bg.png');
-      expect(requiredAssets).toContain('assets/logo.png');
+      expect(requiredAssets).toContain('assets/logo.png'); // Colorful logo with hand gesture
       expect(requiredAssets).toContain('assets/dot-red.svg');
       expect(requiredAssets).toContain('assets/dot-green.svg');
       expect(requiredAssets).toContain('assets/dot-blue.svg');
@@ -203,7 +203,7 @@ describe('Performance System Core', () => {
   describe('Asset Bundle Validation', () => {
     it('should validate all required game assets are defined', () => {
       const gameAssets = [
-        'bg.png', 'logo.png',
+        'bg.png', 'logo.png', // Colorful logo with hand gesture
         'dot-red.svg', 'dot-green.svg', 'dot-blue.svg', 'dot-yellow.svg', 'dot-purple.svg',
         'bomb.svg', 'slowmo-dot.svg', 'clock-icon.svg'
       ];
