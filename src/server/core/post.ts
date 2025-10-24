@@ -15,7 +15,7 @@ export const createPost = async () => {
       description:
         'Tap into chaos! Tap the correct colored dots while avoiding bombs and wrong colors.',
       heading: 'Color Dot Rush',
-      appIconUri: 'default-icon.png', // Use the app icon image
+      appIconUri: 'app-icon.png', // Use the Gemini generated app icon image
     },
     postData: {
       gameState: 'initial',

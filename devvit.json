@@ -20,7 +20,7 @@
     "items": [
       {
         "label": "Create Color Dot Rush Game Post",
-        "description": "Create a new Color Dot Rush game post - Reddit Community Games 2025",
+        "description": "Create a new Color Dot Rush game post",
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-create"

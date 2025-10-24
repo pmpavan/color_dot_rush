@@ -122,7 +122,7 @@ export class Loading extends Scene {
     try {
       // Load the logo image that's needed for the splash screen
       // Add cache-busting parameter to ensure updated logo is loaded
-      const logoPath = `assets/logo.png?v=${Date.now()}`;
+      const logoPath = `assets/logo.png?v=${Date.now()}&r=${Math.random()}`;
       this.load.image('logo', logoPath);
       
       // Set up loading progress tracking
@@ -136,6 +136,14 @@ export class Loading extends Scene {
       // Handle loading completion
       this.load.on('complete', () => {
         console.log('Color Dot Rush: All assets loaded successfully');
+        
+        // Set texture filtering for logo to maintain crisp quality
+        if (this.textures.exists('logo')) {
+          const logoTexture = this.textures.get('logo');
+          logoTexture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+          console.log('Color Dot Rush: Logo texture filtering set to LINEAR');
+        }
+        
         this.assetsLoaded = true;
         this.checkLoadingComplete();
       });

@@ -124,13 +124,13 @@ export class SplashScreen extends Scene {
       this.logo.setPosition(width / 2, logoY);
 
       // Rescale logo for new dimensions - larger since it's now the main title
-      const maxLogoWidth = Math.min(width * 0.6, 300);
-      const maxLogoHeight = Math.min(height * 0.25, 200);
+      const maxLogoWidth = Math.min(width * 0.6, 400);
+      const maxLogoHeight = Math.min(height * 0.25, 250);
       
       if (this.logo.width > 0 && this.logo.height > 0) {
         const scaleX = maxLogoWidth / this.logo.width;
         const scaleY = maxLogoHeight / this.logo.height;
-        const scale = Math.min(scaleX, scaleY, 1);
+        const scale = Math.min(scaleX, scaleY, 1.5);
         
         this.logo.setScale(scale);
       }
@@ -382,6 +382,9 @@ export class SplashScreen extends Scene {
   create() {
     console.log('SplashScreen: Starting scene creation');
 
+    // Clear any cached logo texture to ensure fresh logo is loaded
+    this.clearLogoTextureCache();
+
     // Create a simple loading state first
     this.createLoadingState();
 
@@ -389,6 +392,53 @@ export class SplashScreen extends Scene {
     this.time.delayedCall(50, () => {
       this.initializeScene();
     });
+  }
+
+  /**
+   * Clear logo texture cache to ensure fresh logo is loaded
+   */
+  private clearLogoTextureCache(): void {
+    try {
+      // Remove the logo texture from cache if it exists
+      if (this.textures.exists('logo')) {
+        this.textures.remove('logo');
+        console.log('SplashScreen: Cleared cached logo texture');
+      }
+    } catch (error) {
+      console.warn('SplashScreen: Error clearing logo texture cache:', error);
+    }
+  }
+
+  /**
+   * Reload logo texture with cache-busting
+   */
+  private reloadLogoTexture(): void {
+    try {
+      // Load the logo with cache-busting parameter
+      const logoPath = `assets/logo.png?v=${Date.now()}&r=${Math.random()}`;
+      this.load.image('logo', logoPath);
+      
+      // Handle successful loading
+      this.load.once('filecomplete-image-logo', () => {
+        console.log('SplashScreen: Logo texture reloaded successfully');
+        // Try to create logo again after a short delay
+        this.time.delayedCall(100, () => {
+          this.createLogo();
+        });
+      });
+      
+      // Handle loading errors
+      this.load.once('loaderror', (file: any) => {
+        if (file.key === 'logo') {
+          console.error('SplashScreen: Failed to reload logo texture:', file.url);
+        }
+      });
+      
+      // Start the loading process
+      this.load.start();
+    } catch (error) {
+      console.error('SplashScreen: Error reloading logo texture:', error);
+    }
   }
 
   /**
@@ -678,7 +728,9 @@ export class SplashScreen extends Scene {
     if (!this.logo) {
       // Check if the logo texture is available before creating the image
       if (!this.textures.exists('logo')) {
-        console.warn('SplashScreen: Logo texture not available yet, skipping logo creation');
+        console.warn('SplashScreen: Logo texture not available yet, reloading logo...');
+        // Try to reload the logo with cache-busting
+        this.reloadLogoTexture();
         return;
       }
       
@@ -688,6 +740,13 @@ export class SplashScreen extends Scene {
           console.warn('SplashScreen: Failed to create logo image - asset may not be loaded');
           return;
         }
+        
+        // Set texture filtering to maintain crisp quality
+        this.logo.setTexture('logo');
+        if (this.logo.texture) {
+          this.logo.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        }
+        
         console.log('SplashScreen: Logo image created successfully');
       } catch (error) {
         console.error('SplashScreen: Error creating logo image:', error);
@@ -700,19 +759,20 @@ export class SplashScreen extends Scene {
     this.logo.setPosition(width / 2, logoY);
 
     // Scale logo responsively - make it larger since it's now the main title
-    const maxLogoWidth = Math.min(width * 0.6, 300); // Max 60% of screen width or 300px
-    const maxLogoHeight = Math.min(height * 0.25, 200); // Max 25% of screen height or 200px
+    const maxLogoWidth = Math.min(width * 0.6, 400); // Max 60% of screen width or 400px
+    const maxLogoHeight = Math.min(height * 0.25, 250); // Max 25% of screen height or 250px
     
     if (this.logo.width > 0 && this.logo.height > 0) {
       const scaleX = maxLogoWidth / this.logo.width;
       const scaleY = maxLogoHeight / this.logo.height;
-      const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond original size
+      // Allow scaling up to 1.5x for better visibility, but cap at reasonable limits
+      const scale = Math.min(scaleX, scaleY, 1.5);
       
       this.logo.setScale(scale);
       console.log(`SplashScreen: Logo scaled to ${scale} (${this.logo.width}x${this.logo.height})`);
     } else {
       console.warn('SplashScreen: Logo dimensions not available yet, using default scale');
-      this.logo.setScale(0.5); // Default scale
+      this.logo.setScale(0.8); // Increased default scale for better visibility
     }
 
     // Make sure logo is visible

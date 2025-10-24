@@ -756,8 +756,8 @@ export class UIElementFactory {
     const charge = this.scene.add.circle(0, 0, 15, 0xFFFFFF, 0); // Transparent fill
     charge.setDepth(101);
 
-    // Create a more visible electric blue indicator in the center
-    const slowIndicator = this.scene.add.circle(0, 0, 6, 0x00BFFF);
+    // Create a more visible bright cyan indicator in the center
+    const slowIndicator = this.scene.add.circle(0, 0, 6, 0x00FFFF);
     slowIndicator.setDepth(102);
 
     container.add([charge, slowIndicator]);

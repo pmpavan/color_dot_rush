@@ -84,15 +84,15 @@ export class GlowEffects {
   }
 
   /**
-   * Get glow configuration for slow-mo dot (Brown)
+   * Get glow configuration for slow-mo dot (Bright White/Cyan)
    */
   static getSlowMoGlowConfig(): GlowConfig {
     return {
-      color: '#8B4513', // Brown - distinct from regular dot colors
-      intensity: 0.6,
-      radius: 20,
-      blur: 15,
-      alpha: 0.4
+      color: '#FFFFFF', // Bright white - distinct from all regular dot colors
+      intensity: 1.0,
+      radius: 30,
+      blur: 25,
+      alpha: 0.8
     };
   }
 

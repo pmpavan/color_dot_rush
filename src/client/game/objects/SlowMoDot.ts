@@ -18,30 +18,48 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   private hitbox: Phaser.Geom.Rectangle;
   private clockIcon: Phaser.GameObjects.Arc;
   private clockHand: Phaser.GameObjects.Line;
+  private clockHand2: Phaser.GameObjects.Line;
   private shimmerTween: Phaser.Tweens.Tween | null = null;
   private lastCollisionTime: number = 0;
   private glowEffect: Phaser.GameObjects.Graphics | null = null;
   private glowTween: Phaser.Tweens.Tween | null = null;
   private activationGlows: Phaser.GameObjects.Arc[] = [];
   private activationTweens: Phaser.Tweens.Tween[] = [];
+  private timeDistortionRings: Phaser.GameObjects.Arc[] = [];
+  private timeDistortionTweens: Phaser.Tweens.Tween[] = [];
+  private breathingTween: Phaser.Tweens.Tween | null = null;
   public override active: boolean = false;
 
   constructor(scene: Phaser.Scene) {
-    // Create as a single brown circle with clock icon (distinct from regular dot colors)
-    super(scene, 0, 0, 40, 0, 360, false, 0x8B4513);
+    // Create as bright white circle with distinct time-themed design
+    super(scene, 0, 0, 40, 0, 360, false, 0xFFFFFF);
     
     this.speed = 100; // Default speed
     this.size = 80; // Default size
     this.direction = new Phaser.Math.Vector2(0, 1); // Default downward movement
     this.hitbox = new Phaser.Geom.Rectangle(0, 0, this.size, this.size);
     
-    // Create clock icon as graphics with white outline
-    this.clockIcon = scene.add.circle(0, 0, 15, 0xFFFFFF, 0.8);
+    // Create enhanced clock icon with bright cyan theme for high visibility
+    this.clockIcon = scene.add.circle(0, 0, 20, 0x00FFFF, 1.0);
     this.clockIcon.setStrokeStyle(3, 0xFFFFFF, 1);
+    this.clockIcon.setDepth(1000); // Ensure it's on top
     
-    // Create clock hand with white color
-    this.clockHand = scene.add.line(0, 0, 0, 0, 0, -8, 0xFFFFFF, 1);
-    this.clockHand.setLineWidth(2);
+    // Create hour hand (shorter, pointing to 12 o'clock) - Cyan
+    // Line from center (0,0) to (0, -8) - pointing upward
+    this.clockHand = scene.add.line(0, 0, 0, 0, 0, -8, 0x00FFFF, 1);
+    this.clockHand.setLineWidth(4);
+    this.clockHand.setDepth(1001); // Ensure it's on top of the clock icon
+    
+    // Create minute hand (longer, pointing to 1:30 o'clock - 45 degrees from hour hand) - White
+    const angle45 = Math.PI / 4; // 45 degrees in radians
+    const minuteHandLength = 12; // Longer than hour hand
+    // Line from center (0,0) to calculated position at 45 degrees
+    this.clockHand2 = scene.add.line(0, 0, 0, 0, 
+      Math.sin(angle45) * minuteHandLength, 
+      -Math.cos(angle45) * minuteHandLength, 
+      0xFFFFFF, 1);
+    this.clockHand2.setLineWidth(3);
+    this.clockHand2.setDepth(1002); // Ensure it's on top
     
     // Don't add to scene directly - let ObjectPool manage this
     // scene.add.existing(this);
@@ -57,9 +75,10 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.size = size;
     this.direction = direction.clone();
     
-    // Set visual properties - ensure SlowMo dots stay brown
+    // Set visual properties - bright white theme for maximum visibility
     this.setRadius(size / 2);
-    this.setFillStyle(0x8B4513); // Brown - distinct from regular dot colors
+    this.setFillStyle(0xFFFFFF); // Bright white - distinct from all regular dot colors
+    this.setStrokeStyle(3, 0x00FFFF, 1); // Bright cyan stroke for extra visibility
     
     // Update hitbox - significantly larger than visual sprite for better accessibility
     const hitboxSize = Math.max(size * 1.5, 60); // 50% larger than visual size, minimum 60px tap target
@@ -69,6 +88,21 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.setPosition(x, y);
     this.clockIcon.setPosition(x, y);
     this.clockHand.setPosition(x, y);
+    this.clockHand2.setPosition(x, y);
+    
+    // Ensure clock elements are visible and properly positioned
+    this.clockIcon.setVisible(true);
+    this.clockHand.setVisible(true);
+    this.clockHand2.setVisible(true);
+    this.clockIcon.setAlpha(1);
+    this.clockHand.setAlpha(1);
+    this.clockHand2.setAlpha(1);
+    
+    // Debug logging for clock elements
+    console.log(`[SLOWMO DEBUG] Clock elements positioned at (${x}, ${y})`);
+    console.log(`[SLOWMO DEBUG] Clock icon visible: ${this.clockIcon.visible}, alpha: ${this.clockIcon.alpha}`);
+    console.log(`[SLOWMO DEBUG] Hour hand (cyan, 8px, static) visible: ${this.clockHand.visible}, alpha: ${this.clockHand.alpha}`);
+    console.log(`[SLOWMO DEBUG] Minute hand (white, 12px, 45°, static) visible: ${this.clockHand2.visible}, alpha: ${this.clockHand2.alpha}`);
     
     // Initialize hitbox position
     this.hitbox.setPosition(
@@ -76,11 +110,17 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       y - this.hitbox.height / 2
     );
     
-    // Create glow effect
+    // Create enhanced glow effect
     this.createGlowEffect();
     
-    // Start shimmering effect
-    this.startShimmerEffect();
+    // Start time distortion effects
+    this.startTimeDistortionEffects();
+    
+    // Start animated clock hand
+    this.startClockHandAnimation();
+    
+    // Start breathing effect
+    this.startBreathingEffect();
   }
 
   /**
@@ -102,10 +142,16 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     // Update clock icon position
     this.clockIcon.setPosition(this.x, this.y);
     this.clockHand.setPosition(this.x, this.y);
+    this.clockHand2.setPosition(this.x, this.y);
 
     // Update glow effect position
     if (this.glowEffect) {
       this.glowEffect.setPosition(this.x, this.y);
+    }
+
+    // Update time distortion rings position
+    for (const ring of this.timeDistortionRings) {
+      ring.setPosition(this.x, this.y);
     }
 
     // Update hitbox position
@@ -361,20 +407,20 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   }
 
   /**
-   * Activate slow-motion effect with enhanced visual feedback
+   * Activate slow-motion effect with enhanced time freeze visual feedback
    */
   public activateSlowMo(): void {
     if (!this.active) return;
 
-    // Create multiple radial blue glow effects for more dramatic impact
-    this.createRadialGlowEffect();
+    // Create time freeze effect with enhanced blue theme
+    this.createTimeFreezeEffect();
     
-    // Create ripple effect for immediate feedback
+    // Create enhanced ripple effect for immediate feedback
     this.createRippleEffect();
 
     // Hide the slow-mo dot with a satisfying shrink effect
     this.scene.tweens.add({
-      targets: [this, this.clockIcon, this.clockHand],
+      targets: [this, this.clockIcon, this.clockHand, this.clockHand2],
       scaleX: 0,
       scaleY: 0,
       alpha: 0,
@@ -385,24 +431,24 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       }
     });
   }
-  
+
   /**
-   * Create enhanced radial glow effect with multiple layers
+   * Create time freeze effect with enhanced blue theme
    */
-  private createRadialGlowEffect(): void {
+  private createTimeFreezeEffect(): void {
     // Clean up any existing activation glows first
     this.cleanupActivationGlows();
     
-    // Primary glow - large and dramatic
-    const primaryGlow = this.scene.add.circle(this.x, this.y, 30, 0x3498DB, 0.8);
+    // Primary time freeze glow - bright cyan
+    const primaryGlow = this.scene.add.circle(this.x, this.y, 30, 0x00FFFF, 0.9);
     primaryGlow.setDepth(998);
     this.activationGlows.push(primaryGlow);
     
     const tween1 = this.scene.tweens.add({
       targets: primaryGlow,
-      radius: 300,
+      radius: 400,
       alpha: 0,
-      duration: 600,
+      duration: 800,
       ease: 'Power2.easeOut',
       onComplete: () => {
         const index = this.activationGlows.indexOf(primaryGlow);
@@ -420,18 +466,18 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     });
     this.activationTweens.push(tween1);
 
-    // Secondary glow - faster and brighter
-    const secondaryGlow = this.scene.add.circle(this.x, this.y, 15, 0x5DADE2, 0.9);
+    // Secondary white glow - faster and brighter
+    const secondaryGlow = this.scene.add.circle(this.x, this.y, 20, 0xFFFFFF, 0.95);
     secondaryGlow.setDepth(999);
     this.activationGlows.push(secondaryGlow);
     
     const tween2 = this.scene.tweens.add({
       targets: secondaryGlow,
-      radius: 150,
+      radius: 200,
       alpha: 0,
-      duration: 400,
+      duration: 500,
       ease: 'Power3.easeOut',
-      delay: 50,
+      delay: 100,
       onComplete: () => {
         const index = this.activationGlows.indexOf(secondaryGlow);
         if (index > -1) {
@@ -448,42 +494,52 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     });
     this.activationTweens.push(tween2);
 
-    // Tertiary glow - subtle and long-lasting
-    const tertiaryGlow = this.scene.add.circle(this.x, this.y, 40, 0x85C1E9, 0.4);
-    tertiaryGlow.setDepth(997);
-    this.activationGlows.push(tertiaryGlow);
-    
-    const tween3 = this.scene.tweens.add({
-      targets: tertiaryGlow,
-      radius: 400,
-      alpha: 0,
-      duration: 800,
-      ease: 'Sine.easeOut',
-      delay: 100,
-      onComplete: () => {
-        const index = this.activationGlows.indexOf(tertiaryGlow);
-        if (index > -1) {
-          this.activationGlows.splice(index, 1);
+    // Time distortion particles
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * 45) * Math.PI / 180;
+      const particle = this.scene.add.circle(
+        this.x + Math.cos(angle) * 20,
+        this.y + Math.sin(angle) * 20,
+        4,
+        0xFFFFFF,
+        1.0
+      );
+      particle.setDepth(1000);
+      this.activationGlows.push(particle);
+      
+      const particleTween = this.scene.tweens.add({
+        targets: particle,
+        x: this.x + Math.cos(angle) * 150,
+        y: this.y + Math.sin(angle) * 150,
+        alpha: 0,
+        duration: 600,
+        ease: 'Power2.easeOut',
+        delay: i * 50,
+        onComplete: () => {
+          const index = this.activationGlows.indexOf(particle);
+          if (index > -1) {
+            this.activationGlows.splice(index, 1);
+          }
+          const tweenIndex = this.activationTweens.indexOf(particleTween);
+          if (tweenIndex > -1) {
+            this.activationTweens.splice(tweenIndex, 1);
+          }
+          if (particle.scene) {
+            particle.destroy();
+          }
         }
-        const tweenIndex = this.activationTweens.indexOf(tween3);
-        if (tweenIndex > -1) {
-          this.activationTweens.splice(tweenIndex, 1);
-        }
-        if (tertiaryGlow.scene) {
-          tertiaryGlow.destroy();
-        }
-      }
-    });
-    this.activationTweens.push(tween3);
+      });
+      this.activationTweens.push(particleTween);
+    }
   }
 
   /**
-   * Create enhanced ripple effect for tap feedback
+   * Create enhanced ripple effect for tap feedback with time theme
    */
   public createRippleEffect(): void {
-    // Create expanding blue ripple effect with multiple layers
-    const primaryRipple = this.scene.add.circle(this.x, this.y, 15, 0x3498DB, 0.9);
-    primaryRipple.setStrokeStyle(4, 0x5DADE2, 0.8);
+    // Create expanding bright cyan ripple effect with multiple layers
+    const primaryRipple = this.scene.add.circle(this.x, this.y, 15, 0x00FFFF, 0.9);
+    primaryRipple.setStrokeStyle(4, 0xFFFFFF, 0.8);
     primaryRipple.setDepth(999);
     this.activationGlows.push(primaryRipple);
     
@@ -509,9 +565,9 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     });
     this.activationTweens.push(rippleTween1);
 
-    // Secondary ripple for extra impact
-    const secondaryRipple = this.scene.add.circle(this.x, this.y, 8, 0x85C1E9, 0.7);
-    secondaryRipple.setStrokeStyle(2, 0x3498DB, 0.6);
+    // Secondary ripple for extra impact with white theme
+    const secondaryRipple = this.scene.add.circle(this.x, this.y, 8, 0xFFFFFF, 0.8);
+    secondaryRipple.setStrokeStyle(2, 0x00FFFF, 0.7);
     secondaryRipple.setDepth(998);
     this.activationGlows.push(secondaryRipple);
     
@@ -562,11 +618,54 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
   }
 
   /**
-   * Start shimmering effect for the slow-mo dot
+   * Start time distortion effects with concentric rings
    */
-  private startShimmerEffect(): void {
-    // Removed shimmer effect to prevent pulsing dots
-    // SlowMo dots should be clearly visible without pulsing
+  private startTimeDistortionEffects(): void {
+    // Create 3 concentric rings that pulse outward to show time manipulation
+    for (let i = 0; i < 3; i++) {
+      const ring = this.scene.add.circle(this.x, this.y, 25 + (i * 15), 0x00FFFF, 0.5);
+      ring.setStrokeStyle(3, 0xFFFFFF, 0.8);
+      ring.setDepth(this.depth - 1);
+      this.timeDistortionRings.push(ring);
+      
+      // Animate each ring with different timing
+      const tween = this.scene.tweens.add({
+        targets: ring,
+        radius: 25 + (i * 15) + 20,
+        alpha: 0,
+        duration: 2000 + (i * 500),
+        ease: 'Sine.easeOut',
+        yoyo: true,
+        repeat: -1,
+        delay: i * 200
+      });
+      this.timeDistortionTweens.push(tween);
+    }
+  }
+
+  /**
+   * Start animated clock hand rotation
+   */
+  private startClockHandAnimation(): void {
+    // Clock hands remain static at 45-degree angle - no animation
+    // Hour hand points to 12 o'clock, minute hand points to 1:30 o'clock
+    console.log('[SLOWMO DEBUG] Clock hands positioned statically at 45-degree angle');
+  }
+
+  /**
+   * Start breathing effect for the slow-mo dot
+   */
+  private startBreathingEffect(): void {
+    // Subtle size pulsing to indicate "living" power-up
+    this.breathingTween = this.scene.tweens.add({
+      targets: this,
+      scaleX: 1.05,
+      scaleY: 1.05,
+      duration: 2000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
   }
 
 
@@ -578,8 +677,6 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     console.log(`[SLOWMO DEBUG] Activating SlowMo dot at (${this.x.toFixed(1)}, ${this.y.toFixed(1)})`);
     this.active = true;
     this.setVisible(true);
-    this.clockIcon.setVisible(true);
-    this.clockHand.setVisible(true);
     this.setScale(1);
     this.setAlpha(1);
     
@@ -588,12 +685,70 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
       this.scene.add.existing(this);
     }
     
+    // Ensure clock elements are properly added to scene and visible
+    if (!this.scene.children.exists(this.clockIcon)) {
+      this.scene.add.existing(this.clockIcon);
+    }
+    if (!this.scene.children.exists(this.clockHand)) {
+      this.scene.add.existing(this.clockHand);
+    }
+    if (!this.scene.children.exists(this.clockHand2)) {
+      this.scene.add.existing(this.clockHand2);
+    }
+    
+    this.clockIcon.setVisible(true);
+    this.clockHand.setVisible(true);
+    this.clockHand2.setVisible(true);
+    this.clockIcon.setAlpha(1);
+    this.clockHand.setAlpha(1);
+    this.clockHand2.setAlpha(1);
+    
     // Show glow effect
     if (this.glowEffect) {
       this.glowEffect.setVisible(true);
     }
     
     // No shimmer effect - SlowMo dots should be stable
+  }
+
+  /**
+   * Clean up time distortion effects
+   */
+  private cleanupTimeDistortionEffects(): void {
+    // Kill tweens and destroy all time distortion ring objects
+    for (const ring of this.timeDistortionRings) {
+      try {
+        if (this.scene && this.scene.tweens) {
+          this.scene.tweens.killTweensOf(ring);
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+      
+      try {
+        if (ring && !ring.scene) {
+          continue;
+        }
+        if (ring) {
+          ring.destroy();
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+    }
+    this.timeDistortionRings = [];
+    
+    // Clean up time distortion tweens
+    for (const tween of this.timeDistortionTweens) {
+      try {
+        if (tween) {
+          tween.remove();
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+    }
+    this.timeDistortionTweens = [];
   }
 
   /**
@@ -636,6 +791,7 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.setVisible(false);
     this.clockIcon.setVisible(false);
     this.clockHand.setVisible(false);
+    this.clockHand2.setVisible(false);
     
     // Hide and clean up glow effect
     if (this.glowEffect) {
@@ -657,23 +813,45 @@ export class SlowMoDot extends Phaser.GameObjects.Arc {
     this.scene.tweens.killTweensOf(this);
     this.scene.tweens.killTweensOf(this.clockIcon);
     this.scene.tweens.killTweensOf(this.clockHand);
+    this.scene.tweens.killTweensOf(this.clockHand2);
     
     // Clean up activation glows
     this.cleanupActivationGlows();
+    
+    // Clean up time distortion effects
+    this.cleanupTimeDistortionEffects();
+    
+    // Clock hands are static - no animation to stop
+    
+    // Stop breathing effect
+    if (this.breathingTween) {
+      this.breathingTween.remove();
+      this.breathingTween = null;
+    }
   }
 
   /**
    * Destroy the slow-mo dot and its clock icon
    */
   public override destroy(fromScene?: boolean): void {
-    // Clean up activation glows first
+    // Clean up all effects first
     this.cleanupActivationGlows();
+    this.cleanupTimeDistortionEffects();
+    
+    // Stop all tweens
+    if (this.breathingTween) {
+      this.breathingTween.remove();
+      this.breathingTween = null;
+    }
     
     if (this.clockIcon) {
       this.clockIcon.destroy();
     }
     if (this.clockHand) {
       this.clockHand.destroy();
+    }
+    if (this.clockHand2) {
+      this.clockHand2.destroy();
     }
     if (this.glowEffect) {
       this.glowEffect.destroy();

@@ -419,7 +419,7 @@ export class GameOver extends Scene {
     const timeSection = this.createGameOverInfoItem(
       '⏱️',
       'SESSION TIME',
-      `${(this.gameOverData.sessionTime / 1000).toFixed(1)}s`,
+      `${this.gameOverData.sessionTime.toFixed(1)}s`,
       'rgba(0, 255, 0, 0.8)',
       false
     );
