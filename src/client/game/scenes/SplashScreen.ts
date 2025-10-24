@@ -446,10 +446,16 @@ export class SplashScreen extends Scene {
    */
   private reloadLogoTexture(): void {
     try {
+      // Remove existing texture first
+      if (this.textures.exists('logo')) {
+        this.textures.remove('logo');
+        console.log('SplashScreen: Removed existing logo texture before reload');
+      }
+      
       // Generate unique timestamp for aggressive cache busting
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substr(2, 9);
-      const logoPath = `assets/logo.png?v=${timestamp}&r=${randomId}&t=${timestamp}`;
+      const logoPath = `assets/logo.png?v=${timestamp}&r=${randomId}&t=${timestamp}&force=${Math.random()}`;
       
       console.log('SplashScreen: Reloading logo with cache-busting:', logoPath);
       this.load.image('logo', logoPath);
@@ -459,7 +465,7 @@ export class SplashScreen extends Scene {
         console.log('SplashScreen: Logo texture reloaded successfully with timestamp:', timestamp);
         // Create the logo image after successful loading
         this.time.delayedCall(100, () => {
-          this.createLogoImage();
+          this.createLogoImageAfterReload(this.layoutManager.getCurrentDimensions().width, this.layoutManager.getCurrentDimensions().height);
         });
       });
       
@@ -761,6 +767,25 @@ export class SplashScreen extends Scene {
     const { width, height } = this.layoutManager.getCurrentDimensions();
 
     try {
+      // Force reload the logo texture with fresh cache busting
+      console.log('SplashScreen: Force reloading logo texture before creating image');
+      this.forceReloadLogoTexture();
+      
+      // Wait a moment for the texture to reload, then create the image
+      this.time.delayedCall(200, () => {
+        this.createLogoImageAfterReload(width, height);
+      });
+      
+    } catch (error) {
+      console.error('SplashScreen: Error creating logo image:', error);
+    }
+  }
+
+  /**
+   * Create logo image after texture reload
+   */
+  private createLogoImageAfterReload(width: number, height: number): void {
+    try {
       // Create the logo image
       this.logo = this.add.image(0, 0, 'logo');
       if (!this.logo) {
@@ -774,13 +799,45 @@ export class SplashScreen extends Scene {
         this.logo.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
       }
       
-      console.log('SplashScreen: Logo image created successfully');
+      console.log('SplashScreen: Logo image created successfully after reload');
       
       // Position and scale the logo
       this.positionAndScaleLogo(width, height);
       
     } catch (error) {
-      console.error('SplashScreen: Error creating logo image:', error);
+      console.error('SplashScreen: Error creating logo image after reload:', error);
+    }
+  }
+
+  /**
+   * Force reload logo texture with fresh cache busting
+   */
+  private forceReloadLogoTexture(): void {
+    try {
+      // Remove existing texture first
+      if (this.textures.exists('logo')) {
+        this.textures.remove('logo');
+        console.log('SplashScreen: Removed existing logo texture');
+      }
+      
+      // Generate fresh cache busting parameters
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substr(2, 9);
+      const logoPath = `assets/logo.png?v=${timestamp}&r=${randomId}&t=${timestamp}&force=${Math.random()}`;
+      
+      console.log('SplashScreen: Force reloading logo with fresh cache busting:', logoPath);
+      this.load.image('logo', logoPath);
+      
+      // Handle successful loading
+      this.load.once('filecomplete-image-logo', () => {
+        console.log('SplashScreen: Logo texture force reloaded successfully');
+      });
+      
+      // Start the loading process
+      this.load.start();
+      
+    } catch (error) {
+      console.error('SplashScreen: Error force reloading logo texture:', error);
     }
   }
 
@@ -832,8 +889,81 @@ export class SplashScreen extends Scene {
       this.logo = null;
     }
     
-    // Force reload with cache busting
-    this.reloadLogoTexture();
+    // Use a completely different approach - load logo directly in SplashScreen
+    this.loadLogoDirectly();
+  }
+
+  /**
+   * Load logo directly in SplashScreen with fresh cache busting
+   */
+  private loadLogoDirectly(): void {
+    try {
+      // Remove any existing logo texture
+      if (this.textures.exists('logo')) {
+        this.textures.remove('logo');
+        console.log('SplashScreen: Removed existing logo texture for direct load');
+      }
+      
+      // Generate completely fresh cache busting parameters
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substr(2, 9);
+      const forceParam = Math.random().toString(36).substr(2, 9);
+      const logoPath = `assets/logo.png?v=${timestamp}&r=${randomId}&t=${timestamp}&force=${forceParam}&splash=${Date.now()}`;
+      
+      console.log('SplashScreen: Loading logo directly with fresh cache busting:', logoPath);
+      
+      // Load the logo with a unique key to avoid conflicts
+      const logoKey = `logo-splash-${timestamp}`;
+      this.load.image(logoKey, logoPath);
+      
+      // Handle successful loading
+      this.load.once(`filecomplete-image-${logoKey}`, () => {
+        console.log('SplashScreen: Logo loaded directly with key:', logoKey);
+        this.createLogoWithKey(logoKey);
+      });
+      
+      // Handle loading errors
+      this.load.once('loaderror', (file: any) => {
+        if (file.key === logoKey) {
+          console.error('SplashScreen: Failed to load logo directly:', file.url);
+        }
+      });
+      
+      // Start the loading process
+      this.load.start();
+      
+    } catch (error) {
+      console.error('SplashScreen: Error loading logo directly:', error);
+    }
+  }
+
+  /**
+   * Create logo image with specific key
+   */
+  private createLogoWithKey(logoKey: string): void {
+    try {
+      const { width, height } = this.layoutManager.getCurrentDimensions();
+      
+      // Create the logo image with the specific key
+      this.logo = this.add.image(0, 0, logoKey);
+      if (!this.logo) {
+        console.warn('SplashScreen: Failed to create logo image with key:', logoKey);
+        return;
+      }
+      
+      // Set texture filtering to maintain crisp quality
+      if (this.logo.texture) {
+        this.logo.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      }
+      
+      console.log('SplashScreen: Logo image created successfully with direct load');
+      
+      // Position and scale the logo
+      this.positionAndScaleLogo(width, height);
+      
+    } catch (error) {
+      console.error('SplashScreen: Error creating logo with key:', error);
+    }
   }
 
   /**
