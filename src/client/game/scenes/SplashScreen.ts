@@ -404,6 +404,9 @@ export class SplashScreen extends Scene {
         this.textures.remove('logo');
         console.log('SplashScreen: Cleared cached logo texture');
       }
+      
+      // Note: Loader cache clearing removed due to TypeScript compatibility issues
+      // The timestamp-based cache busting should be sufficient
     } catch (error) {
       console.warn('SplashScreen: Error clearing logo texture cache:', error);
     }
@@ -414,16 +417,20 @@ export class SplashScreen extends Scene {
    */
   private reloadLogoTexture(): void {
     try {
-      // Load the logo with cache-busting parameter
-      const logoPath = `assets/logo.png?v=${Date.now()}&r=${Math.random()}`;
+      // Generate unique timestamp for aggressive cache busting
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substr(2, 9);
+      const logoPath = `assets/logo.png?v=${timestamp}&r=${randomId}&t=${timestamp}`;
+      
+      console.log('SplashScreen: Reloading logo with cache-busting:', logoPath);
       this.load.image('logo', logoPath);
       
       // Handle successful loading
       this.load.once('filecomplete-image-logo', () => {
-        console.log('SplashScreen: Logo texture reloaded successfully');
-        // Try to create logo again after a short delay
+        console.log('SplashScreen: Logo texture reloaded successfully with timestamp:', timestamp);
+        // Create the logo image after successful loading
         this.time.delayedCall(100, () => {
-          this.createLogo();
+          this.createLogoImage();
         });
       });
       
@@ -719,40 +726,40 @@ export class SplashScreen extends Scene {
   }
 
   /**
-   * Create and position the logo image responsively
+   * Create the actual logo image object
    */
-  private createLogo(): void {
+  private createLogoImage(): void {
     const { width, height } = this.layoutManager.getCurrentDimensions();
 
-    // Create logo if it doesn't exist
-    if (!this.logo) {
-      // Check if the logo texture is available before creating the image
-      if (!this.textures.exists('logo')) {
-        console.warn('SplashScreen: Logo texture not available yet, reloading logo...');
-        // Try to reload the logo with cache-busting
-        this.reloadLogoTexture();
+    try {
+      // Create the logo image
+      this.logo = this.add.image(0, 0, 'logo');
+      if (!this.logo) {
+        console.warn('SplashScreen: Failed to create logo image - asset may not be loaded');
         return;
       }
       
-      try {
-        this.logo = this.add.image(0, 0, 'logo');
-        if (!this.logo) {
-          console.warn('SplashScreen: Failed to create logo image - asset may not be loaded');
-          return;
-        }
-        
-        // Set texture filtering to maintain crisp quality
-        this.logo.setTexture('logo');
-        if (this.logo.texture) {
-          this.logo.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-        }
-        
-        console.log('SplashScreen: Logo image created successfully');
-      } catch (error) {
-        console.error('SplashScreen: Error creating logo image:', error);
-        return;
+      // Set texture filtering to maintain crisp quality
+      this.logo.setTexture('logo');
+      if (this.logo.texture) {
+        this.logo.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
       }
+      
+      console.log('SplashScreen: Logo image created successfully');
+      
+      // Position and scale the logo
+      this.positionAndScaleLogo(width, height);
+      
+    } catch (error) {
+      console.error('SplashScreen: Error creating logo image:', error);
     }
+  }
+
+  /**
+   * Position and scale the logo image
+   */
+  private positionAndScaleLogo(width: number, height: number): void {
+    if (!this.logo) return;
 
     // Position logo as the main title element (more centered)
     const logoY = height * 0.25; // Position at 25% from top (main title position)
@@ -780,6 +787,24 @@ export class SplashScreen extends Scene {
     this.logo.setDepth(10); // Ensure it's above the background
 
     console.log('SplashScreen: Logo created and positioned at', this.logo.x, this.logo.y);
+  }
+
+  /**
+   * Create and position the logo image responsively
+   */
+  private createLogo(): void {
+    const { width, height } = this.layoutManager.getCurrentDimensions();
+
+    // Create logo if it doesn't exist
+    if (!this.logo) {
+      // Always force reload logo to ensure we get the updated version with cache busting
+      console.log('SplashScreen: Forcing logo reload to ensure updated version...');
+      this.reloadLogoTexture();
+      return;
+    }
+
+    // Update position and scale for existing logo
+    this.positionAndScaleLogo(width, height);
   }
 
   /**
