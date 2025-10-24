@@ -1308,6 +1308,8 @@ export class Game extends Scene {
     try {
       if (this.uiScene) {
         this.uiScene.setVisible(false);
+        // Clear target color border when game ends
+        this.uiScene.clearTargetColorBorder();
         console.log('Game: UI elements hidden for game over overlay');
       }
     } catch (error) {

@@ -513,6 +513,21 @@ export class SimpleUIScene extends Scene {
 
   // setSlowMoCharges removed - simplified slow mo logic
 
+  /**
+   * Clear target color border when game ends
+   */
+  public clearTargetColorBorder(): void {
+    console.log('SimpleUIScene: Clearing target color border');
+    if (this.targetColorBorder && this.targetColorBorder.scene) {
+      try {
+        this.targetColorBorder.destroy();
+        console.log('SimpleUIScene: Target color border destroyed');
+      } catch (error) {
+        console.error('SimpleUIScene: Error destroying target color border:', error);
+      }
+    }
+    this.targetColorBorder = null;
+  }
 
   /**
    * Show or hide the entire UI
