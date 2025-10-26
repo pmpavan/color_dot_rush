@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Rush - Mod Tools</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .status-card h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-value {
+            font-weight: 500;
+        }
+        
+        .enabled {
+            color: #27ae60;
+        }
+        
+        .disabled {
+            color: #e74c3c;
+        }
+        
+        .actions {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .actions h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        .config-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .config-section h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Color Rush Mod Tools</h1>
+            <p>Manage daily challenges, weekly leaderboards, and social sharing</p>
+        </div>
+        
+        <div id="loading" class="loading">
+            Loading system status...
+        </div>
+        
+        <div id="content" class="hidden">
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3>🎯 Daily Challenge</h3>
+                    <div id="daily-status">
+                        <!-- Status will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>📊 Weekly Leaderboard</h3>
+                    <div id="weekly-status">
+                        <!-- Status will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>📱 Social Sharing</h3>
+                    <div id="sharing-status">
+                        <!-- Status will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>⚙️ System Health</h3>
+                    <div id="health-status">
+                        <!-- Status will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <h3>🎛️ Quick Actions</h3>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="createDailyPost()">
+                        Create Daily Challenge Post
+                    </button>
+                    <button class="btn btn-success" onclick="createWeeklyPost()">
+                        Create Weekly Leaderboard Post
+                    </button>
+                    <button class="btn" onclick="executeAllTasks()">
+                        Execute All Scheduled Tasks
+                    </button>
+                    <button class="btn" onclick="createStatusPost()">
+                        Create Status Post
+                    </button>
+                    <button class="btn" onclick="refreshStatus()">
+                        Refresh Status
+                    </button>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3>⚙️ Configuration</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="daily-enabled" onchange="updateConfig()">
+                        Enable Daily Challenges
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="weekly-enabled" onchange="updateConfig()">
+                        Enable Weekly Leaderboards
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="sharing-enabled" onchange="updateConfig()">
+                        Enable Social Sharing
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="daily-time">Daily Post Time:</label>
+                    <input type="time" id="daily-time" onchange="updateConfig()">
+                </div>
+                <div class="form-group">
+                    <label for="weekly-day">Weekly Post Day:</label>
+                    <select id="weekly-day" onchange="updateConfig()">
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="weekly-time">Weekly Post Time:</label>
+                    <input type="time" id="weekly-time" onchange="updateConfig()">
+                </div>
+            </div>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+    
+    <script>
+        let currentConfig = {};
+        
+        // Load system status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemStatus();
+            loadConfiguration();
+        });
+        
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch('/api/mod-tools/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayStatus(data.status);
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('content').classList.remove('hidden');
+                } else {
+                    showError('Failed to load system status: ' + data.message);
+                }
+            } catch (error) {
+                showError('Error loading system status: ' + error.message);
+            }
+        }
+        
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/api/post-configuration');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentConfig = data.configuration;
+                    updateConfigForm();
+                }
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+            }
+        }
+        
+        function displayStatus(status) {
+            // Daily Challenge Status
+            const dailyStatus = document.getElementById('daily-status');
+            dailyStatus.innerHTML = `
+                <div class="status-item">
+                    <span>Status:</span>
+                    <span class="status-value ${status.dailyChallenge.enabled ? 'enabled' : 'disabled'}">
+                        ${status.dailyChallenge.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span>Next Post:</span>
+                    <span class="status-value">${status.dailyChallenge.nextPost}</span>
+                </div>
+                <div class="status-item">
+                    <span>Participants:</span>
+                    <span class="status-value">${status.dailyChallenge.participants}</span>
+                </div>
+            `;
+            
+            // Weekly Leaderboard Status
+            const weeklyStatus = document.getElementById('weekly-status');
+            weeklyStatus.innerHTML = `
+                <div class="status-item">
+                    <span>Status:</span>
+                    <span class="status-value ${status.weeklyLeaderboard.enabled ? 'enabled' : 'disabled'}">
+                        ${status.weeklyLeaderboard.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span>Next Post:</span>
+                    <span class="status-value">${status.weeklyLeaderboard.nextPost}</span>
+                </div>
+                <div class="status-item">
+                    <span>Total Players:</span>
+                    <span class="status-value">${status.weeklyLeaderboard.totalPlayers}</span>
+                </div>
+            `;
+            
+            // Social Sharing Status
+            const sharingStatus = document.getElementById('sharing-status');
+            sharingStatus.innerHTML = `
+                <div class="status-item">
+                    <span>Status:</span>
+                    <span class="status-value ${status.socialSharing.enabled ? 'enabled' : 'disabled'}">
+                        ${status.socialSharing.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span>Platforms:</span>
+                    <span class="status-value">${status.socialSharing.platforms.join(', ')}</span>
+                </div>
+                <div class="status-item">
+                    <span>Total Shares:</span>
+                    <span class="status-value">${status.socialSharing.totalShares}</span>
+                </div>
+            `;
+            
+            // System Health Status
+            const healthStatus = document.getElementById('health-status');
+            healthStatus.innerHTML = `
+                <div class="status-item">
+                    <span>Status:</span>
+                    <span class="status-value ${status.systemHealth.status === 'healthy' ? 'enabled' : 'disabled'}">
+                        ${status.systemHealth.status.toUpperCase()}
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span>Last Execution:</span>
+                    <span class="status-value">${status.systemHealth.lastExecution}</span>
+                </div>
+                <div class="status-item">
+                    <span>Errors:</span>
+                    <span class="status-value">${status.systemHealth.errors}</span>
+                </div>
+            `;
+        }
+        
+        function updateConfigForm() {
+            document.getElementById('daily-enabled').checked = currentConfig.dailyChallenge?.enabled || false;
+            document.getElementById('weekly-enabled').checked = currentConfig.weeklyLeaderboard?.enabled || false;
+            document.getElementById('sharing-enabled').checked = currentConfig.socialSharing?.enabled || false;
+            document.getElementById('daily-time').value = currentConfig.dailyChallenge?.postTime || '08:00';
+            document.getElementById('weekly-day').value = currentConfig.weeklyLeaderboard?.postDay || 1;
+            document.getElementById('weekly-time').value = currentConfig.weeklyLeaderboard?.postTime || '09:00';
+        }
+        
+        async function updateConfig() {
+            const updates = {
+                dailyChallenge: {
+                    enabled: document.getElementById('daily-enabled').checked,
+                    postTime: document.getElementById('daily-time').value,
+                },
+                weeklyLeaderboard: {
+                    enabled: document.getElementById('weekly-enabled').checked,
+                    postDay: parseInt(document.getElementById('weekly-day').value),
+                    postTime: document.getElementById('weekly-time').value,
+                },
+                socialSharing: {
+                    enabled: document.getElementById('sharing-enabled').checked,
+                }
+            };
+            
+            try {
+                const response = await fetch('/api/post-configuration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updates),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Configuration updated successfully');
+                    loadConfiguration();
+                } else {
+                    showError('Failed to update configuration: ' + data.message);
+                }
+            } catch (error) {
+                showError('Error updating configuration: ' + error.message);
+            }
+        }
+        
+        async function createDailyPost() {
+            await executeAction('create_daily_post');
+        }
+        
+        async function createWeeklyPost() {
+            await executeAction('create_weekly_post');
+        }
+        
+        async function executeAllTasks() {
+            await executeAction('execute_scheduled_tasks');
+        }
+        
+        async function createStatusPost() {
+            try {
+                const response = await fetch('/internal/mod-tools/status-post', {
+                    method: 'POST',
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Status post created successfully');
+                } else {
+                    showError('Failed to create status post: ' + data.message);
+                }
+            } catch (error) {
+                showError('Error creating status post: ' + error.message);
+            }
+        }
+        
+        async function executeAction(action) {
+            try {
+                const response = await fetch('/api/mod-tools/action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(data.message);
+                    loadSystemStatus();
+                } else {
+                    showError('Failed to execute action: ' + data.message);
+                }
+            } catch (error) {
+                showError('Error executing action: ' + error.message);
+            }
+        }
+        
+        async function refreshStatus() {
+            loadSystemStatus();
+            loadConfiguration();
+        }
+        
+        function showSuccess(message) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="success">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 3000);
+        }
+        
+        function showError(message) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

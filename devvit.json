@@ -30,6 +30,18 @@
   "triggers": {
     "onAppInstall": "/internal/on-app-install"
   },
+  "scheduler": {
+    "tasks": {
+      "daily-challenge-post": {
+        "endpoint": "/internal/execute-scheduled-tasks",
+        "cron": "0 8 * * *"
+      },
+      "weekly-leaderboard-post": {
+        "endpoint": "/internal/execute-scheduled-tasks",
+        "cron": "0 9 * * 1"
+      }
+    }
+  },
   "permissions": {
     "redis": true
   },

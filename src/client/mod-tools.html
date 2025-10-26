@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Rush Mod Tools</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #28a745;
+        }
+        .status-card h3 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .status-card p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+        .endpoint-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .endpoint-list h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .endpoint {
+            background: white;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 3px solid #007bff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .config-examples {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .config-examples h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .action-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+        .action-button:hover {
+            background: #0056b3;
+        }
+        .action-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Color Rush Mod Tools</h1>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>🎯 Daily Challenge</h3>
+                <p><strong>Status:</strong> ✅ Enabled</p>
+                <p><strong>Next Post:</strong> Every day at 8:00 AM UTC</p>
+                <p><strong>Types:</strong> Speed Demon, Perfectionist, Bomb Dodger, Color Master, Endurance</p>
+            </div>
+            
+            <div class="status-card">
+                <h3>📈 Weekly Leaderboard</h3>
+                <p><strong>Status:</strong> ✅ Enabled</p>
+                <p><strong>Next Post:</strong> Every Monday at 9:00 AM UTC</p>
+                <p><strong>Features:</strong> Top 20 players, weekly statistics</p>
+            </div>
+            
+            <div class="status-card">
+                <h3>📱 Social Sharing</h3>
+                <p><strong>Status:</strong> ✅ Enabled</p>
+                <p><strong>Platforms:</strong> Reddit, Twitter, Discord</p>
+                <p><strong>Features:</strong> Score sharing, rank display</p>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="action-button" onclick="executeTask('daily-challenge')">Create Daily Challenge Post</button>
+            <button class="action-button" onclick="executeTask('weekly-leaderboard')">Create Weekly Leaderboard Post</button>
+            <button class="action-button" onclick="executeTask('execute-all')">Execute All Tasks</button>
+            <button class="action-button" onclick="checkStatus()">Check System Status</button>
+        </div>
+
+        <div class="endpoint-list">
+            <h3>🎛️ API Endpoints</h3>
+            <div class="endpoint">GET /api/post-configuration - View current configuration</div>
+            <div class="endpoint">POST /api/post-configuration - Update configuration</div>
+            <div class="endpoint">GET /api/configuration-status - View system status</div>
+            <div class="endpoint">GET /internal/scheduled-tasks-status - Check task status</div>
+            <div class="endpoint">GET /api/share-statistics - View sharing statistics</div>
+            <div class="endpoint">GET /api/daily-challenge-info - View challenge info</div>
+        </div>
+
+        <div class="config-examples">
+            <h3>📝 Configuration Examples</h3>
+            
+            <h4>Disable Daily Challenges:</h4>
+            <div class="code-block">
+{
+  "dailyChallenge": {
+    "enabled": false
+  }
+}
+            </div>
+            
+            <h4>Change Posting Times:</h4>
+            <div class="code-block">
+{
+  "dailyChallenge": {
+    "postTime": "10:00"
+  },
+  "weeklyLeaderboard": {
+    "postTime": "11:00"
+  }
+}
+            </div>
+            
+            <h4>Disable Social Sharing:</h4>
+            <div class="code-block">
+{
+  "socialSharing": {
+    "enabled": false
+  }
+}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function executeTask(taskType) {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Executing...';
+            
+            try {
+                let endpoint = '';
+                switch(taskType) {
+                    case 'daily-challenge':
+                        endpoint = '/internal/daily-challenge-post';
+                        break;
+                    case 'weekly-leaderboard':
+                        endpoint = '/internal/weekly-leaderboard-post';
+                        break;
+                    case 'execute-all':
+                        endpoint = '/internal/execute-scheduled-tasks';
+                        break;
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    alert('Task executed successfully!');
+                } else {
+                    alert('Task failed. Check console for details.');
+                }
+            } catch (error) {
+                alert('Error executing task: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = button.textContent.replace('Executing...', '');
+            }
+        }
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch('/internal/scheduled-tasks-status');
+                const data = await response.json();
+                alert('System Status: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                alert('Error checking status: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

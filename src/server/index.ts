@@ -7,6 +7,12 @@ import {
 } from '../shared/types/api';
 import { redis, createServer, context, reddit } from '@devvit/web/server';
 import { createPost } from './core/post';
+import { createWeeklyLeaderboardPost, shouldPostWeeklyLeaderboard, getNextWeeklyPostTime } from './core/weeklyLeaderboardPost';
+import { createDailyChallengePost, shouldPostDailyChallenge, submitDailyChallengeScore, getTodaysChallengeInfo } from './core/dailyChallengePost';
+import { executeScheduledTasks, getScheduledTasksStatus } from './core/scheduledTasks';
+import { shareScore, getAvailablePlatforms, getShareStatistics } from './core/socialSharing';
+import { getPostConfiguration, updatePostConfiguration, getConfigurationStatus } from './core/postConfiguration';
+import { createModToolsMenu, getSystemStatus, executeModAction, createModToolsStatusPost } from './core/modTools';
 
 const app = express();
 
@@ -476,6 +482,859 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
     res.status(400).json({
       status: 'error',
       message: 'Failed to create post',
+    });
+  }
+});
+
+// Test endpoint for debugging
+router.get('/internal/test-mod-tools', async (_req, res): Promise<void> => {
+  try {
+    console.log('Test mod tools endpoint called');
+    res.json({
+      success: true,
+      message: 'Mod tools test endpoint working',
+      subredditName: context.subredditName,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Test endpoint failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Mod tools web interface endpoint
+router.get('/mod-tools', async (_req, res): Promise<void> => {
+  try {
+    console.log('Serving mod tools web interface...');
+    
+    const modToolsHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Rush Mod Tools</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #28a745;
+        }
+        .status-card h3 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .status-card p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+        .endpoint-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .endpoint-list h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .endpoint {
+            background: white;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 3px solid #007bff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .config-examples {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .config-examples h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .action-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+        .action-button:hover {
+            background: #0056b3;
+        }
+        .action-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Color Rush Mod Tools</h1>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>🎯 Daily Challenge</h3>
+                <p><strong>Status:</strong> ✅ Enabled</p>
+                <p><strong>Next Post:</strong> Every day at 8:00 AM UTC</p>
+                <p><strong>Types:</strong> Speed Demon, Perfectionist, Bomb Dodger, Color Master, Endurance</p>
+            </div>
+            
+            <div class="status-card">
+                <h3>📈 Weekly Leaderboard</h3>
+                <p><strong>Status:</strong> ✅ Enabled</p>
+                <p><strong>Next Post:</strong> Every Monday at 9:00 AM UTC</p>
+                <p><strong>Features:</strong> Top 20 players, weekly statistics</p>
+            </div>
+            
+            <div class="status-card">
+                <h3>📱 Social Sharing</h3>
+                <p><strong>Status:</strong> ✅ Enabled</p>
+                <p><strong>Platforms:</strong> Reddit, Twitter, Discord</p>
+                <p><strong>Features:</strong> Score sharing, rank display</p>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button id="daily-challenge-btn" name="daily-challenge-btn" class="action-button" onclick="executeTask('daily-challenge')" aria-label="Create Daily Challenge Post">Create Daily Challenge Post</button>
+            <button id="weekly-leaderboard-btn" name="weekly-leaderboard-btn" class="action-button" onclick="executeTask('weekly-leaderboard')" aria-label="Create Weekly Leaderboard Post">Create Weekly Leaderboard Post</button>
+            <button id="execute-all-btn" name="execute-all-btn" class="action-button" onclick="executeTask('execute-all')" aria-label="Execute All Scheduled Tasks">Execute All Tasks</button>
+            <button id="check-status-btn" name="check-status-btn" class="action-button" onclick="checkStatus()" aria-label="Check System Status">Check System Status</button>
+        </div>
+
+        <div class="endpoint-list">
+            <h3>🎛️ API Endpoints</h3>
+            <div class="endpoint">GET /api/post-configuration - View current configuration</div>
+            <div class="endpoint">POST /api/post-configuration - Update configuration</div>
+            <div class="endpoint">GET /api/configuration-status - View system status</div>
+            <div class="endpoint">GET /internal/scheduled-tasks-status - Check task status</div>
+            <div class="endpoint">GET /api/share-statistics - View sharing statistics</div>
+            <div class="endpoint">GET /api/daily-challenge-info - View challenge info</div>
+        </div>
+
+        <div class="config-examples">
+            <h3>📝 Configuration Examples</h3>
+            
+            <h4>Disable Daily Challenges:</h4>
+            <div class="code-block">
+{
+  "dailyChallenge": {
+    "enabled": false
+  }
+}
+            </div>
+            
+            <h4>Change Posting Times:</h4>
+            <div class="code-block">
+{
+  "dailyChallenge": {
+    "postTime": "10:00"
+  },
+  "weeklyLeaderboard": {
+    "postTime": "11:00"
+  }
+}
+            </div>
+            
+            <h4>Disable Social Sharing:</h4>
+            <div class="code-block">
+{
+  "socialSharing": {
+    "enabled": false
+  }
+}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function executeTask(taskType) {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Executing...';
+            
+            try {
+                let endpoint = '';
+                switch(taskType) {
+                    case 'daily-challenge':
+                        endpoint = '/internal/daily-challenge-post';
+                        break;
+                    case 'weekly-leaderboard':
+                        endpoint = '/internal/weekly-leaderboard-post';
+                        break;
+                    case 'execute-all':
+                        endpoint = '/internal/execute-scheduled-tasks';
+                        break;
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    alert('Task executed successfully!');
+                } else {
+                    alert('Task failed. Check console for details.');
+                }
+            } catch (error) {
+                alert('Error executing task: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = button.textContent.replace('Executing...', '');
+            }
+        }
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch('/internal/scheduled-tasks-status');
+                const data = await response.json();
+                alert('System Status: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                alert('Error checking status: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>`;
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(modToolsHTML);
+    
+  } catch (error) {
+    console.error('Error serving mod tools interface:', error);
+    res.status(500).send('Error loading mod tools interface');
+  }
+});
+
+router.post('/internal/menu/mod-tools', async (_req, res): Promise<void> => {
+  try {
+    console.log('Mod tools menu action triggered');
+    
+    const { subredditName } = context;
+    if (!subredditName) {
+      console.error('subredditName is missing from context');
+      throw new Error('subredditName is required');
+    }
+    
+    console.log(`Creating mod tools post for subreddit: ${subredditName}`);
+
+    // Create a comprehensive mod tools status post
+    const title = `🔧 Color Rush Mod Tools - System Status`;
+    
+    const content = `# 🔧 Color Rush Mod Tools - System Status
+
+## 📊 Current System Status
+
+### 🎯 Daily Challenge
+- **Status**: ✅ Enabled
+- **Next Post**: Every day at 8:00 AM UTC
+- **Challenge Types**: Speed Demon, Perfectionist, Bomb Dodger, Color Master, Endurance
+
+### 📈 Weekly Leaderboard  
+- **Status**: ✅ Enabled
+- **Next Post**: Every Monday at 9:00 AM UTC
+- **Features**: Top 20 players, weekly statistics, community engagement
+
+### 📱 Social Sharing
+- **Status**: ✅ Enabled
+- **Platforms**: Reddit, Twitter, Discord
+- **Features**: Score sharing, rank display, customizable messages
+
+## 🎛️ Quick Actions
+
+### Manual Posting
+- **Create Daily Challenge Post**: Use \`/internal/daily-challenge-post\` endpoint
+- **Create Weekly Leaderboard Post**: Use \`/internal/weekly-leaderboard-post\` endpoint
+- **Execute All Tasks**: Use \`/internal/execute-scheduled-tasks\` endpoint
+
+### Configuration
+- **View Config**: \`GET /api/post-configuration\`
+- **Update Config**: \`POST /api/post-configuration\` with JSON body
+- **View Status**: \`GET /api/configuration-status\`
+
+### Monitoring
+- **Task Status**: \`GET /internal/scheduled-tasks-status\`
+- **Share Stats**: \`GET /api/share-statistics\`
+- **Challenge Info**: \`GET /api/daily-challenge-info\`
+
+## 📝 Configuration Examples
+
+### Disable Daily Challenges
+\`\`\`json
+{
+  "dailyChallenge": {
+    "enabled": false
+  }
+}
+\`\`\`
+
+### Change Posting Times
+\`\`\`json
+{
+  "dailyChallenge": {
+    "postTime": "10:00"
+  },
+  "weeklyLeaderboard": {
+    "postTime": "11:00"
+  }
+}
+\`\`\`
+
+### Disable Social Sharing
+\`\`\`json
+{
+  "socialSharing": {
+    "enabled": false
+  }
+}
+\`\`\`
+
+---
+
+*This post is automatically generated for moderators. Use the API endpoints above to manage the system.*`;
+
+    console.log('Mod tools accessed - showing system status...');
+    
+    // Get system status information
+    const systemStatus = await getSystemStatus();
+    const configStatus = await getConfigurationStatus();
+    
+    // Create a comprehensive status message
+    const statusMessage = `🔧 **Color Rush Mod Tools - System Status**
+
+**🎯 Daily Challenge System:**
+• Status: ✅ Always Enabled
+• Next Post: ${systemStatus.dailyChallenge.nextPost || 'Not scheduled'}
+• Challenge Types: Speed Demon, Perfectionist, Bomb Dodger, Color Master, Endurance
+
+**📈 Weekly Leaderboard System:**
+• Status: ✅ Always Enabled
+• Next Post: ${systemStatus.weeklyLeaderboard.nextPost || 'Not scheduled'}
+• Features: Top 20 players, weekly statistics
+
+**📱 Social Sharing System:**
+• Status: ${systemStatus.socialSharing.enabled ? '✅ Enabled' : '❌ Disabled'}
+• Platforms: Reddit, Twitter, Discord
+• Features: Score sharing, rank display
+
+**🎛️ Available Actions:**
+• Create Daily Challenge Post
+• Create Weekly Leaderboard Post  
+• Execute All Scheduled Tasks
+• Check System Status
+
+**📝 Configuration:**
+• Daily Challenge: Always Enabled
+• Weekly Leaderboard: Always Enabled
+• Social Sharing: ${configStatus.socialSharing.enabled ? 'Enabled' : 'Disabled'}
+
+*Use the API endpoints to manage settings and execute tasks.*`;
+
+    // Return JSON response with showToast for proper Devvit menu action format
+    res.json({
+      showToast: {
+        text: statusMessage,
+        appearance: 'neutral'
+      }
+    });
+    
+  } catch (error) {
+    console.error(`Error in mod tools endpoint: ${error}`);
+    console.error('Error details:', error);
+    
+    // Return error response matching the working post-create format
+    res.status(400).json({
+      status: 'error',
+      message: `Mod tools error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
+// Weekly Leaderboard Post Endpoints
+
+router.post('/internal/weekly-leaderboard-post', async (_req, res): Promise<void> => {
+  try {
+    console.log('Weekly leaderboard post endpoint called');
+    
+    const result = await createWeeklyLeaderboardPost();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Weekly leaderboard post created successfully',
+        postId: result.postId,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to create weekly leaderboard post',
+      });
+    }
+  } catch (error) {
+    console.error('Error in weekly leaderboard post endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while creating weekly leaderboard post',
+    });
+  }
+});
+
+router.get('/internal/weekly-leaderboard-status', async (_req, res): Promise<void> => {
+  try {
+    const shouldPost = shouldPostWeeklyLeaderboard();
+    const nextPostTime = getNextWeeklyPostTime();
+    
+    res.json({
+      shouldPostNow: shouldPost,
+      nextScheduledPost: nextPostTime.toISOString(),
+      nextPostDate: nextPostTime.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+    });
+  } catch (error) {
+    console.error('Error getting weekly leaderboard status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get weekly leaderboard status',
+    });
+  }
+});
+
+// Scheduled Tasks Endpoints
+
+router.post('/internal/execute-scheduled-tasks', async (_req, res): Promise<void> => {
+  try {
+    const results = await executeScheduledTasks();
+    
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+    
+    res.json({
+      success: true,
+      message: `Scheduled tasks executed: ${successCount} successful, ${failureCount} failed`,
+      results: results,
+      summary: {
+        total: results.length,
+        successful: successCount,
+        failed: failureCount,
+      },
+    });
+  } catch (error) {
+    console.error('Error executing scheduled tasks:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to execute scheduled tasks',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+router.get('/internal/scheduled-tasks-status', async (_req, res): Promise<void> => {
+  try {
+    const status = await getScheduledTasksStatus();
+    
+    res.json({
+      success: true,
+      status: status,
+    });
+  } catch (error) {
+    console.error('Error getting scheduled tasks status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get scheduled tasks status',
+    });
+  }
+});
+
+// Daily Challenge Endpoints
+
+router.post('/internal/daily-challenge-post', async (_req, res): Promise<void> => {
+  try {
+    console.log('Daily challenge post endpoint called');
+    
+    const result = await createDailyChallengePost();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Daily challenge post created successfully',
+        postId: result.postId,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to create daily challenge post',
+      });
+    }
+  } catch (error) {
+    console.error('Error in daily challenge post endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while creating daily challenge post',
+    });
+  }
+});
+
+router.get('/internal/daily-challenge-info', async (_req, res): Promise<void> => {
+  try {
+    const challengeInfo = getTodaysChallengeInfo();
+    
+    res.json({
+      success: true,
+      challenge: challengeInfo,
+    });
+  } catch (error) {
+    console.error('Error getting daily challenge info:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get daily challenge info',
+    });
+  }
+});
+
+router.post('/api/submit-daily-challenge-score', async (req, res): Promise<void> => {
+  try {
+    const { challengeId, score } = req.body;
+    const { userId } = context;
+    
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+      return;
+    }
+    
+    if (!challengeId || typeof score !== 'number') {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid request data',
+      });
+      return;
+    }
+    
+    // Get username for the authenticated user
+    let username: string;
+    try {
+      const user = await reddit.getUserById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      username = user.username;
+    } catch (userError) {
+      console.error('Error fetching user data:', userError);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to authenticate user',
+      });
+      return;
+    }
+    
+    const result = await submitDailyChallengeScore(challengeId, userId, username, score);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        rank: result.rank,
+        message: 'Daily challenge score submitted successfully',
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to submit daily challenge score',
+      });
+    }
+  } catch (error) {
+    console.error('Error submitting daily challenge score:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while submitting daily challenge score',
+    });
+  }
+});
+
+// Social Sharing Endpoints
+
+router.post('/api/share-score', async (req, res): Promise<void> => {
+  try {
+    const { score, rank, challengeType, gameMode, sessionTime, achievements } = req.body;
+    
+    const shareData = {
+      score,
+      rank,
+      challengeType,
+      gameMode,
+      sessionTime,
+      achievements,
+    };
+    
+    const results = await shareScore(shareData);
+    
+    res.json({
+      success: true,
+      results: results,
+    });
+  } catch (error) {
+    console.error('Error sharing score:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to share score',
+    });
+  }
+});
+
+router.get('/api/social-sharing-platforms', async (_req, res): Promise<void> => {
+  try {
+    const platforms = getAvailablePlatforms();
+    
+    res.json({
+      success: true,
+      platforms: platforms,
+    });
+  } catch (error) {
+    console.error('Error getting social sharing platforms:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get social sharing platforms',
+    });
+  }
+});
+
+router.get('/api/share-statistics', async (_req, res): Promise<void> => {
+  try {
+    const statistics = await getShareStatistics();
+    
+    res.json({
+      success: true,
+      statistics: statistics,
+    });
+  } catch (error) {
+    console.error('Error getting share statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get share statistics',
+    });
+  }
+});
+
+// Configuration Endpoints
+
+router.get('/api/post-configuration', async (_req, res): Promise<void> => {
+  try {
+    const config = await getPostConfiguration();
+    
+    res.json({
+      success: true,
+      configuration: config,
+    });
+  } catch (error) {
+    console.error('Error getting post configuration:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get post configuration',
+    });
+  }
+});
+
+router.post('/api/post-configuration', async (req, res): Promise<void> => {
+  try {
+    const updates = req.body;
+    
+    const result = await updatePostConfiguration(updates);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Post configuration updated successfully',
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to update post configuration',
+      });
+    }
+  } catch (error) {
+    console.error('Error updating post configuration:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while updating post configuration',
+    });
+  }
+});
+
+router.get('/api/configuration-status', async (_req, res): Promise<void> => {
+  try {
+    const status = await getConfigurationStatus();
+    
+    res.json({
+      success: true,
+      status: status,
+    });
+  } catch (error) {
+    console.error('Error getting configuration status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get configuration status',
+    });
+  }
+});
+
+// Mod Tools Endpoints
+
+router.get('/api/mod-tools/menu', async (_req, res): Promise<void> => {
+  try {
+    const menu = await createModToolsMenu();
+    
+    res.json({
+      success: true,
+      menu: menu,
+    });
+  } catch (error) {
+    console.error('Error getting mod tools menu:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get mod tools menu',
+    });
+  }
+});
+
+router.get('/api/mod-tools/status', async (_req, res): Promise<void> => {
+  try {
+    const status = await getSystemStatus();
+    
+    res.json({
+      success: true,
+      status: status,
+    });
+  } catch (error) {
+    console.error('Error getting mod tools status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get mod tools status',
+    });
+  }
+});
+
+router.post('/api/mod-tools/action', async (req, res): Promise<void> => {
+  try {
+    const { action, parameters } = req.body;
+    
+    if (!action) {
+      res.status(400).json({
+        success: false,
+        message: 'Action is required',
+      });
+      return;
+    }
+    
+    const result = await executeModAction(action, parameters);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message,
+      });
+    }
+  } catch (error) {
+    console.error('Error executing mod action:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while executing mod action',
+    });
+  }
+});
+
+router.post('/internal/mod-tools/status-post', async (_req, res): Promise<void> => {
+  try {
+    const result = await createModToolsStatusPost();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Mod tools status post created successfully',
+        postId: result.postId,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to create mod tools status post',
+      });
+    }
+  } catch (error) {
+    console.error('Error creating mod tools status post:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while creating mod tools status post',
     });
   }
 });
