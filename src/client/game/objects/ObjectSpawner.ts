@@ -84,7 +84,7 @@ export class ObjectSpawner {
     this.config = {
       minSpawnRate: 300, // 0.3 seconds minimum (faster)
       maxSpawnRate: 800, // 0.8 seconds maximum (faster)
-      bombChance: 0.12, // 12% chance for bombs (reduced from 30% for better balance)
+      bombChance: 0.20, // 20% chance for bombs (increased for more challenging gameplay)
       // slowMoChance removed - now using interval-based spawning
       correctColorRatio: 0.4, // 40% of dots should be correct color (increased for better gameplay)
       baseSpawnRate: 500, // Base spawn rate for performance scaling (faster)
