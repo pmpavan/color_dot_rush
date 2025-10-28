@@ -6,6 +6,14 @@ export const createPost = async () => {
     throw new Error('subredditName is required');
   }
 
+  // Format date for the title
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
   return await reddit.submitCustomPost({
     splash: {
       // Splash screen customization for Color Dot Rush - Reddit Community Games 2025
@@ -22,6 +30,6 @@ export const createPost = async () => {
       score: 0,
     },
     subredditName: subredditName,
-    title: 'Color Dot Rush - Tap into chaos!',
+    title: `Color Dot Rush - ${dateStr} - Tap into chaos!`,
   });
 };
