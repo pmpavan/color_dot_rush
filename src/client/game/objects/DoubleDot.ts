@@ -16,7 +16,7 @@ export class DoubleDot extends Phaser.GameObjects.Arc {
   private direction: Phaser.Math.Vector2;
   private hitbox: Phaser.Geom.Rectangle;
   private doubleIcon: Phaser.GameObjects.Arc;
-  private doubleText: Phaser.GameObjects.Text;
+  private doubleText: Phaser.GameObjects.DOMElement | null = null;
   private shimmerTween: Phaser.Tweens.Tween | null = null;
   private lastCollisionTime: number = 0;
   private glowEffect: Phaser.GameObjects.Graphics | null = null;
@@ -722,7 +722,9 @@ export class DoubleDot extends Phaser.GameObjects.Arc {
     this.active = false;
     this.setVisible(false);
     this.doubleIcon.setVisible(false);
-    this.doubleText.setVisible(false);
+    if (this.doubleText) {
+      this.doubleText.setVisible(false);
+    }
     
     // Hide and clean up glow effect
     if (this.glowEffect) {

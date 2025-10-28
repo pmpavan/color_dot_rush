@@ -4,8 +4,8 @@ export enum GameColor {
   RED = '#FF0000', // Warning Red - intense red with subtle flicker
   GREEN = '#00FF00', // Volt Green - lime green with glow
   BLUE = '#00BFFF', // Electric Blue - sky blue with glow
-  YELLOW = '#FFA500', // Plasma Orange - bright orange with glow
-  PURPLE = '#FF69B4', // Cyber Pink - hot pink with glow
+  YELLOW = '#FFFF00', // Pure Yellow - bright vibrant yellow
+  PURPLE = '#FF00FF', // Bright Magenta - vibrant pink-purple
 }
 
 export enum UIColor {

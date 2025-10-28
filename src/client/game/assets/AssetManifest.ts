@@ -48,13 +48,13 @@ export const GAME_ASSETS: AssetDefinition[] = [
     key: 'dot-yellow',
     type: 'image',
     path: 'assets/dot-yellow.svg',
-    description: 'Yellow colored dot (#F1C40F)',
+    description: 'Yellow colored dot (#FFFF00)',
   },
   {
     key: 'dot-purple',
     type: 'image',
     path: 'assets/dot-purple.svg',
-    description: 'Purple colored dot (#9B59B6)',
+    description: 'Purple colored dot (#FF00FF)',
   },
 
   // Special game objects
@@ -152,8 +152,8 @@ export const DOT_ASSET_MAP = {
   '#E74C3C': 'dot-red',
   '#2ECC71': 'dot-green',
   '#3498DB': 'dot-blue',
-  '#F1C40F': 'dot-yellow',
-  '#9B59B6': 'dot-purple',
+  '#FFFF00': 'dot-yellow',
+  '#FF00FF': 'dot-purple',
 } as const;
 
 /**
