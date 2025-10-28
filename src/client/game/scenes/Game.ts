@@ -388,6 +388,9 @@ export class Game extends Scene {
       const pointsToAward = this.isDoublePointsActive ? 2 : 1;
       this.score += pointsToAward;
 
+      // Show points text using DOM element
+      dot.showPointsText(pointsToAward);
+
       // Create celebratory pop effect with particle burst
       this.createCorrectTapEffect(dot);
 

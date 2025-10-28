@@ -293,6 +293,55 @@ export class Dot extends Phaser.GameObjects.Arc {
   }
 
   /**
+   * Show DOM text for points earned (+1 or +2)
+   */
+  public showPointsText(points: number): void {
+    // Convert Phaser coordinates to DOM coordinates
+    const canvas = this.scene.game.canvas;
+    const canvasRect = canvas.getBoundingClientRect();
+    
+    // Calculate DOM position relative to the canvas
+    const domX = canvasRect.left + (this.x * canvasRect.width / canvas.width);
+    const domY = canvasRect.top + (this.y * canvasRect.height / canvas.height);
+    
+    // Create DOM text element
+    const pointsText = document.createElement('div');
+    pointsText.textContent = `+${points}`;
+    pointsText.style.position = 'fixed';
+    pointsText.style.left = `${domX}px`;
+    pointsText.style.top = `${domY}px`;
+    pointsText.style.transform = 'translate(-50%, -50%)';
+    pointsText.style.fontSize = '24px';
+    pointsText.style.fontWeight = 'bold';
+    pointsText.style.color = '#FFFFFF';
+    pointsText.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
+    pointsText.style.pointerEvents = 'none';
+    pointsText.style.zIndex = '1000';
+    pointsText.style.fontFamily = 'Obsidian, Arial, sans-serif';
+    pointsText.style.userSelect = 'none';
+    
+    // Add to DOM
+    document.body.appendChild(pointsText);
+    
+    // Animate the text
+    pointsText.style.opacity = '1';
+    pointsText.style.transition = 'all 500ms ease-out';
+    
+    // Move up and fade out
+    setTimeout(() => {
+      pointsText.style.transform = 'translate(-50%, -100%)';
+      pointsText.style.opacity = '0';
+    }, 50);
+    
+    // Remove from DOM after animation
+    setTimeout(() => {
+      if (pointsText.parentNode) {
+        pointsText.parentNode.removeChild(pointsText);
+      }
+    }, 500);
+  }
+
+  /**
    * Create flash white burst effect on correct tap
    */
   private createWhiteBurstEffect(): void {
