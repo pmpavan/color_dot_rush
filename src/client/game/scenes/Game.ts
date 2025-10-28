@@ -13,6 +13,8 @@ import { NeonMotionEffects } from '../utils/NeonMotionEffects';
 import { AccessibilityManager } from '../utils/AccessibilityManager';
 import { OnboardingService } from '../../services/OnboardingService';
 import { OnboardingTutorial } from '../utils/OnboardingTutorial';
+import { DOMTextElement } from '../utils/DOMTextRenderer';
+import { NeonTextConfig, NeonTextEffectType, NeonTextSize } from '../utils/NeonTextEffects';
 
 // Game state finite state machine
 enum GameState {
@@ -51,6 +53,9 @@ export class Game extends Scene {
   private doublePointsStartTime: number = 0;
   private doublePointsVignette: Phaser.GameObjects.Rectangle | null = null;
   private doublePointsTween: Phaser.Tweens.Tween | null = null;
+
+  // Countdown timer display
+  private countdownTimerElement: DOMTextElement | null = null;
 
   // Object management
   private objectPool: ObjectPoolManager | null = null;
@@ -1264,6 +1269,9 @@ export class Game extends Scene {
         this.isSlowMoActive = false;
         this.slowMoStartTime = 0;
 
+        // Hide countdown timer
+        this.hideCountdownTimer();
+
         console.log('[SLOW-MO] Slow-motion fully deactivated - all speeds restored');
       }
     });
@@ -1373,6 +1381,9 @@ export class Game extends Scene {
         // Reset double points state
         this.isDoublePointsActive = false;
         this.doublePointsStartTime = 0;
+
+        // Hide countdown timer
+        this.hideCountdownTimer();
 
         console.log('[2X] Double points fully deactivated - normal points restored');
       }
@@ -2641,6 +2652,50 @@ export class Game extends Scene {
   }
 
   /**
+   * Create countdown timer display in the right corner
+   */
+  private createCountdownTimer(): void {
+    if (!this.uiScene || !this.uiScene.getDOMTextRenderer) {
+      console.warn('Game: DOMTextRenderer not available for countdown timer');
+      return;
+    }
+
+    const domTextRenderer = this.uiScene.getDOMTextRenderer();
+    if (!domTextRenderer) {
+      console.warn('Game: DOMTextRenderer not available for countdown timer');
+      return;
+    }
+
+    // Position in bottom-left corner with margin
+    const x = 80;
+    const y = this.scale.height - 60;
+
+    // Create neon-styled countdown timer
+    const timerConfig: NeonTextConfig = {
+      effectType: NeonTextEffectType.GLOW_BLUE,
+      size: NeonTextSize.LARGE,
+      intensity: 0.8,
+      animation: true,
+      performance: 'high'
+    };
+
+    this.countdownTimerElement = domTextRenderer.createNeonText(
+      'countdown-timer',
+      '',
+      x,
+      y,
+      timerConfig
+    );
+
+    // Initially hide the timer
+    if (this.countdownTimerElement) {
+      domTextRenderer.setVisible('countdown-timer', false);
+    }
+
+    console.log('Game: Countdown timer created');
+  }
+
+  /**
    * Wait for UIScene to be ready with retry logic
    * Handles cases where UIScene takes time to initialize
    */
@@ -2711,6 +2766,11 @@ export class Game extends Scene {
       this.uiScene.setVisible(true);
       console.log('Game: UI elements shown after restart');
     }
+
+    // Create countdown timer display
+    this.createCountdownTimer();
+
+    console.log('Game: UIScene communication setup completed');
 
     // Setup event listeners for scene communication
     if (this.uiScene && this.uiScene.events) {
@@ -2960,6 +3020,69 @@ export class Game extends Scene {
     }
   }
 
+  /**
+   * Update countdown timer display
+   */
+  private updateCountdownTimer(): void {
+    if (!this.uiScene || !this.uiScene.getDOMTextRenderer || !this.countdownTimerElement) {
+      return;
+    }
+
+    const domTextRenderer = this.uiScene.getDOMTextRenderer();
+    if (!domTextRenderer) {
+      return;
+    }
+
+    let remainingTime = 0;
+    let timerText = '';
+    let isActive = false;
+
+    // Check slowmo timer
+    if (this.isSlowMoActive) {
+      const slowMoElapsed = this.time.now - this.slowMoStartTime;
+      remainingTime = Math.max(0, SlowMoDot.DURATION - slowMoElapsed);
+      const seconds = Math.ceil(remainingTime / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      timerText = `SLOWMO: ${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+      isActive = true;
+    }
+    // Check 2x points timer
+    else if (this.isDoublePointsActive) {
+      const doublePointsElapsed = this.time.now - this.doublePointsStartTime;
+      remainingTime = Math.max(0, DoubleDot.DURATION - doublePointsElapsed);
+      const seconds = Math.ceil(remainingTime / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      timerText = `2X: ${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+      isActive = true;
+    }
+
+    // Show/hide timer based on active state
+    if (isActive && remainingTime > 0) {
+      domTextRenderer.setVisible('countdown-timer', true);
+      domTextRenderer.updateText('countdown-timer', timerText);
+    } else {
+      domTextRenderer.setVisible('countdown-timer', false);
+    }
+  }
+
+  /**
+   * Hide countdown timer display
+   */
+  private hideCountdownTimer(): void {
+    if (!this.uiScene || !this.uiScene.getDOMTextRenderer) {
+      return;
+    }
+
+    const domTextRenderer = this.uiScene.getDOMTextRenderer();
+    if (!domTextRenderer) {
+      return;
+    }
+
+    domTextRenderer.setVisible('countdown-timer', false);
+  }
+
   // Override update method to include debug updates
   override update(time: number, delta: number): void {
     super.update(time, delta);
@@ -2985,6 +3108,9 @@ export class Game extends Scene {
 
       // Update difficulty display for debugging
       this.updateDifficultyDisplay();
+
+      // Update countdown timer display
+      this.updateCountdownTimer();
 
       // Update hitbox visualization
       this.drawHitboxes();
