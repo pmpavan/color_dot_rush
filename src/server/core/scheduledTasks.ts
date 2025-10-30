@@ -26,9 +26,9 @@ export async function executeScheduledTasks(): Promise<ScheduledTaskResult[]> {
   const results: ScheduledTaskResult[] = [];
   const now = new Date();
   
-  // Task 1: Daily Challenge Post
+  // Task 1: Daily Challenge Post (DISABLED - keeping code for future use)
   try {
-    const shouldPostDaily = await shouldPostDailyChallengeConfig();
+    const shouldPostDaily = false; // Disabled - check config: await shouldPostDailyChallengeConfig();
     if (shouldPostDaily) {
       const result = await createDailyChallengePost();
       
@@ -59,7 +59,7 @@ export async function executeScheduledTasks(): Promise<ScheduledTaskResult[]> {
 
   // Task 2: Weekly Leaderboard Post
   try {
-    const shouldPostWeekly = await shouldPostWeeklyLeaderboardConfig();
+    const shouldPostWeekly = true; //await shouldPostWeeklyLeaderboardConfig();
     if (shouldPostWeekly) {
       const result = await createWeeklyLeaderboardPost();
       
@@ -113,7 +113,7 @@ export async function getScheduledTasksStatus(): Promise<{
           name: 'daily-challenge-post',
           description: 'Posts daily challenge every day at 8 AM',
           nextRun: nextPosts.dailyChallenge || new Date(),
-          isEnabled: true,
+          isEnabled: false, // Disabled - keeping code for future use
         },
         {
           name: 'weekly-leaderboard-post',

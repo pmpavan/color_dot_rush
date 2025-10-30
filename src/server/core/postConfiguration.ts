@@ -40,7 +40,7 @@ const DEFAULT_CONFIG: PostConfiguration = {
     postTime: '08:00',
     timezone: 'UTC',
     challengeTypes: ['SPEED_DEMON', 'PERFECTIONIST', 'BOMB_DODGER', 'COLOR_MASTER', 'ENDURANCE'],
-    autoPost: true,
+    autoPost: false, // Disabled - keep code for future use
   },
   weeklyLeaderboard: {
     postDay: 1, // Monday

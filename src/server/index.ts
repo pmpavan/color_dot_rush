@@ -13,6 +13,7 @@ import { executeScheduledTasks, getScheduledTasksStatus } from './core/scheduled
 import { shareScore, getAvailablePlatforms, getShareStatistics } from './core/socialSharing';
 import { getPostConfiguration, updatePostConfiguration, getConfigurationStatus } from './core/postConfiguration';
 import { createModToolsMenu, getSystemStatus, executeModAction, createModToolsStatusPost } from './core/modTools';
+import { checkAndPostTopScoreComment } from './core/topScoreComment';
 
 const app = express();
 
@@ -134,6 +135,13 @@ router.post<Record<string, never>, SubmitScoreResponse, SubmitScoreRequest>(
         console.warn('Could not calculate user rank:', rankError);
         // Don't fail the request if rank calculation fails
       }
+
+      // Check if this score beats the top score for this post and post a comment if it does
+      // Do this asynchronously after sending the response to avoid blocking
+      // Fire and forget - don't wait for the result
+      checkAndPostTopScoreComment(postId, username, score).catch((error) => {
+        console.error('Error checking/posting top score comment (non-blocking):', error);
+      });
 
       // Check for 30-second timeout compliance
       const elapsedTime = Date.now() - startTime;
