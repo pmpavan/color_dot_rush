@@ -59,7 +59,11 @@ function getPreviousWeekKey(): string {
  */
 function getWeekBounds(weekKey: string): { weekStart: Date; weekEnd: Date } {
   try {
-    const [year, month, day] = weekKey.split('-').map(Number);
+    const parts = weekKey.split('-').map(Number);
+    const year = parts[0] ?? new Date().getFullYear();
+    const month = parts[1] ?? new Date().getMonth() + 1;
+    const day = parts[2] ?? new Date().getDate();
+    
     const weekStart = new Date(year, month - 1, day);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
@@ -181,7 +185,7 @@ ${leaderboardTable}
 
 ## 📊 Weekly Stats
 - **Total Players:** ${totalPlayers.toLocaleString()}
-- **Top Score:** ${entries.length > 0 ? entries[0].score.toLocaleString() : 'N/A'}
+- **Top Score:** ${entries[0]?.score.toLocaleString() ?? 'N/A'}
 - **Average Score:** ${entries.length > 0 ? Math.round(entries.reduce((sum, entry) => sum + entry.score, 0) / entries.length).toLocaleString() : 'N/A'}
 
 ## 🎯 How to Play
@@ -191,7 +195,7 @@ ${leaderboardTable}
 - Compete for the **weekly leaderboard**!
 
 ## 🏆 Next Week's Challenge
-The leaderboard resets every Monday! Can you beat this week's top score of **${entries.length > 0 ? entries[0].score.toLocaleString() : '0'}**?
+The leaderboard resets every Monday! Can you beat this week's top score of **${entries[0]?.score.toLocaleString() ?? '0'}**?
 
 ---
 
@@ -250,11 +254,11 @@ export async function createWeeklyLeaderboardPost(): Promise<{ success: boolean;
     });
     
     // Create the Reddit post
-    const post = await reddit.submitTextPost({
+    const post = await reddit.submitPost({
       subredditName: subredditName,
       title: postTemplate.title,
       text: postTemplate.content,
-      flairId: postTemplate.flair, // Optional flair
+      ...(postTemplate.flair && { flairId: postTemplate.flair }),
     });
     
     console.log(`Weekly leaderboard post created successfully: ${post.id}`);

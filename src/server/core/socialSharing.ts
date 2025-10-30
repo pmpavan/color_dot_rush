@@ -83,7 +83,7 @@ async function shareToReddit(shareData: ShareData, message: string): Promise<Sha
     }
     
     // Create a post in the subreddit
-    const post = await reddit.submitTextPost({
+    const post = await reddit.submitPost({
       subredditName: subredditName,
       title: `🎮 Score Share: ${shareData.score.toLocaleString()} points!`,
       text: message,
@@ -120,7 +120,7 @@ async function shareToTwitter(shareData: ShareData, message: string): Promise<Sh
     // Create a post that's optimized for Twitter sharing
     const twitterMessage = message.length > 200 ? message.substring(0, 197) + '...' : message;
     
-    const post = await reddit.submitTextPost({
+    const post = await reddit.submitPost({
       subredditName: subredditName,
       title: `🐦 Twitter Share: ${shareData.score.toLocaleString()} points!`,
       text: `${twitterMessage}\n\n*This post is optimized for Twitter sharing. Copy the text above to share on Twitter!*`,
@@ -154,7 +154,7 @@ async function shareToDiscord(shareData: ShareData, message: string): Promise<Sh
       throw new Error('subredditName is required for Discord sharing');
     }
     
-    const post = await reddit.submitTextPost({
+    const post = await reddit.submitPost({
       subredditName: subredditName,
       title: `💬 Discord Share: ${shareData.score.toLocaleString()} points!`,
       text: `${message}\n\n*Share this post in your Discord server to show off your score!*`,

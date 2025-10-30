@@ -75,7 +75,7 @@ const DAILY_CHALLENGES = {
 function getTodaysChallengeType(): string {
   const dayOfWeek = new Date().getDay();
   const challengeTypes = Object.keys(DAILY_CHALLENGES);
-  return challengeTypes[dayOfWeek % challengeTypes.length];
+  return challengeTypes[dayOfWeek % challengeTypes.length] ?? challengeTypes[0] ?? 'SPEED_DEMON';
 }
 
 /**
@@ -290,11 +290,11 @@ export async function createDailyChallengePost(): Promise<{ success: boolean; po
     });
     
     // Create the Reddit post
-    const post = await reddit.submitTextPost({
+    const post = await reddit.submitPost({
       subredditName: subredditName,
       title: postTemplate.title,
       text: postTemplate.content,
-      flairId: postTemplate.flair,
+      ...(postTemplate.flair && { flairId: postTemplate.flair }),
     });
     
     console.log(`Daily challenge post created successfully: ${post.id}`);
@@ -366,13 +366,13 @@ export async function submitDailyChallengeScore(
     // Calculate user's rank
     const rank = await redis.zRank(participantsKey, userScoreEntry);
     const totalParticipants = await redis.zCard(participantsKey);
-    const userRank = rank !== undefined ? totalParticipants - rank : null;
+    const userRank = rank !== undefined ? totalParticipants - rank : undefined;
     
     console.log(`Daily challenge score submitted: ${score} by ${username}, rank: ${userRank}`);
     
     return {
       success: true,
-      rank: userRank,
+      ...(userRank !== undefined && { rank: userRank }),
     };
     
   } catch (error) {

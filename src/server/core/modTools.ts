@@ -126,12 +126,12 @@ export async function getSystemStatus(): Promise<{
     
     return {
       dailyChallenge: {
-        enabled: config.dailyChallenge.enabled,
+        enabled: config.dailyChallenge.autoPost,
         nextPost: config.dailyChallenge.nextPost?.toISOString() || 'Not scheduled',
         participants: 0, // Would be fetched from Redis
       },
       weeklyLeaderboard: {
-        enabled: config.weeklyLeaderboard.enabled,
+        enabled: config.weeklyLeaderboard.autoPost,
         nextPost: config.weeklyLeaderboard.nextPost?.toISOString() || 'Not scheduled',
         totalPlayers: 0, // Would be fetched from Redis
       },
@@ -321,7 +321,7 @@ export async function createModToolsStatusPost(): Promise<{ success: boolean; po
 
 *This post is automatically generated for moderators. Use the API endpoints above to manage the system.*`;
 
-    const post = await reddit.submitTextPost({
+    const post = await reddit.submitPost({
       subredditName: subredditName,
       title: title,
       text: content,

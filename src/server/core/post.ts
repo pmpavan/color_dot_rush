@@ -8,11 +8,14 @@ export const createPost = async () => {
 
   // Format date for the title
   const now = new Date();
-  const dateStr = now.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  // Use deterministic YYYY-MM-DD format to ensure date always appears
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(now.getUTCDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+
+  const title = `Color Dot Rush - Tap into chaos! - ${dateStr}`;
+  console.log('Creating Color Dot Rush post with title:', title);
 
   return await reddit.submitCustomPost({
     splash: {
@@ -30,6 +33,6 @@ export const createPost = async () => {
       score: 0,
     },
     subredditName: subredditName,
-    title: `Color Dot Rush - ${dateStr} - Tap into chaos!`,
+    title,
   });
 };

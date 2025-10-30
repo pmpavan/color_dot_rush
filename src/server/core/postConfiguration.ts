@@ -135,17 +135,12 @@ export async function shouldPostDailyChallenge(): Promise<boolean> {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    // TEMPORARY: Allow posting at any time for testing after approval
-    // TODO: Revert this after confirming scheduler works
-    console.log('Time check - allowing posting at any time for testing');
-    return true;
-    
     // Allow posting within 2 hours of the target time to handle delays
-    // const targetTimeInMinutes = (targetHour || 0) * 60 + (targetMinute || 0);
-    // const currentTimeInMinutes = currentHour * 60 + currentMinute;
-    // 
-    // // Check if we're within 2 hours of the target time (120 minutes)
-    // return currentTimeInMinutes >= targetTimeInMinutes && currentTimeInMinutes < targetTimeInMinutes + 120;
+    const targetTimeInMinutes = (targetHour || 0) * 60 + (targetMinute || 0);
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    
+    // Check if we're within 2 hours of the target time (120 minutes)
+    return currentTimeInMinutes >= targetTimeInMinutes && currentTimeInMinutes < targetTimeInMinutes + 120;
   } catch (error) {
     console.error('Error checking daily challenge posting schedule:', error);
     return false;

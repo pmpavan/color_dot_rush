@@ -16,12 +16,23 @@ import { createModToolsMenu, getSystemStatus, executeModAction, createModToolsSt
 
 const app = express();
 
+// Log server startup
+console.log('=== SERVER STARTUP ===');
+console.log('Server starting at:', new Date().toISOString());
+console.log('App name: color-dot-rush');
+
 // Middleware for JSON body parsing
 app.use(express.json());
 // Middleware for URL-encoded body parsing
 app.use(express.urlencoded({ extended: true }));
 // Middleware for plain text body parsing
 app.use(express.text());
+
+// Logging middleware to track all requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 const router = express.Router();
 
@@ -472,13 +483,24 @@ router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
 
 router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
   try {
+    console.log('=== MENU POST-CREATE TRIGGERED ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Context subreddit:', context.subredditName);
+    console.log('Request body:', JSON.stringify(_req.body));
+    
     const post = await createPost();
+    
+    console.log('=== POST CREATED SUCCESSFULLY ===');
+    console.log('Post ID:', post.id);
+    console.log('Post URL:', `https://reddit.com/r/${context.subredditName}/comments/${post.id}`);
 
     res.json({
       navigateTo: `https://reddit.com/r/${context.subredditName}/comments/${post.id}`,
     });
   } catch (error) {
+    console.error('=== MENU POST-CREATE ERROR ===');
     console.error(`Error creating post: ${error}`);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(400).json({
       status: 'error',
       message: 'Failed to create post',
@@ -964,14 +986,42 @@ router.get('/internal/weekly-leaderboard-status', async (_req, res): Promise<voi
   }
 });
 
+// Test endpoint to verify logging works
+router.get('/internal/test-logging', async (_req, res): Promise<void> => {
+  console.log('=== TEST LOGGING ENDPOINT CALLED ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('This is a test log message to verify logging works');
+  console.error('This is a test error log to verify error logging works');
+  
+  res.json({
+    success: true,
+    message: 'Test logging endpoint called - check logs!',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Scheduled Tasks Endpoints
 
 router.post('/internal/execute-scheduled-tasks', async (_req, res): Promise<void> => {
   try {
+    console.log('=== SCHEDULER TRIGGERED ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Context subreddit:', context.subredditName);
+    
     const results = await executeScheduledTasks();
     
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
+    
+    console.log('=== SCHEDULER RESULTS ===');
+    console.log(`Total tasks: ${results.length}, Successful: ${successCount}, Failed: ${failureCount}`);
+    results.forEach((result, index) => {
+      console.log(`Task ${index + 1} (${result.taskName}):`, {
+        success: result.success,
+        error: result.error,
+        result: result.result,
+      });
+    });
     
     res.json({
       success: true,
@@ -984,6 +1034,7 @@ router.post('/internal/execute-scheduled-tasks', async (_req, res): Promise<void
       },
     });
   } catch (error) {
+    console.error('=== SCHEDULER ERROR ===');
     console.error('Error executing scheduled tasks:', error);
     res.status(500).json({
       success: false,
@@ -1346,5 +1397,14 @@ app.use(router);
 const port = process.env.WEBBIT_PORT || 3000;
 
 const server = createServer(app);
-server.on('error', (err) => console.error(`server error; ${err.stack}`));
-server.listen(port, () => console.log(`http://localhost:${port}`));
+server.on('error', (err) => {
+  console.error('=== SERVER ERROR ===');
+  console.error(`server error; ${err.stack}`);
+});
+
+server.listen(port, () => {
+  console.log('=== SERVER LISTENING ===');
+  console.log(`http://localhost:${port}`);
+  console.log('All routes registered:', router.stack.length, 'routes');
+  console.log('Scheduler endpoints configured in devvit.json');
+});
